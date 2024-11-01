@@ -16,6 +16,16 @@
                     "-i"
                 ]
             }
-        }
+        },
+        "cSpell.words": [
+            "Bilibili",
+            "devcontainer",
+            "Disqus",
+            "Giscus",
+            "gitmodules",
+            "nojekyll",
+            "Simiao",
+            "wangsimiao"
+        ]
     }
 }

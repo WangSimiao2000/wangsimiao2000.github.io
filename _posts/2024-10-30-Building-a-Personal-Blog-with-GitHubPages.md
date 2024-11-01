@@ -100,7 +100,7 @@ webmaster_verifications:
 
 配置网站图标可以参考官方文档[Adding a favicon](https://chirpy.cotes.page/posts/customize-the-favicon/)
 
-先在此网站[realfavicongenerator](https://realfavicongenerator.net/)生成网站图标
+先在此网站[real favicon generator](https://realfavicongenerator.net/)生成网站图标
 
 然后将生成的文件放在`assets/img/favicon`目录下, 如果没有这个目录, 可以自己创建
 
