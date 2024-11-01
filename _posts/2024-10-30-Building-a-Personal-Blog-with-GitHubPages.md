@@ -1,5 +1,5 @@
 ---
-titile: 基于GithubPages与Jekyll主题Chirpy搭建个人博客
+title: 基于GithubPages与Jekyll主题Chirpy搭建个人博客
 date: 2024-10-30 10:00:00 +0800
 categories: [笔记, 博客]
 tags: [博客, GithubPages, Jekyll, Chirpy]
