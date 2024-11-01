@@ -119,8 +119,9 @@ Chirpy支持Disqus, Utterances和Giscus三种评论系统, 你可以在`_config.
 
 我建议使用Giscus, 因为Giscus是一个开源的评论系统:
 1. 首先要在[Giscus app](https://github.com/apps/giscus)处安装Giscus
-2. 然后在仓库的`Settings`选项卡中找到`General`选项, 勾选`Features`中的`Discussions`选项
-3. 最后在`_config.yml`文件中填入在[Giscus](https://giscus.app/)中配置的信息
+2. 安装时选择要安装的仓库, 可以选择所有仓库, 也可以单独选择, 我这里选择了我的博客仓库`wangsimiao2000.github.io`
+3. 然后在仓库的`Settings`选项卡中找到`General`选项, 勾选`Features`中的`Discussions`选项
+4. 最后在`_config.yml`文件中填入在[Giscus](https://giscus.app/zh-CN)中配置的信息
 
 ```yaml
 comments:
