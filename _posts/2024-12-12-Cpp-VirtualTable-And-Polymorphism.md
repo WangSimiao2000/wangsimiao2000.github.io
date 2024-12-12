@@ -175,3 +175,23 @@ Base& yinbase = derive2; // 父类引用绑定子类对象
 yinbase.vfunc(); // 是多态：通过父类引用调用虚函数，实际调用的是子类的vfunc
 
 ```
+
+## 父类的析构函数
+
+- 如果父类的析构函数不是虚函数, 那么通过父类指针释放子类对象的时候, 只会调用父类的析构函数, 不会调用子类的析构函数
+- 如果父类的析构函数是虚函数, 那么通过父类指针释放子类对象的时候, 会先调用子类的析构函数, 再调用父类的析构函数
+
+```cpp
+class Base {
+public:
+    virtual ~Base() { std::cout << "Base destructor\n"; }
+};
+
+class Derived : public Base {
+public:
+    ~Derived() { std::cout << "Derived destructor\n"; }
+};
+
+Base* ptr = new Derived();
+delete ptr; // 会正确调用 Derived 的析构函数，再调用 Base 的析构函数
+```
