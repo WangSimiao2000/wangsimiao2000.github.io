@@ -119,9 +119,9 @@ comments:
   # Giscus options › https://giscus.app
   giscus:
     repo: WangSimiao2000/wangsimiao2000.github.io # <gh-username>/<repo>
-    repo_id: R_kgDONJB2cg
+    repo_id: R_kgDONW4tGQ
     category: General
-    category_id: DIC_kwDONJB2cs4Cj4-T
+    category_id: DIC_kwDONW4tGc4ClVF_
     mapping: pathname # optional, default to 'pathname'
     strict: 0 # optional, default to '0'
     input_position: bottom # optional, default to 'bottom'
