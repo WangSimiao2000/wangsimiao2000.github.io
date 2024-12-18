@@ -305,18 +305,18 @@ int main(void) {
 
 例如, 当创建了一个`shared_ptr`对象时, 引用计数器`use_count`的值为1, 弱引用计数器`weak_count`的值为0, 如图:
 
-![创建一个sp](/assets/posts/Cpp-Smart-Pointer/01.png){"width": 700px}
+![创建一个sp](/assets/posts/Cpp-Smart-Pointer/01.png){:width="700px"}
 
 当使用`weak_ptr`对象观测这个`shared_ptr`对象时, 弱引用计数器`weak_count`的值会增加1, 引用计数器`use_count`的值不变, 如图:
 
-![创建一个wp](/assets/posts/Cpp-Smart-Pointer/02.png){"width": 700px}
+![创建一个wp](/assets/posts/Cpp-Smart-Pointer/02.png){:width="700px"}
 
 如果此时`shared_ptr`对象离开作用域, 被销毁, 引用计数器`use_count`的值会减一, 但是弱引用计数器`weak_count`的值不变, 如图:
 
-![销毁一个sp](/assets/posts/Cpp-Smart-Pointer/03.png){"width": 700px}
+![销毁一个sp](/assets/posts/Cpp-Smart-Pointer/03.png){:width="700px"}
 
 当`use_count`为 0 时, 这时, `shared_ptr`的析构函数会删除掉所管理的对象, 但是由于`weak_count`的值不为 0, 所以`shared_ptr`的控制块不会被销毁, 如图:
 
-![销毁一个sp](/assets/posts/Cpp-Smart-Pointer/04.png){"width": 700px}
+![销毁一个sp](/assets/posts/Cpp-Smart-Pointer/04.png){:width="700px"}
 
 当`weak_ptr`对象离开作用域, 被销毁, 弱引用计数器`weak_count`的值会减一, 当`weak_count`的值为 0 时, `shared_ptr`的控制块才会被销毁.
