@@ -124,3 +124,64 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
 **注意**: 这里需要把opencv文件夹的`\opencv\build\x64\vc16\bin`目录里的`opencv_world4100d.dll`文件复制到项目build文件夹的Debug文件夹下, 否则会报错`"由于找不到 opencv world4100d.dll，无法继续执行代码。重新安装程序可能会解决此问题。"`
 
 ![Error](/assets/posts/GAMES101-Assignment1/02.png){:width="700px"}
+
+## 绕任意轴旋转的矩阵(额外题目)
+
+实现一个构建绕任意轴旋转的旋转矩阵的函数，可以使用 Rodrigues 旋转公式（罗德里格旋转公式）。它是基于轴-角表示法的一种方法。
+
+### 罗德里格旋转公式：
+假设旋转轴是单位向量 $\mathbf{u} = (x, y, z)$，旋转角度是 $\theta$，则旋转矩阵为：
+
+$$
+R = I + \sin(\theta)K + (1 - \cos(\theta))K^2
+$$
+
+其中：
+- $I$ 是 3x3 单位矩阵。
+- $K$ 是旋转轴 $\mathbf{u}$ 的反对称矩阵：
+
+$$
+K = \begin{bmatrix}
+0 & -z & y \\
+z & 0 & -x \\
+-y & x & 0
+\end{bmatrix}
+$$
+
+```cpp
+Eigen::Matrix4f get_rotation(Vector3f axis, float angle) {
+	// 构建一个函数，返回绕任意轴旋转的旋转矩阵
+	// axis: 旋转轴，angle: 旋转角度
+
+	// 归一化旋转轴
+	axis.normalize();
+	float x = axis[0], y = axis[1], z = axis[2]; // 旋转轴的三个分量
+	float radian = angle * MY_PI / 180.0f; // 角度转弧度
+
+	Eigen::Matrix3f K = Eigen::Matrix3f::Zero(); // 构建反对称矩阵
+	K(0, 1) = -z; 
+    K(0, 2) = y;
+	K(1, 0) = z;
+	K(1, 2) = -x;
+	K(2, 0) = -y;
+	K(2, 1) = x;
+
+	// 计算旋转矩阵 R = I + sin(θ)K + (1 - cos(θ))K^2
+    Eigen::Matrix3f I = Eigen::Matrix3f::Identity();
+	Eigen::Matrix3f R = I + sin(radian) * K + (1 - cos(radian)) * K * K;
+
+	// 将3x3的旋转矩阵转换为4x4的旋转矩阵
+	Eigen::Matrix4f rotation_matrix = Eigen::Matrix4f::Identity();
+	rotation_matrix.block<3, 3>(0, 0) = R;
+
+	return rotation_matrix;
+
+}
+```
+
+
+
+### 步骤：
+1. **归一化旋转轴**：确保旋转轴是单位向量。
+2. **计算旋转矩阵**：使用 Rodrigues 公式生成 3x3 的旋转矩阵。
+3. **扩展为 4x4 矩阵**：将其扩展为 4x4 矩阵以适配齐次坐标。
