@@ -2,7 +2,7 @@
 title: GAMES101 作业1
 date: 2024-12-21 16:40:00 +0800
 categories: [笔记, GAMES101]
-tags: [GAMES101]
+tags: [GAMES101, 旋转矩阵, 透视投影矩阵]
 math: true
 ---
 
