@@ -121,3 +121,4 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
 
 ![GAMES101-Assignment1](/assets/posts/GAMES101-Assignment1/image.png){:width="400px"}
 
+**注意**: 这里需要把opencv文件夹的`\opencv\build\x64\vc16\bin`目录里的`opencv_world4100d.lib`文件复制到项目build文件夹的Debug文件夹下, 否则会报错`"由于找不到 opencv world4100d.dl，无法继续执行代码。重新安装程序可能会解决此问题。"`
