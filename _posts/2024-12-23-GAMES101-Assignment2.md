@@ -152,7 +152,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
 
 ## 渲染结果
 
-渲染结果是两个三角形的叠加, 一个是浅绿色, 一个神浅蓝色:
+渲染结果是两个三角形的叠加, 一个是浅绿色, 一个是浅蓝色:
 
 ![GAMES101-Assignment2](/assets/posts/GAMES101-Assignment2/01.png){:width="500px"}
 
