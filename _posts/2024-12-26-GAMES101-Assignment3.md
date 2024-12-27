@@ -9,6 +9,31 @@ tags: [GAMES101, 着色]
 
 我的所有GAMES101作业的仓库地址: [GAMES101-Assignments](https://github.com/WangSimiao2000/GAMES101-Assignments)
 
+## 投影矩阵修改
+
+> 之前的投影矩阵感觉有点问题, 这里重新实现一下
+
+修改main.cpp中的get_projection_matrix()函数, 实现投影矩阵的计算:
+
+```cpp
+Eigen::Matrix4f projection;
+float top = -tan(DEG2RAD(eye_fov/2.0f) * abs(zNear));
+float right = top * aspect_ratio;
+projection << zNear/right,0,0,0,
+              0,zNear/top,0,0,
+              0,0,(zNear+zFar)/(zNear-zFar),(2*zNear*zFar)/(zFar-zNear),
+              0,0,1,0;
+return projection;
+```
+
+然后在gloabl.h中添加一个宏定义:
+
+```cpp
+inline double DEG2RAD(double deg) {return deg * MY_PI/180;}
+```
+
+以上定义是为了将角度(deg)转换为弧度(rad), 以便在计算投影矩阵时使用
+
 ## 实现法向量、颜色、纹理颜色的插值
 
 > 对应pdf任务1,2
@@ -106,7 +131,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
 }
 ```
 
-此外, 还需要将前两次作业的投影矩阵的计算代码复制到此项目的main.cpp的get_projection_matrix()函数中, 以便在rasterizer.cpp中调用
+
 
 此时可以在build目录的Debug文件夹下运行项目:
 
