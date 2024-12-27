@@ -11,6 +11,8 @@ tags: [GAMES101, 着色]
 
 ## 实现法向量、颜色、纹理颜色的插值
 
+> 对应pdf任务1,2
+
 修改rasterizer.cpp中的函数rasterize_triangle(const Triangle& t) : 在此处实现与作业2类似的插值算法, 实现法向量、颜色、纹理颜色的插值
 
 ```cpp
@@ -104,3 +106,82 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
 }
 ```
 
+此外, 还需要将前两次作业的投影矩阵的计算代码复制到此项目的main.cpp的get_projection_matrix()函数中, 以便在rasterizer.cpp中调用
+
+此时可以在build目录的Debug文件夹下运行项目:
+
+```bash
+Rasterizer output.png normal
+```
+
+注意, 由于Windows的VS项目中的相对路径与Linux的不同, 所以在Windows下运行时, 需要把models文件夹复制(或剪切)到build目录下, 否则会出现以下报错:
+
+![Error](/assets/posts/GAMES101-Assignment3/01.png){:width="700px"}
+
+会在Debug文件夹下生成output.png文件, 此时的渲染结果如下:
+
+![Normal](/assets/posts/GAMES101-Assignment3/normal.png){:width="400px"}
+
+## 在片段着色器中实现Blinn-Phong模型
+
+> 对应pdf任务3
+
+修改main.cpp中的phong_fragment_shader(const fragment_shader_payload& payload)函数, 实现Blinn-Phong模型:
+
+```cpp
+Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
+{
+	Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005); // 环境光反射系数
+	Eigen::Vector3f kd = payload.color; // 漫反射系数(颜色)
+	Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937); // 镜面反射系数
+
+	auto l1 = light{ {20, 20, 20}, {500, 500, 500} }; // 光源1
+	auto l2 = light{ {-20, 20, 0}, {500, 500, 500} }; // 光源2
+
+	std::vector<light> lights = { l1, l2 }; // 光源列表
+	Eigen::Vector3f amb_light_intensity{ 10, 10, 10 }; // 环境光强度
+	Eigen::Vector3f eye_pos{ 0, 0, 10 }; // 视点位置
+
+	float p = 150; // 镜面反射的指数
+
+	Eigen::Vector3f color = payload.color; // 片元颜色
+	Eigen::Vector3f point = payload.view_pos; // 片元位置
+	Eigen::Vector3f normal = payload.normal; // 片元法向量
+
+    Eigen::Vector3f result_color = {0, 0, 0};
+    for (auto& light : lights)
+    {
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
+        // components are. Then, accumulate that result on the *result_color* object.
+		Eigen::Vector3f DiffuseColor, SpecularColor; // 漫反射光、镜面反射光
+
+		float r = (point - light.position).norm(); // 光源到片元的距离
+		Eigen::Vector3f currLightIntensity = light.intensity / (r * r); // 当前光源强度
+
+		Eigen::Vector3f view_dir = (eye_pos - point).normalized(); // 视线方向
+		Eigen::Vector3f light_dir = (light.position - point).normalized(); // 光线方向
+		Eigen::Vector3f normal_dir = normal.normalized(); // 法向量
+		Eigen::Vector3f h = (view_dir + light_dir).normalized(); // 半程向量
+
+		DiffuseColor = kd.cwiseProduct(currLightIntensity) * std::max(0.0f, normal_dir.dot(light_dir)); // 漫反射光
+		SpecularColor = ks.cwiseProduct(currLightIntensity) * std::pow(std::max(0.0f, normal_dir.dot(h)), p); // 镜面反射光
+        
+		result_color += DiffuseColor + SpecularColor; // 累加漫反射光和镜面反射光
+    }
+
+	Eigen::Vector3f AmbientColor = ka.cwiseProduct(amb_light_intensity); // 环境光
+	result_color += AmbientColor; // 累加环境光: 环境光不用多次计算
+
+    return result_color * 255.f;
+}
+```
+
+修改并保存后, 需要重新编译项目, 然后在build目录的Debug文件夹下运行以下命令以切换成Blinn-Phong模型渲染:
+
+```bash
+Rasterizer output.png phong
+```
+
+会在Debug文件夹下生成output.png文件, 此时的渲染结果如下:
+
+![Phong](/assets/posts/GAMES101-Assignment3/phong.png){:width="400px"}
