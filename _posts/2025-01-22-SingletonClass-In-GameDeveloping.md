@@ -277,7 +277,7 @@ public class TestMgr : SingletonAutoMono<Test2Mgr>
 }
 ```
 
-## 单例模式基类的使用
+## 单例模式衍生类的实际使用
 
 在其他类中, 通过Instance属性来获取单例实例, 然后就可以调用单例类的方法了.
 
