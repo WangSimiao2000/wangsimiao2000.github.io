@@ -12,31 +12,31 @@ tags: [游戏开发, 设计模式]
 单例模式是一种设计模式, 确保一个类在应用程序中只有一个实例, 并提供全局访问点.
 
 特点:
-- 唯一实例: 确保某些全局管理类只有一个实例存在，避免资源冲突. 
-- 方便访问: 提供全局访问点，其他地方可以方便地访问它. 
+- 唯一实例: 确保某些全局管理类只有一个实例存在, 避免资源冲突. 
+- 方便访问: 提供全局访问点, 其他地方可以方便地访问它. 
 - 节省资源: 避免重复创建和销毁同一类实例. 
 
 ## 单例模式基类
 
-通过定义一个单例基类，可以避免每个类都重复实现单例逻辑，从而: 
+通过定义一个单例基类, 可以避免每个类都重复实现单例逻辑, 从而: 
 - 减少代码冗余. 
-- 保持代码风格一致，方便维护. 
+- 保持代码风格一致, 方便维护. 
 
 ## 单例模式基类用途
 
-在游戏开发中，一些管理类需要贯穿整个游戏生命周期，比如: 
+在游戏开发中, 一些管理类需要贯穿整个游戏生命周期, 比如: 
 
 - 游戏管理器(GameManager)
 - 音频管理器(AudioManager)
 - 场景管理器(SceneManager)
 - 配置管理器(ConfigManager)
 
-这些管理类通常需要是全局唯一的实例，单例模式基类可以帮助这些类快速实现单例功能. 
+这些管理类通常需要是全局唯一的实例, 单例模式基类可以帮助这些类快速实现单例功能. 
 
 ## 单例模式基类实现(C#)
 
-一般使用泛型来实现单例模式基类，这样可以适用于所有需要单例的类. 
-- 泛型T必须是类，且必须有一个无参构造函数，以便在Instance属性中实例化. 
+一般使用泛型来实现单例模式基类, 这样可以适用于所有需要单例的类. 
+- 泛型T必须是类, 且必须有一个无参构造函数, 以便在Instance属性中实例化. 
 
 ### 不继承MonoBehaviour的单例基类
 
@@ -55,7 +55,7 @@ using UnityEngine;
 #endregion
 
 #region 注意
-// 限制泛型T必须是类，且必须有一个无参构造函数, 以便在Instance属性中实例化
+// 限制泛型T必须是类, 且必须有一个无参构造函数, 以便在Instance属性中实例化
 # endregion
 
 #region 潜在问题
@@ -129,7 +129,7 @@ public abstract class BaseManager<T> where T: class // , new()
 
 ### 继承MonoBehaviour的单例基类
 
-不需要考虑多线程问题，因为Unity的主线程中的Object是线程安全的. 
+不需要考虑多线程问题, 因为Unity的主线程中的Object是线程安全的. 
 
 #### 需要手动挂载的单例基类
 
@@ -232,6 +232,71 @@ public class SingletonAutoMono<T> : MonoBehaviour where T : MonoBehaviour
             }
             return instance;
         }
+    }
+}
+```
+
+## 单例模式衍生类的实现
+
+### 不继承MonoBehaviour的单例模式
+
+在类的开始处继承单例基类, 然后就可以通过Instance属性来获取单例实例.
+
+```csharp
+public class ChildManager : BaseManager<ChildManager>
+{
+    // 私有构造函数
+    private ChildManager()
+    {
+        Debug.Log("ChildManager is created!");
+    }
+
+    public void Func()
+    {
+        Debug.Log("ChildManager Func");
+    }
+}
+```
+
+### 继承MonoBehaviour的单例模式
+
+```csharp
+public class TestMgr : SingletonAutoMono<Test2Mgr>
+{
+    // 如果是继承MonoBehaviour的单例基类, 则不需要私有构造函数
+
+    private void Start()
+    {
+        Debug.Log("TestMgr Start");
+    }
+
+    public void Func()
+    {
+        Debug.Log("TestMgr Func");
+    }
+}
+```
+
+## 单例模式基类的使用
+
+在其他类中, 通过Instance属性来获取单例实例, 然后就可以调用单例类的方法了.
+
+```csharp
+public class Main : MonoBehaviour
+{
+    // Start is called before the first frame update
+    void Start()
+    {
+        #region 不继承MonoBehaviour的单例模式
+        ChildManager.Instance.Func();
+        // 注意: 由于可以自己去new一个单例模式类对象, 以下两个操作破坏了单例模式的唯一性(不推荐)
+        // ChildManager t = new ChildManager(); 
+        // BaseManager<ChildManager> t2 = new BaseManager<ChildManager>(); 
+        #endregion
+
+        #region 继承MonoBehaviour的单例模式
+        TestMgr.Instance.Func();
+        #endregion
     }
 }
 ```
