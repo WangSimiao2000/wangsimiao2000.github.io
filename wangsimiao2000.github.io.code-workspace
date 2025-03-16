@@ -39,6 +39,7 @@
             "vptr",
             "vtbl",
             "wangsimiao"
-        ]
+        ],
+        "marscode.chatLanguage": "cn"
     }
 }
