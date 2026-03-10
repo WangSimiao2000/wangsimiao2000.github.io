@@ -29,14 +29,7 @@ a.friend-card.card:hover {
   gap: 1rem;
   padding: 1.25rem 1.5rem;
 }
-.friend-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-.friend-icon-fallback {
+.friend-icon {
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -47,6 +40,12 @@ a.friend-card.card:hover {
   font-size: 1.4rem;
   color: var(--text-muted-color);
   flex-shrink: 0;
+  overflow: hidden;
+}
+.friend-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .friend-info {
   min-width: 0;
@@ -76,10 +75,11 @@ a.friend-card.card:hover {
       <a href="{{ friend.url }}" class="friend-card card" target="_blank" rel="noopener noreferrer">
         <div class="card-body">
           {% if friend.icon %}
-            <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="friend-avatar" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-            <span class="friend-icon-fallback" style="display:none;"><i class="fas fa-globe"></i></span>
+            <span class="friend-icon">
+              <img src="{{ friend.icon }}" alt="{{ friend.name }}" onerror="this.parentElement.innerHTML='<i class=\'fas fa-globe\'></i>';" />
+            </span>
           {% else %}
-            <span class="friend-icon-fallback"><i class="fas fa-globe"></i></span>
+            <span class="friend-icon"><i class="fas fa-globe"></i></span>
           {% endif %}
           <div class="friend-info">
             <div class="friend-name">{{ friend.name }}</div>
