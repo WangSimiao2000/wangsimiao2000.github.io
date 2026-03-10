@@ -4,91 +4,28 @@ icon: fas fa-user-friends
 order: 5
 ---
 
-<style>
-.friend-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-}
-a.friend-card.card {
-  text-decoration: none !important;
-  color: inherit;
-  border-bottom: none !important;
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-}
-a.friend-card.card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--card-shadow);
-  color: inherit;
-  border-bottom: none !important;
-}
-.friend-card .card-body {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-}
-.friend-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--sidebar-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  color: var(--text-muted-color);
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.friend-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.friend-info {
-  min-width: 0;
-  flex: 1;
-}
-.friend-name {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--heading-color);
-  margin: 0;
-  line-height: 1.4;
-}
-.friend-desc {
-  font-size: 0.85rem;
-  color: var(--text-muted-color);
-  margin: 0.3rem 0 0;
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-</style>
-
-<div class="friend-grid">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
   {% for friend in site.data.friends %}
     {% if friend.name and friend.url %}
-      <a href="{{ friend.url }}" class="friend-card card" target="_blank" rel="noopener noreferrer">
-        <div class="card-body">
-          {% if friend.icon %}
-            <span class="friend-icon">
-              <img src="{{ friend.icon }}" alt="{{ friend.name }}" onerror="this.parentElement.innerHTML='<i class=\'fas fa-globe\'></i>';" />
-            </span>
-          {% else %}
-            <span class="friend-icon"><i class="fas fa-globe"></i></span>
-          {% endif %}
-          <div class="friend-info">
-            <div class="friend-name">{{ friend.name }}</div>
-            {% if friend.description %}
-              <div class="friend-desc">{{ friend.description }}</div>
+      <div class="col">
+        <div class="card h-100">
+          <div class="card-body d-flex align-items-center">
+            {% if friend.icon %}
+              <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0" width="48" height="48" style="object-fit:cover;" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
+            {% else %}
+              <i class="fas fa-globe fa-2x me-3 text-muted"></i>
             {% endif %}
+            <div>
+              <a href="{{ friend.url }}" class="stretched-link" target="_blank" rel="noopener noreferrer">
+                <span class="fw-bold">{{ friend.name }}</span>
+              </a>
+              {% if friend.description %}
+                <div class="text-muted small mt-1">{{ friend.description }}</div>
+              {% endif %}
+            </div>
           </div>
         </div>
-      </a>
+      </div>
     {% endif %}
   {% endfor %}
 </div>
