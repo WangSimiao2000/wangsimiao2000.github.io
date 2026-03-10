@@ -11,7 +11,7 @@ comments: true
       <div class="col">
         <div class="card h-100">
           <div class="card-body d-flex align-items-center">
-            {% if friend.icon %}
+            {% if friend.icon and friend.icon != "" %}
               <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0" width="48" height="48" style="object-fit:cover;" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
             {% else %}
               <i class="fas fa-globe fa-2x me-3 text-muted"></i>

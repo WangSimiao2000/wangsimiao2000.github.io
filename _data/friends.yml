@@ -8,7 +8,7 @@
 
 - name: "Kazuha的博客 (博客已停运)"
   url: "https://kaze-kazuha.top/"
-  icon: ""
+  # icon: (无图标，显示默认)
   description: "注意: 此博客因服务器停止运行而关闭,仅留做纪念"
 
 - name: "A Time Soliloquy"
