@@ -5,15 +5,32 @@ order: 5
 ---
 
 <style>
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .gallery-card {
   overflow: hidden;
   cursor: pointer;
+  border-radius: 8px;
   border: none;
 }
 .gallery-card img {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
+  display: block;
   transition: transform 0.3s ease;
 }
 .gallery-card:hover img {
@@ -30,9 +47,7 @@ order: 5
   justify-content: center;
   align-items: center;
 }
-.lb-overlay.active {
-  display: flex;
-}
+.lb-overlay.active { display: flex; }
 .lb-overlay img {
   max-width: 92vw;
   max-height: 90vh;
@@ -86,12 +101,10 @@ order: 5
 </div>
 
 {% if site.data.gallery.size > 0 %}
-<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+<div class="gallery-grid">
   {% for photo in site.data.gallery %}
-    <div class="col">
-      <div class="card gallery-card card-wrapper h-100" onclick="openLB({{ forloop.index0 }})">
-        <img src="{{ photo.image }}" alt="{{ photo.title | default: '照片' }}" loading="lazy" />
-      </div>
+    <div class="card gallery-card card-wrapper" onclick="openLB({{ forloop.index0 }})">
+      <img src="{{ photo.image }}" alt="{{ photo.title | default: '照片' }}" loading="lazy" />
     </div>
   {% endfor %}
 </div>
