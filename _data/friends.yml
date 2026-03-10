@@ -5,3 +5,18 @@
   url: "https://benign.host/"
   icon: "https://benign.host/_astro/24841247_iUHr3.webp"
   description: "Overflow Stack Developer."
+
+- name: "Kazuha的博客 (博客已停运)"
+  url: "https://kaze-kazuha.top/"
+  icon: ""
+  description: "注意: 此博客因服务器停止运行而关闭,仅留做纪念"
+
+- name: "A Time Soliloquy"
+  url: "https://www.solitude21.cn"
+  icon: "https://www.solitude21.cn/images/avatar.gif"
+  description: "大学牲,喜欢画画,游戏爱好者"
+
+- name: "leoz.work"
+  url: "https://leoz.work"
+  icon: "https://leoz.work/images/author.jpg"
+  description: "Leo,中国科学院大学,软件工程"
