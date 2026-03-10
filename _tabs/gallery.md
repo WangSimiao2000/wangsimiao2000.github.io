@@ -86,16 +86,11 @@ order: 5
 </div>
 
 {% if site.data.gallery.size > 0 %}
-<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-3">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
   {% for photo in site.data.gallery %}
     <div class="col">
-      <div class="card gallery-card post-preview card-wrapper h-100" onclick="openLB({{ forloop.index0 }})">
+      <div class="card gallery-card card-wrapper h-100" onclick="openLB({{ forloop.index0 }})">
         <img src="{{ photo.image }}" alt="{{ photo.title | default: '照片' }}" loading="lazy" />
-        {% if photo.title %}
-          <div class="card-body py-2 px-3">
-            <small class="text-muted">{{ photo.title }}</small>
-          </div>
-        {% endif %}
       </div>
     </div>
   {% endfor %}
