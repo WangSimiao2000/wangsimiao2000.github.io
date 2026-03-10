@@ -9,23 +9,21 @@ comments: true
   {% for friend in site.data.friends %}
     {% if friend.name and friend.url %}
       <div class="col">
-        <div class="card h-100">
-          <div class="card-body d-flex align-items-center">
+        <a href="{{ friend.url }}" class="card h-100 post-preview text-decoration-none card-wrapper" target="_blank" rel="noopener noreferrer">
+          <div class="card-body d-flex align-items-center" style="position:relative;z-index:1;">
             {% if friend.icon and friend.icon != "" %}
               <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0" width="48" height="48" style="object-fit:cover;" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
             {% else %}
               <i class="fas fa-globe fa-2x me-3 text-muted"></i>
             {% endif %}
             <div>
-              <a href="{{ friend.url }}" class="stretched-link" target="_blank" rel="noopener noreferrer">
-                <span class="fw-bold">{{ friend.name }}</span>
-              </a>
+              <span class="fw-bold" style="color:var(--heading-color);">{{ friend.name }}</span>
               {% if friend.description %}
                 <div class="text-muted small mt-1" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ friend.description }}</div>
               {% endif %}
             </div>
           </div>
-        </div>
+        </a>
       </div>
     {% endif %}
   {% endfor %}

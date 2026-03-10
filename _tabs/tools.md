@@ -8,23 +8,21 @@ order: 6
   {% for tool in site.data.tools %}
     {% if tool.name and tool.url %}
       <div class="col">
-        <div class="card h-100">
-          <div class="card-body d-flex align-items-center">
+        <a href="{{ tool.url }}" class="card h-100 post-preview text-decoration-none card-wrapper">
+          <div class="card-body d-flex align-items-center" style="position:relative;z-index:1;">
             {% if tool.icon %}
               <i class="{{ tool.icon }} fa-2x me-3 text-muted"></i>
             {% else %}
               <i class="fas fa-puzzle-piece fa-2x me-3 text-muted"></i>
             {% endif %}
             <div>
-              <a href="{{ tool.url }}" class="stretched-link">
-                <span class="fw-bold">{{ tool.name }}</span>
-              </a>
+              <span class="fw-bold" style="color:var(--heading-color);">{{ tool.name }}</span>
               {% if tool.description %}
                 <div class="text-muted small mt-1">{{ tool.description }}</div>
               {% endif %}
             </div>
           </div>
-        </div>
+        </a>
       </div>
     {% endif %}
   {% endfor %}
