@@ -21,7 +21,7 @@ comments: true
                 <span class="fw-bold">{{ friend.name }}</span>
               </a>
               {% if friend.description %}
-                <div class="text-muted small mt-1">{{ friend.description }}</div>
+                <div class="text-muted small mt-1" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ friend.description }}</div>
               {% endif %}
             </div>
           </div>
