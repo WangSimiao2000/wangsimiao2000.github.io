@@ -1,0 +1,4 @@
+- name: "称骨算命"
+  description: "传统称骨算命小工具"
+  url: "/bazi-fortune/"
+  icon: "fas fa-balance-scale"
