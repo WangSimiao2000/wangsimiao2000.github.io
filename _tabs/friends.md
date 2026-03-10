@@ -2,6 +2,7 @@
 title: 友情链接
 icon: fas fa-user-friends
 order: 5
+comments: true
 ---
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
