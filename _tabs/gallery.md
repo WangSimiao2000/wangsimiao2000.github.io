@@ -5,35 +5,30 @@ order: 5
 ---
 
 <style>
-.gallery-grid {
+.g-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 @media (max-width: 768px) {
-  .gallery-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .g-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 480px) {
-  .gallery-grid {
-    grid-template-columns: 1fr;
-  }
+  .g-grid { grid-template-columns: 1fr; }
 }
-.gallery-card {
+.g-item {
   overflow: hidden;
+  border-radius: 6px;
   cursor: pointer;
-  border-radius: 8px;
-  border: none;
+  line-height: 0;
 }
-.gallery-card img {
+.g-item img {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  display: block;
   transition: transform 0.3s ease;
 }
-.gallery-card:hover img {
+.g-item:hover img {
   transform: scale(1.05);
 }
 
@@ -101,11 +96,11 @@ order: 5
 </div>
 
 {% if site.data.gallery.size > 0 %}
-<div class="gallery-grid">
+<div class="g-grid">
   {% for photo in site.data.gallery %}
-    <div class="card gallery-card card-wrapper" onclick="openLB({{ forloop.index0 }})">
-      <img src="{{ photo.image }}" alt="{{ photo.title | default: '照片' }}" loading="lazy" />
-    </div>
+  <div class="g-item" onclick="openLB({{ forloop.index0 }})">
+    <img src="{{ photo.image }}" alt="照片" loading="lazy" />
+  </div>
   {% endfor %}
 </div>
 {% else %}
@@ -116,7 +111,7 @@ order: 5
 (function() {
   var imgs = [
     {% for photo in site.data.gallery %}
-      { src: "{{ photo.image }}", title: "{{ photo.title | default: '照片' }}" }{% unless forloop.last %},{% endunless %}
+    "{{ photo.image }}"{% unless forloop.last %},{% endunless %}
     {% endfor %}
   ];
   var idx = 0;
@@ -125,8 +120,7 @@ order: 5
   var lbCtr = document.getElementById('lb-counter');
 
   function show() {
-    lbImg.src = imgs[idx].src;
-    lbImg.alt = imgs[idx].title;
+    lbImg.src = imgs[idx];
     lbCtr.textContent = (idx + 1) + ' / ' + imgs.length;
   }
   window.openLB = function(i) {
