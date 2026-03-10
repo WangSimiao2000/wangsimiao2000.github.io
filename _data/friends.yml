@@ -1,7 +1,7 @@
 # 友情链接列表
 # 每条记录包含: name (必填), url (必填), icon (可选), description (可选)
 
-- name: "示例博客"
-  url: "https://example.com"
-  icon: "https://example.com/favicon.ico"
-  description: "一个示例博客"
+- name: "B3n1gn X"
+  url: "https://benign.host/"
+  icon: "https://benign.host/_astro/24841247_iUHr3.webp"
+  description: "Overflow Stack Developer."
