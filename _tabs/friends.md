@@ -1,4 +1,5 @@
 ---
+title: 友情链接
 icon: fas fa-user-friends
 order: 5
 ---
