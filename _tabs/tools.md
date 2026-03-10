@@ -5,83 +5,69 @@ order: 6
 ---
 
 <style>
-.card-grid {
+.tool-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-
-.tool-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border-color);
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-  text-decoration: none;
-  color: var(--text-color);
-  display: flex;
-  align-items: center;
   gap: 1rem;
 }
-
-.tool-card:hover {
+.tool-grid .card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.tool-grid .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
 }
-
-.card-icon {
-  flex-shrink: 0;
+.tool-grid .card .card-body a {
+  text-decoration: none;
+  color: inherit;
+  border-bottom: none !important;
+}
+.tool-grid .card .card-body a:hover {
+  color: inherit;
+  border-bottom: none !important;
+}
+.tool-icon {
   width: 48px;
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.default-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
   font-size: 1.5rem;
-  color: var(--text-color);
   opacity: 0.6;
+  flex-shrink: 0;
 }
-
-.card-text h3 {
-  margin: 0;
+.tool-name {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-color);
+  margin: 0;
 }
-
-.card-text p {
-  margin: 0.25rem 0 0;
+.tool-desc {
   font-size: 0.85rem;
-  color: var(--text-color);
+  margin: 0.25rem 0 0;
   opacity: 0.75;
 }
 </style>
 
-<div class="card-grid">
+<div class="tool-grid">
   {% for tool in site.data.tools %}
     {% if tool.name and tool.url %}
-      <a href="{{ tool.url }}" class="tool-card">
-        <div class="card-icon">
-          {% if tool.icon %}
-            <span class="default-icon"><i class="{{ tool.icon }}"></i></span>
-          {% else %}
-            <span class="default-icon"><i class="fas fa-puzzle-piece"></i></span>
-          {% endif %}
+      <div class="card">
+        <div class="card-body p-0">
+          <a href="{{ tool.url }}" class="d-flex align-items-center p-0" style="padding: 1.25rem !important;">
+            {% if tool.icon %}
+              <span class="tool-icon me-3"><i class="{{ tool.icon }}"></i></span>
+            {% else %}
+              <span class="tool-icon me-3"><i class="fas fa-puzzle-piece"></i></span>
+            {% endif %}
+            <div>
+              <div class="tool-name">{{ tool.name }}</div>
+              {% if tool.description %}
+                <div class="tool-desc">{{ tool.description }}</div>
+              {% endif %}
+            </div>
+          </a>
         </div>
-        <div class="card-text">
-          <h3>{{ tool.name }}</h3>
-          {% if tool.description %}
-            <p>{{ tool.description }}</p>
-          {% endif %}
-        </div>
-      </a>
+      </div>
     {% endif %}
   {% endfor %}
 </div>
