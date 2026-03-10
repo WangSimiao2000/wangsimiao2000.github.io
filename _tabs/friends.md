@@ -9,7 +9,7 @@ comments: true
   {% for friend in site.data.friends %}
     {% if friend.name and friend.url %}
       <div class="col">
-        <a href="{{ friend.url }}" class="card h-100 post-preview text-decoration-none card-wrapper img-link" target="_blank" rel="noopener noreferrer">
+        <div class="card h-100 post-preview" style="cursor:pointer;" onclick="window.open('{{ friend.url }}','_blank')">
           <div class="card-body d-flex align-items-center" style="position:relative;z-index:1;">
             {% if friend.icon and friend.icon != "" %}
               <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0" width="48" height="48" style="object-fit:cover;" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
@@ -23,7 +23,7 @@ comments: true
               {% endif %}
             </div>
           </div>
-        </a>
+        </div>
       </div>
     {% endif %}
   {% endfor %}
