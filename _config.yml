@@ -210,7 +210,7 @@ r2_gallery:
   # R2 公开访问域名（自定义域名或 R2.dev 公开域名），不要以 / 结尾
   public_url: "https://pub-7bf80453844047b1bd82b30ec1edd37e.r2.dev"
   # R2 bucket 中相册图片的前缀路径，留空表示根目录
-  prefix: "gallery/"
+  prefix: ""
 
 exclude:
   - "*.gem"
