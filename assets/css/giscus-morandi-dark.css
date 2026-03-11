@@ -154,6 +154,7 @@ main .gsc-comment-box-buttons button[type='submit'] {
   border-radius: 8px !important;
   background-color: #8FB896 !important;
   border-color: #8FB896 !important;
+  color: #1E1D1B !important;
 }
 
 main .gsc-comment-box-buttons button[type='submit']:hover {
