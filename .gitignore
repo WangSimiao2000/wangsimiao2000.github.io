@@ -18,10 +18,7 @@ package-lock.json
 # IDE configurations
 .idea
 .kiro
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/tasks.json
+.vscode
 
 # Misc
 *.code-workspace

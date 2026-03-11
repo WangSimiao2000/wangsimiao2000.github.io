@@ -31,7 +31,7 @@
 }
 
 %tag-hover {
-  @extend %link-color;
+  color: var(--sidebar-active-color) !important;
 
   background: var(--tag-hover);
   border-color: var(--tag-hover);
