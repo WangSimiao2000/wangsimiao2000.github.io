@@ -10,7 +10,7 @@ class SidebarUtil {
     this.#isExpanded = !this.#isExpanded;
     document.body.toggleAttribute(ATTR_DISPLAY, this.#isExpanded);
     $sidebar.classList.toggle('z-2', this.#isExpanded);
-    $mask.classList.toggle('d-none', !this.#isExpanded);
+    $mask.classList.toggle('show', this.#isExpanded);
   }
 }
 

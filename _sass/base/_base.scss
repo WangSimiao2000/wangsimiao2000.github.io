@@ -450,6 +450,14 @@ mjx-container {
 
 #mask {
   inset: 0 0 0 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s v.$ease-spring-soft;
+
+  &.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 #main-wrapper {

@@ -28,13 +28,13 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
   }
 
   @include bp.lt(bp.get(lg)) {
-    @include mx.slide;
-
     transform: translateX(-#{v.$sidebar-width}); /* hide */
     -webkit-transform: translateX(-#{v.$sidebar-width});
+    transition: transform 0.45s v.$ease-spring;
 
     [#{$sidebar-display}] & {
       transform: translateX(0);
+      transition: transform 0.5s v.$ease-spring;
     }
   }
 
