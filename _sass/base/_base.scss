@@ -386,7 +386,9 @@ a.card.post-preview {
 /* Overwrite bootstrap outline button */
 .btn.btn-outline-primary {
   &:not(.disabled):hover {
-    border-color: #007bff !important;
+    background-color: var(--tag-hover) !important;
+    border-color: var(--tag-hover) !important;
+    color: var(--link-color) !important;
   }
 }
 
