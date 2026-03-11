@@ -16,7 +16,7 @@ timezone: Asia/Shanghai
 
 title: MickeyMiao 的博客 # the main title
 
-tagline: 我的个人博客, 分享技术笔记或生活随笔 # it will display as the subtitle
+tagline: code is cheap, show me your prompt # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing. 
