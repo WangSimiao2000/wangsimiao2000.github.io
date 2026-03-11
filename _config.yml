@@ -127,8 +127,6 @@ r2_gallery:
 exclude:
   - "*.gem"
   - "*.gemspec"
-  - tools
-  - scripts
   - README.md
   - LICENSE
   - _javascript

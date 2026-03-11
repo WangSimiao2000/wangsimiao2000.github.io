@@ -54,12 +54,12 @@ jobs:
           AWS_DEFAULT_REGION: auto
         run: |
           pip install awscli --quiet
-          bash tools/generate-gallery-r2.sh
+          bash _scripts/generate-gallery-r2.sh
 
       - name: Check friend links
         run: |
           pip install pyyaml --quiet
-          bash tools/check-friends.sh
+          bash _scripts/check-friends.sh
 
       - name: Build site
         run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
