@@ -217,6 +217,7 @@ exclude:
   - "*.gemspec"
   - docs
   - tools
+  - _themes
   - README.md
   - LICENSE
   - "*.config.js"
