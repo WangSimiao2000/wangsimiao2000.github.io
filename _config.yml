@@ -1,6 +1,11 @@
 # Site Configuration
 
-theme: jekyll-theme-chirpy
+plugins:
+  - jekyll-paginate
+  - jekyll-seo-tag
+  - jekyll-archives
+  - jekyll-sitemap
+  - jekyll-include-cache
 
 lang: zh-CN
 timezone: Asia/Shanghai
@@ -121,13 +126,11 @@ r2_gallery:
 exclude:
   - "*.gem"
   - "*.gemspec"
-  - docs
   - tools
-  - _themes
+  - scripts
   - README.md
   - LICENSE
-  - "*.config.js"
-  - package*.json
+  - _javascript
 
 jekyll-archives:
   enabled: [categories, tags]

@@ -1,0 +1,308 @@
+@mixin styles {
+  /* Framework color — Morandi warm gray */
+  --main-bg: #F5F0EB;
+  --mask-bg: #C8C1B9;
+  --main-border-color: #E5DED6;
+
+  /* Common color — Morandi palette */
+  --text-color: #4A4A4A;
+  --text-muted-color: #8E8E8E;
+  --text-muted-highlight-color: inherit;
+  --heading-color: #3D3D3D;
+  --label-color: #6B6B6B;
+  --blockquote-border-color: #DDD6CE;
+  --blockquote-text-color: #8E8E8E;
+  --link-color: #B07D62;
+  --link-underline-color: #DDD6CE;
+  --button-bg: #EFEBE7;
+  --btn-border-color: #D9D0C7;
+  --btn-backtotop-color: #7A7A7A;
+  --btn-backtotop-border-color: #E5DED6;
+  --checkbox-color: #C5BDB5;
+  --checkbox-checked-color: #7D9B8A;
+  --img-bg: radial-gradient(circle, rgb(245 240 235) 0%, rgb(232 224 216) 100%);
+  --shimmer-bg: linear-gradient(
+    90deg,
+    rgb(245 240 235 / 0%) 0%,
+    rgb(220 213 205 / 100%) 50%,
+    rgb(245 240 235 / 0%) 100%
+  );
+
+  /* Sidebar — Morandi warm gray */
+  --site-title-color: #7A7268;
+  --site-subtitle-color: #8A8279;
+  --sidebar-bg: #E8E0D8;
+  --sidebar-border-color: #DDD6CE;
+  --sidebar-muted-color: #6B6360;
+  --sidebar-active-color: #6B8F71;
+  --sidebar-hover-bg: rgb(215 207 198 / 64%);
+  --sidebar-btn-bg: #F0EAE4;
+  --sidebar-btn-color: #9A928A;
+  --avatar-border-color: #F5F0EB;
+
+  /* Topbar */
+  --topbar-bg: rgb(245 240 235 / 70%);
+  --topbar-text-color: #5A5A5A;
+  --search-border-color: #E0D8D0;
+  --search-icon-color: #B8B0A8;
+  --input-focus-border-color: #B07D62;
+
+  /* Home page */
+  --post-list-text-color: #6B6B6B;
+  --btn-patinator-text-color: #5A5A5A;
+  --btn-paginator-hover-color: var(--sidebar-bg);
+
+  /* Posts — terracotta accent + sage green TOC */
+  --toc-highlight: #7D9B8A;
+  --toc-popup-border-color: #D4C5B9;
+  --btn-share-color: #9A928A;
+  --btn-share-hover-color: #B07D62;
+  --card-bg: #FDFBF9;
+  --card-hover-bg: #EDE7E0;
+  --card-shadow: rgb(120 110 100 / 6%) 0 1px 3px 0;
+  --footnote-target-bg: #E8F0E8;
+  --tb-odd-bg: #F8F4F0;
+  --tb-border-color: #E5DED6;
+  --dash-color: #C8C1B9;
+  --kbd-wrap-color: #C5BDB5;
+  --kbd-text-color: var(--text-color);
+  --kbd-bg-color: #FDFBF9;
+  --prompt-text-color: rgb(60 55 50 / 77%);
+  --prompt-tip-bg: #D5E5D0;
+  --prompt-tip-icon-color: #6B8F71;
+  --prompt-info-bg: #D0DDE5;
+  --prompt-info-icon-color: #5A7D8F;
+  --prompt-warning-bg: #E8DCC8;
+  --prompt-warning-icon-color: #B09060;
+  --prompt-danger-bg: #E5D0D0;
+  --prompt-danger-icon-color: #B06060;
+
+  /* Tags */
+  --tag-border: #DDD6CE;
+  --tag-shadow: var(--btn-border-color);
+  --tag-hover: #D4C5B9;
+  --search-tag-bg: #F0EAE4;
+
+  /* Categories */
+  --categories-border: rgb(80 70 60 / 12%);
+  --categories-hover-bg: var(--btn-border-color);
+  --categories-icon-hover-color: #6B8F71;
+
+  /* Archive */
+  --timeline-color: rgb(80 70 60 / 10%);
+  --timeline-node-bg: #B8B0A8;
+  --timeline-year-dot-color: #F5F0EB;
+
+  /* --- Code — Morandi toned --- */
+  --language-border-color: #E0D8D0;
+  --highlight-bg-color: #F0EAE4;
+  --highlighter-rouge-color: #5A7D6A;
+  --highlight-lineno-color: #A8A098;
+  --inline-code-bg: rgb(80 70 60 / 6%);
+  --code-color: #4A4A4A;
+  --code-header-text-color: #A8A098;
+  --code-header-muted-color: #DDD6CE;
+  --code-header-icon-color: #C5BDB5;
+  --clipboard-checked-color: #6B8F71;
+
+  [class^='prompt-'] {
+    --link-underline-color: rgb(200 193 185);
+  }
+
+  .dark {
+    display: none;
+  }
+
+  /* --- Syntax highlight — Morandi light --- */
+
+  .highlight table td {
+    padding: 5px;
+  }
+
+  .highlight table pre {
+    margin: 0;
+  }
+
+  .highlight,
+  .highlight .w {
+    color: #4A4A4A;
+    background-color: #F0EAE4;
+  }
+
+  .highlight .k,
+  .highlight .kd,
+  .highlight .kn,
+  .highlight .kp,
+  .highlight .kr,
+  .highlight .kt,
+  .highlight .kv {
+    color: #B06060;
+  }
+
+  .highlight .gr {
+    color: #F0EAE4;
+  }
+
+  .highlight .gd {
+    color: #8C4040;
+    background-color: #F0DADA;
+  }
+
+  .highlight .nb {
+    color: #8A6840;
+  }
+
+  .highlight .nc {
+    color: #8A6840;
+  }
+
+  .highlight .no {
+    color: #8A6840;
+  }
+
+  .highlight .nn {
+    color: #8A6840;
+  }
+
+  .highlight .sr {
+    color: #5A7D6A;
+  }
+
+  .highlight .na {
+    color: #5A7D6A;
+  }
+
+  .highlight .nt {
+    color: #5A7D6A;
+  }
+
+  .highlight .gi {
+    color: #5A7D6A;
+    background-color: #DAF0E0;
+  }
+
+  .highlight .kc {
+    color: #5A6D8F;
+  }
+
+  .highlight .l,
+  .highlight .ld,
+  .highlight .m,
+  .highlight .mb,
+  .highlight .mf,
+  .highlight .mh,
+  .highlight .mi,
+  .highlight .il,
+  .highlight .mo,
+  .highlight .mx {
+    color: #5A6D8F;
+  }
+
+  .highlight .sb {
+    color: #5A6D8F;
+  }
+
+  .highlight .bp {
+    color: #5A6D8F;
+  }
+
+  .highlight .ne {
+    color: #5A6D8F;
+  }
+
+  .highlight .nl {
+    color: #5A6D8F;
+  }
+
+  .highlight .py {
+    color: #5A6D8F;
+  }
+
+  .highlight .nv,
+  .highlight .vc,
+  .highlight .vg,
+  .highlight .vi,
+  .highlight .vm {
+    color: #5A6D8F;
+  }
+
+  .highlight .o,
+  .highlight .ow {
+    color: #5A6D8F;
+  }
+
+  .highlight .gh {
+    color: #5A6D8F;
+    font-weight: bold;
+  }
+
+  .highlight .gu {
+    color: #5A6D8F;
+    font-weight: bold;
+  }
+
+  .highlight .s,
+  .highlight .sa,
+  .highlight .sc,
+  .highlight .dl,
+  .highlight .sd,
+  .highlight .s2,
+  .highlight .se,
+  .highlight .sh,
+  .highlight .sx,
+  .highlight .s1,
+  .highlight .ss {
+    color: #6B5A3E;
+  }
+
+  .highlight .nd {
+    color: #8A6D8F;
+  }
+
+  .highlight .nf,
+  .highlight .fm {
+    color: #8A6D8F;
+  }
+
+  .highlight .err {
+    color: #F0EAE4;
+    background-color: #8C4040;
+  }
+
+  .highlight .c,
+  .highlight .ch,
+  .highlight .cd,
+  .highlight .cm,
+  .highlight .cp,
+  .highlight .cpf,
+  .highlight .c1,
+  .highlight .cs {
+    color: #9A928A;
+  }
+
+  .highlight .gl {
+    color: #9A928A;
+  }
+
+  .highlight .gt {
+    color: #9A928A;
+  }
+
+  .highlight .ni {
+    color: #4A4A4A;
+  }
+
+  .highlight .si {
+    color: #4A4A4A;
+  }
+
+  .highlight .ge {
+    color: #4A4A4A;
+    font-style: italic;
+  }
+
+  .highlight .gs {
+    color: #4A4A4A;
+    font-weight: bold;
+  }
+}
