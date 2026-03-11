@@ -67,19 +67,3 @@ comments: true
 {% endif %}
 
 <hr class="mt-5 mb-4">
-
-<script src="https://giscus.app/client.js"
-  data-repo="{{ site.comments.giscus.repo }}"
-  data-repo-id="{{ site.comments.giscus.repo_id }}"
-  data-category="{{ site.comments.giscus.category }}"
-  data-category-id="{{ site.comments.giscus.category_id }}"
-  data-mapping="{{ site.comments.giscus.mapping | default: 'pathname' }}"
-  data-strict="{{ site.comments.giscus.strict | default: '0' }}"
-  data-reactions-enabled="{{ site.comments.giscus.reactions_enabled | default: '1' }}"
-  data-emit-metadata="0"
-  data-input-position="{{ site.comments.giscus.input_position | default: 'bottom' }}"
-  data-theme="preferred_color_scheme"
-  data-lang="{{ site.comments.giscus.lang | default: site.lang }}"
-  crossorigin="anonymous"
-  async>
-</script>
