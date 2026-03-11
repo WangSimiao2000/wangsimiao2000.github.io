@@ -26,28 +26,26 @@ function getLunarYearDays(year) {
 function solarToLunar(year, month, day) {
     const baseYear = 1900;
     const baseDay = 31;
-    
-    // 计算距离1900年1月31日的天数
+
     let offset = 0;
     for (let i = baseYear; i < year; i++) {
         const yearDays = (i % 4 === 0 && i % 100 !== 0) || (i % 400 === 0) ? 366 : 365;
         offset += yearDays;
     }
-    
+
     const monthDays = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     if ((year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0)) {
         monthDays[2] = 29;
     }
-    
+
     for (let i = 1; i < month; i++) {
         offset += monthDays[i];
     }
     offset += day - baseDay;
-    
-    // 计算农历日期
+
     let lunarYear = baseYear;
     let lunarDay = 1;
-    
+
     while (offset > 0) {
         const yearDays = getLunarYearDays(lunarYear);
         if (offset >= yearDays) {
@@ -57,210 +55,124 @@ function solarToLunar(year, month, day) {
             break;
         }
     }
-    
+
     const leapMonth = getLeapMonth(lunarYear);
     let isLeap = false;
-    
+
     for (let i = 1; i <= 12; i++) {
-        let monthDays = getLunarMonthDays(lunarYear, i);
-        
-        if (offset >= monthDays) {
-            offset -= monthDays;
+        let mDays = getLunarMonthDays(lunarYear, i);
+
+        if (offset >= mDays) {
+            offset -= mDays;
         } else {
             lunarDay = offset + 1;
             break;
         }
-        
-        // 处理闰月
+
         if (i === leapMonth && !isLeap) {
             i--;
             isLeap = true;
-            monthDays = getLeapDays(lunarYear);
+            mDays = getLeapDays(lunarYear);
         }
     }
-    
+
     return { year: lunarYear, day: lunarDay };
 }
 
-// 节气计算（精确版）
+// 节气计算
 function getSolarMonth(year, month, day, hour) {
-    // 节气大致日期和时刻（简化但相对准确）
-    // 格式：[日期, 大致小时]
     const solarTerms = {
-        1: [6, 0],   // 小寒
-        2: [4, 6],   // 立春
-        3: [6, 0],   // 惊蛰
-        4: [5, 6],   // 清明
-        5: [6, 0],   // 立夏
-        6: [6, 6],   // 芒种
-        7: [7, 12],  // 小暑
-        8: [8, 6],   // 立秋
-        9: [8, 6],   // 白露
-        10: [8, 12], // 寒露
-        11: [7, 18], // 立冬
-        12: [7, 12]  // 大雪
+        1: [6, 0], 2: [4, 6], 3: [6, 0], 4: [5, 6], 5: [6, 0], 6: [6, 6],
+        7: [7, 12], 8: [8, 6], 9: [8, 6], 10: [8, 12], 11: [7, 18], 12: [7, 12]
     };
-    
+
     const [termDay, termHour] = solarTerms[month] || [7, 12];
-    
-    // 判断是否已过节气
     const isPassed = (day > termDay) || (day === termDay && hour >= termHour);
-    
-    // 返回对应的节气月
-    if (month === 1) return isPassed ? 12 : 11;
-    if (month === 2) return isPassed ? 1 : 12;
-    if (month === 3) return isPassed ? 2 : 1;
-    if (month === 4) return isPassed ? 3 : 2;
-    if (month === 5) return isPassed ? 4 : 3;
-    if (month === 6) return isPassed ? 5 : 4;
-    if (month === 7) return isPassed ? 6 : 5;
-    if (month === 8) return isPassed ? 7 : 6;
-    if (month === 9) return isPassed ? 8 : 7;
-    if (month === 10) return isPassed ? 9 : 8;
-    if (month === 11) return isPassed ? 10 : 9;
-    return isPassed ? 11 : 10;
+
+    const map = {
+        1: [12, 11], 2: [1, 12], 3: [2, 1], 4: [3, 2], 5: [4, 3], 6: [5, 4],
+        7: [6, 5], 8: [7, 6], 9: [8, 7], 10: [9, 8], 11: [10, 9], 12: [11, 10]
+    };
+    return isPassed ? map[month][0] : map[month][1];
 }
 
-// 表单提交
-document.getElementById('baziForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const gender = document.getElementById('gender').value;
-    const mode = document.querySelector('input[name="inputMode"]:checked').value;
-    
-    let year, solarMonth, lunarDay, hour;
-    let processHTML = '';
-    
-    if (mode === 'solar') {
-        // 阳历模式
-        let inputYear = parseInt(document.getElementById('year').value);
-        let month = parseInt(document.getElementById('month').value);
-        let day = parseInt(document.getElementById('day').value);
-        hour = parseInt(document.getElementById('hour').value);
-        
-        const inputMonth = month, inputDay = day, inputHour = hour;
-        
-        // 处理23点
-        if (hour === 23) {
-            hour = 0;
-            day++;
-            const monthDays = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-            if ((inputYear % 4 === 0 && inputYear % 100 !== 0) || (inputYear % 400 === 0)) monthDays[2] = 29;
-            if (day > monthDays[month]) {
-                day = 1;
-                month++;
-                if (month > 12) {
-                    month = 1;
-                    inputYear++;
-                }
-            }
-        }
-        
-        solarMonth = getSolarMonth(inputYear, month, day, hour);
-        const lunar = solarToLunar(inputYear, month, day);
-        year = lunar.year;
-        lunarDay = lunar.day;
-        
-        const monthNames = ['', '正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
-        const hourNames = ['子时', '丑时', '丑时', '寅时', '寅时', '卯时', '卯时', '辰时', '辰时', '巳时', '巳时', '午时', '午时', '未时', '未时', '申时', '申时', '酉时', '酉时', '戌时', '戌时', '亥时', '亥时', '子时'];
-        
-        const is23Hour = inputHour === 23;
-        const displayDate = is23Hour ? `${inputYear}年${month}月${day}日` : `${inputYear}年${inputMonth}月${inputDay}日`;
-        
-        processHTML = `
-            <div class="process-item">
-                <strong>输入：</strong>阳历 ${inputYear}年${inputMonth}月${inputDay}日 ${inputHour}:00-${inputHour}:59
-            </div>
-        `;
-        
-        if (is23Hour) {
-            processHTML += `<div class="process-item" style="color: #ffd700;">
-                <strong>时辰调整：</strong>23点算次日子时 → ${displayDate} 子时
-            </div>`;
-        }
-        
-        processHTML += `
-            <div class="process-item">
-                <strong>阳历转农历：</strong>${displayDate} → 农历 <strong>${year}年${lunarDay}日</strong>
-            </div>
-            <div class="process-item">
-                <strong>节气转换：</strong>${displayDate} ${hourNames[hour]} → 节气月 <strong>${monthNames[solarMonth]}</strong>
-            </div>
-        `;
-    } else {
-        // 手动模式
-        year = parseInt(document.getElementById('manualYear').value);
-        solarMonth = parseInt(document.getElementById('solarMonth').value);
-        lunarDay = parseInt(document.getElementById('lunarDay').value);
-        hour = parseInt(document.getElementById('shiChen').value);
-        
-        const monthNames = ['', '正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
-        const hourNames = ['子时', '丑时', '丑时', '寅时', '寅时', '卯时', '卯时', '辰时', '辰时', '巳时', '巳时', '午时', '午时', '未时', '未时', '申时', '申时', '酉时', '酉时', '戌时', '戌时', '亥时', '亥时', '子时'];
-        
-        processHTML = `
-            <div class="process-item">
-                <strong>输入：</strong>手动模式
-            </div>
-            <div class="process-item">
-                <strong>年份：</strong>${year}年
-            </div>
-            <div class="process-item">
-                <strong>节气月：</strong>${monthNames[solarMonth]}
-            </div>
-            <div class="process-item">
-                <strong>农历日：</strong>农历${lunarDay}日
-            </div>
-            <div class="process-item">
-                <strong>时辰：</strong>${hourNames[hour]}
-            </div>
-        `;
-    }
-    
-    const yearW = yearWeight[year] || 0;
-    const monthW = monthWeight[solarMonth] || 0;
-    const dayW = dayWeight[lunarDay] || 0;
-    const hourW = hourWeight[hour] || 0;
-    
-    const weight = yearW + monthW + dayW + hourW;
-    const weightKey = weight.toFixed(1);
-    const poems = gender === 'male' ? malePoems : femalePoems;
-    const poem = poems[weightKey] || "命运未知，请核对生辰八字。";
-    
-    processHTML += `
-        <div class="process-item">
-            <strong>年份骨重：</strong>${year}年 = ${yearW} 两
-        </div>
-        <div class="process-item">
-            <strong>月份骨重：</strong>节气月 = ${monthW} 两
-        </div>
-        <div class="process-item">
-            <strong>日期骨重：</strong>农历${lunarDay}日 = ${dayW} 两
-        </div>
-        <div class="process-item">
-            <strong>时辰骨重：</strong>= ${hourW} 两
-        </div>
-        <div class="process-sum">
-            总计：${yearW} + ${monthW} + ${dayW} + ${hourW} = ${weight.toFixed(1)} 两
-        </div>
-    `;
-    
-    // 更新两个显示区域
-    document.getElementById('processDisplay').innerHTML = processHTML;
-    document.getElementById('weightDisplay').textContent = `骨重：${weight.toFixed(1)} 两`;
-    document.getElementById('poemDisplay').textContent = poem;
-    document.getElementById('result').classList.add('show');
-    
-    document.getElementById('processDisplaySide').innerHTML = processHTML;
-    document.getElementById('weightDisplaySide').textContent = `骨重：${weight.toFixed(1)} 两`;
-    document.getElementById('poemDisplaySide').textContent = poem;
-    document.getElementById('resultContainer').classList.add('show');
+// 模式切换
+document.querySelectorAll('input[name="inputMode"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+        document.getElementById('solarMode').style.display = r.value === 'solar' ? '' : 'none';
+        document.getElementById('manualMode').style.display = r.value === 'manual' ? '' : 'none';
+    });
 });
 
-// 模式切换
-document.querySelectorAll('input[name="inputMode"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        const mode = e.target.value;
-        document.getElementById('solarMode').style.display = mode === 'solar' ? 'block' : 'none';
-        document.getElementById('manualMode').style.display = mode === 'manual' ? 'block' : 'none';
-    });
+// 表单提交
+document.getElementById('baziForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var gender = document.getElementById('gender').value;
+    var mode = document.querySelector('input[name="inputMode"]:checked').value;
+    var year, sm, ld, hour, html = '';
+    var mn = ['', '正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '冬月', '腊月'];
+    var hn = ['子时', '丑时', '丑时', '寅时', '寅时', '卯时', '卯时', '辰时', '辰时', '巳时', '巳时', '午时', '午时', '未时', '未时', '申时', '申时', '酉时', '酉时', '戌时', '戌时', '亥时', '亥时', '子时'];
+
+    if (mode === 'solar') {
+        var iY = parseInt(document.getElementById('year').value);
+        var m = parseInt(document.getElementById('month').value);
+        var d = parseInt(document.getElementById('day').value);
+        hour = parseInt(document.getElementById('hour').value);
+        var iM = m, iD = d, iH = hour;
+
+        if (hour === 23) {
+            hour = 0; d++;
+            var md = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            if ((iY % 4 === 0 && iY % 100 !== 0) || (iY % 400 === 0)) md[2] = 29;
+            if (d > md[m]) { d = 1; m++; if (m > 12) { m = 1; iY++; } }
+        }
+
+        sm = getSolarMonth(iY, m, d, hour);
+        var lunar = solarToLunar(iY, m, d);
+        year = lunar.year;
+        ld = lunar.day;
+
+        var is23 = iH === 23;
+        var dd = is23 ? iY + '年' + m + '月' + d + '日' : iY + '年' + iM + '月' + iD + '日';
+
+        html = '<div class="process-item"><strong>输入：</strong>阳历 ' + iY + '年' + iM + '月' + iD + '日 ' + iH + ':00-' + iH + ':59</div>';
+        if (is23) html += '<div class="process-item" style="color:var(--link-color)"><strong>时辰调整：</strong>23点算次日子时 → ' + dd + ' 子时</div>';
+        html += '<div class="process-item"><strong>阳历转农历：</strong>' + dd + ' → 农历 <strong>' + year + '年' + ld + '日</strong></div>';
+        html += '<div class="process-item"><strong>节气转换：</strong>' + dd + ' ' + hn[hour] + ' → 节气月 <strong>' + mn[sm] + '</strong></div>';
+    } else {
+        year = parseInt(document.getElementById('manualYear').value);
+        sm = parseInt(document.getElementById('solarMonth').value);
+        ld = parseInt(document.getElementById('lunarDay').value);
+        hour = parseInt(document.getElementById('shiChen').value);
+
+        html = '<div class="process-item"><strong>输入：</strong>手动模式</div>';
+        html += '<div class="process-item"><strong>年份：</strong>' + year + '年</div>';
+        html += '<div class="process-item"><strong>节气月：</strong>' + mn[sm] + '</div>';
+        html += '<div class="process-item"><strong>农历日：</strong>农历' + ld + '日</div>';
+        html += '<div class="process-item"><strong>时辰：</strong>' + hn[hour] + '</div>';
+    }
+
+    var yW = yearWeight[year] || 0;
+    var mW = monthWeight[sm] || 0;
+    var dW = dayWeight[ld] || 0;
+    var hW = hourWeight[hour] || 0;
+    var weight = yW + mW + dW + hW;
+    var wKey = weight.toFixed(1);
+    var poems = gender === 'male' ? malePoems : femalePoems;
+    var poem = poems[wKey] || "命运未知，请核对生辰八字。";
+
+    html += '<div class="process-item"><strong>年份骨重：</strong>' + year + '年 = ' + yW + ' 两</div>';
+    html += '<div class="process-item"><strong>月份骨重：</strong>节气月 = ' + mW + ' 两</div>';
+    html += '<div class="process-item"><strong>日期骨重：</strong>农历' + ld + '日 = ' + dW + ' 两</div>';
+    html += '<div class="process-item"><strong>时辰骨重：</strong>= ' + hW + ' 两</div>';
+    html += '<div class="process-sum">总计：' + yW + ' + ' + mW + ' + ' + dW + ' + ' + hW + ' = ' + wKey + ' 两</div>';
+
+    document.getElementById('processDisplay').innerHTML = html;
+    document.getElementById('weightDisplay').textContent = '骨重：' + wKey + ' 两';
+    document.getElementById('poemDisplay').textContent = poem;
+
+    var rs = document.getElementById('result');
+    rs.classList.add('show');
+    rs.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
