@@ -20,3 +20,8 @@
   url: "https://leoz.work"
   icon: "https://leoz.work/images/author.jpg"
   description: "Leo,中国科学院大学,软件工程"
+
+- name: "Lazy_V's Blog"
+  url: "https://zzxzzk115.github.io/blog/"
+  icon: "https://zzxzzk115.github.io/blog/logo.png"
+  description: "Talk is cheap, show me the code."
