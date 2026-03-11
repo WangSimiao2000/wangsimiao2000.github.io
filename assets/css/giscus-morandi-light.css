@@ -68,61 +68,61 @@ main {
 }
 
 main .gsc-comment-box {
-  border-color: var(--color-border-muted) !important;
-  border-radius: 12px !important;
-  background-color: var(--color-canvas-default) !important;
-  box-shadow: 0 1px 3px rgb(120 110 100 / 6%) !important;
+  border-color: var(--color-border-muted);
+  border-radius: 12px;
+  background-color: var(--color-canvas-default);
+  box-shadow: 0 1px 3px rgb(120 110 100 / 6%);
 }
 
 main .gsc-comment-box textarea {
-  border-color: var(--color-border-muted) !important;
-  border-radius: 8px !important;
-  background-color: var(--color-canvas-inset) !important;
+  border-color: var(--color-border-muted);
+  border-radius: 8px;
+  background-color: var(--color-canvas-inset);
 }
 
 main .gsc-comment-box textarea:focus {
-  border-color: #B07D62 !important;
-  box-shadow: 0 0 0 2px rgb(176 125 98 / 15%) !important;
+  border-color: #B07D62;
+  box-shadow: 0 0 0 2px rgb(176 125 98 / 15%);
 }
 
 main .gsc-header .gsc-left-header em {
-  color: var(--color-fg-muted) !important;
+  color: var(--color-fg-muted);
 }
 
 main .gsc-comment {
-  border-color: var(--color-border-muted) !important;
-  border-radius: 12px !important;
+  border-color: var(--color-border-muted);
+  border-radius: 12px;
 }
 
 main .gsc-comment .gsc-comment-content {
-  background-color: var(--color-canvas-default) !important;
-  border-color: var(--color-border-muted) !important;
+  background-color: var(--color-canvas-default);
+  border-color: var(--color-border-muted);
 }
 
 main .gsc-comment .gsc-comment-header {
-  background-color: var(--color-canvas-subtle) !important;
-  border-color: var(--color-border-muted) !important;
-  border-radius: 12px 12px 0 0 !important;
+  background-color: var(--color-canvas-subtle);
+  border-color: var(--color-border-muted);
+  border-radius: 12px 12px 0 0;
 }
 
 main .gsc-comment .gsc-comment-header > div:first-child {
-  border-color: var(--color-border-muted) !important;
+  border-color: var(--color-border-muted);
 }
 
 main .gsc-timeline {
-  border-color: var(--color-border-muted) !important;
+  border-color: var(--color-border-muted);
 }
 
 main .gsc-replies {
-  border-color: var(--color-border-muted) !important;
+  border-color: var(--color-border-muted);
 }
 
 main .gsc-reply {
-  border-color: var(--color-border-muted) !important;
+  border-color: var(--color-border-muted);
 }
 
 main .gsc-main .gsc-comment:first-child {
-  border-top-color: var(--color-border-muted) !important;
+  border-top-color: var(--color-border-muted);
 }
 
 main .gsc-reactions-count {
@@ -131,40 +131,40 @@ main .gsc-reactions-count {
 
 main .gsc-reactions button,
 main .gsc-comment-reactions button {
-  border-color: var(--color-border-muted) !important;
-  border-radius: 20px !important;
-  background-color: var(--color-canvas-subtle) !important;
+  border-color: var(--color-border-muted);
+  border-radius: 20px;
+  background-color: var(--color-canvas-subtle);
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 main .gsc-reactions button:hover,
 main .gsc-comment-reactions button:hover {
-  border-color: #B07D62 !important;
-  background-color: rgb(176 125 98 / 8%) !important;
+  border-color: #B07D62;
+  background-color: rgb(176 125 98 / 8%);
 }
 
 main .gsc-reactions button.has-reacted,
 main .gsc-comment-reactions button.has-reacted {
-  border-color: #B07D62 !important;
-  background-color: rgb(176 125 98 / 10%) !important;
+  border-color: #B07D62;
+  background-color: rgb(176 125 98 / 10%);
   color: #B07D62;
 }
 
 main .gsc-comment-box-buttons button[type='submit'] {
-  border-radius: 8px !important;
-  background-color: #6B8F71 !important;
-  border-color: #6B8F71 !important;
-  color: #fff !important;
+  border-radius: 8px;
+  background-color: #6B8F71;
+  border-color: #6B8F71;
+  color: #fff;
 }
 
 main .gsc-comment-box-buttons button[type='submit']:hover {
-  background-color: #5A7D60 !important;
+  background-color: #5A7D60;
 }
 
 main .gsc-comment-box-tabs {
-  border-color: var(--color-border-muted) !important;
+  border-color: var(--color-border-muted);
   border-radius: 12px 12px 0 0;
-  background-color: var(--color-canvas-subtle) !important;
+  background-color: var(--color-canvas-subtle);
 }
 
 main .gsc-comment-box-main {
