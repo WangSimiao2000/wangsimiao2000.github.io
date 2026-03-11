@@ -59,6 +59,11 @@ jobs:
           pip install awscli --quiet
           bash scripts/generate-gallery-r2.sh
 
+      - name: Check friend links
+        run: |
+          pip install pyyaml --quiet
+          bash scripts/check-friends.sh
+
       - name: Build site
         run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
         env:
