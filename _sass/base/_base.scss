@@ -471,10 +471,9 @@ mjx-container {
     left: 50%;
     transform: translate(-50%, -50%) rotate(-18deg);
     font-size: clamp(6rem, 12vw, 14rem);
-    font-family: 'Lato', 'Source Sans Pro', sans-serif;
-    font-weight: 900;
-    font-style: italic;
-    letter-spacing: 0.04em;
+    font-family: 'Permanent Marker', cursive;
+    font-weight: 400;
+    letter-spacing: 0.06em;
     white-space: nowrap;
     color: var(--watermark-color, rgba(0, 0, 0, 0.03));
     pointer-events: none;
