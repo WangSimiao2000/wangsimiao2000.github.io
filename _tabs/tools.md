@@ -1,5 +1,5 @@
 ---
-title: 小工具
+title: 工具
 icon: fas fa-toolbox
 order: 7
 ---

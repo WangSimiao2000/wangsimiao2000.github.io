@@ -1,5 +1,5 @@
 ---
-title: 光影集
+title: 相册
 icon: fas fa-camera-retro
 order: 5
 ---

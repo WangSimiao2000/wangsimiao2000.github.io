@@ -1,5 +1,5 @@
 ---
-title: 友情链接
+title: 友链
 icon: fas fa-user-friends
 order: 6
 comments: true
