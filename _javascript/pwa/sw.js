@@ -26,6 +26,9 @@ function verifyUrl(url) {
 }
 
 self.addEventListener('install', (event) => {
+  // Activate new service worker immediately, don't wait for old tabs to close
+  self.skipWaiting();
+
   if (purge) {
     return;
   }
@@ -51,6 +54,9 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // Take control of all open tabs immediately
+      return self.clients.claim();
     })
   );
 });
