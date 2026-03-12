@@ -35,7 +35,13 @@ self.addEventListener('install', (event) => {
 
   event.waitUntil(
     caches.open(swconf.cacheName).then((cache) => {
-      return cache.addAll(swconf.resources);
+      return Promise.all(
+        swconf.resources.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn(`Failed to cache: ${url}`, err);
+          })
+        )
+      );
     })
   );
 });
