@@ -73,6 +73,7 @@ bundle exec jekyll s -l    # 启动 Jekyll (livereload)
 | `npm run watch` | JS 监听模式 |
 | `npm run dev` | 构建 + 启动开发服务器 |
 | `npm test` | 构建站点 + HTML 校验 |
+| `npm run clean` | 清理所有构建产物，恢复干净状态 |
 
 ### 写文章
 

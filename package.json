@@ -10,7 +10,8 @@
     "build": "BUILD=production npx rollup -c --bundleConfigAsCjs",
     "watch": "npx rollup -c --bundleConfigAsCjs -w",
     "dev": "npm run build && bash _scripts/run.sh",
-    "test": "bash _scripts/test.sh"
+    "test": "bash _scripts/test.sh",
+    "clean": "rm -rf assets/js/dist _site .jekyll-cache .jekyll-metadata node_modules && echo '✅ 已清理所有构建产物'"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
