@@ -13,16 +13,17 @@ if ('serviceWorker' in navigator) {
     const popupWindow = Toast.getOrCreateInstance(notification);
 
     navigator.serviceWorker.register(swUrl).then((registration) => {
-      // Restore the update window that was last manually closed by the user
+      // If a new service worker is already waiting, activate it immediately
       if (registration.waiting) {
-        popupWindow.show();
+        registration.waiting.postMessage('SKIP_WAITING');
       }
 
       registration.addEventListener('updatefound', () => {
         registration.installing.addEventListener('statechange', () => {
           if (registration.waiting) {
             if (navigator.serviceWorker.controller) {
-              popupWindow.show();
+              // Automatically activate the new service worker
+              registration.waiting.postMessage('SKIP_WAITING');
             }
           }
         });

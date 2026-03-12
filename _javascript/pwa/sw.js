@@ -66,6 +66,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Use network-first strategy for navigation requests (HTML pages)
+  // so users always see the latest content
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (purge || event.request.method !== 'GET' || !verifyUrl(event.request.url)) {
+            return response;
+          }
+          let responseToCache = response.clone();
+          caches.open(swconf.cacheName).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Cache-first strategy for static assets (CSS, JS, images, etc.)
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
@@ -79,7 +102,6 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
 
-        // See: <https://developers.google.com/web/fundamentals/primers/service-workers#cache_and_return_requests>
         let responseToCache = response.clone();
 
         caches.open(swconf.cacheName).then((cache) => {
