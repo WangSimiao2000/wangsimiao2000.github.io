@@ -496,10 +496,6 @@ body {
     z-index: 0;
     animation: watermark-enter 0.8s v.$ease-spring;
   }
-
-  &.watermark-animating {
-    pointer-events: none;
-  }
 }
 
 #main-wrapper {
