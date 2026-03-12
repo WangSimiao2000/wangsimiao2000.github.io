@@ -13,21 +13,21 @@ comments: true
   {% assign alive_list = site.data.friends %}
 {% endunless %}
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 card-grid">
   {% for friend in alive_list %}
     {% if friend.name and friend.url %}
       <div class="col">
-        <div class="card h-100 post-preview" style="cursor:pointer;" onclick="window.open('{{ friend.url }}','_blank')">
-          <div class="card-body d-flex align-items-center" style="position:relative;z-index:1;">
+        <div class="card h-100 post-preview card-clickable" onclick="window.open('{{ friend.url }}','_blank')">
+          <div class="card-body d-flex align-items-center card-body-inner">
             {% if friend.icon and friend.icon != "" %}
-              <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0" width="48" height="48" style="object-fit:cover;" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
+              <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0 avatar-cover" width="48" height="48" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
             {% else %}
               <i class="fas fa-globe fa-2x me-3 text-muted"></i>
             {% endif %}
             <div>
-              <span class="fw-bold" style="color:var(--heading-color);">{{ friend.name }}</span>
+              <span class="fw-bold card-title-text">{{ friend.name }}</span>
               {% if friend.description %}
-                <div class="text-muted small mt-1" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ friend.description }}</div>
+                <div class="text-muted small mt-1 text-clamp-2">{{ friend.description }}</div>
               {% endif %}
             </div>
           </div>
@@ -40,22 +40,22 @@ comments: true
 {% if dead_list and dead_list.size > 0 %}
 <hr class="mt-5 mb-3">
 
-<h3 class="text-muted mb-4" style="font-size:1.1rem;">
+<h3 class="text-muted mb-4 section-subtitle">
   <i class="fas fa-cross me-2"></i>数字墓园
   <span class="text-muted small ms-2">— 那些沉睡的站点</span>
 </h3>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" style="opacity:0.6;">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 card-grid card-grid--dimmed">
   {% for friend in dead_list %}
     {% if friend.name and friend.url %}
       <div class="col">
-        <div class="card h-100 post-preview" style="cursor:pointer;filter:grayscale(100%);" onclick="window.open('{{ friend.url }}','_blank')">
-          <div class="card-body d-flex align-items-center" style="position:relative;z-index:1;">
+        <div class="card h-100 post-preview card-dead" onclick="window.open('{{ friend.url }}','_blank')">
+          <div class="card-body d-flex align-items-center card-body-inner">
             <i class="fas fa-skull fa-2x me-3 text-muted flex-shrink-0"></i>
             <div>
-              <span class="fw-bold" style="color:var(--heading-color);">{{ friend.name }}</span>
+              <span class="fw-bold card-title-text">{{ friend.name }}</span>
               {% if friend.description %}
-                <div class="text-muted small mt-1" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ friend.description }}</div>
+                <div class="text-muted small mt-1 text-clamp-2">{{ friend.description }}</div>
               {% endif %}
             </div>
           </div>

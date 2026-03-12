@@ -45,8 +45,8 @@
 }
 
 %link-hover {
-  color: #B07D62 !important;
-  border-bottom: 1px solid #B07D62;
+  color: var(--link-color) !important;
+  border-bottom: 1px solid var(--link-color);
   text-decoration: none;
 }
 
@@ -92,7 +92,7 @@
     font-style: normal;
     font-size: 80%;
     padding: 0;
-    color: #6d6c6c;
+    color: var(--text-muted-color);
   }
 }
 
