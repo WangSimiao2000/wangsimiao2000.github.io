@@ -2,13 +2,15 @@
   "name": "wangsimiao2000.github.io",
   "version": "1.0.0",
   "private": true,
-  "since": "2019",
-  "author": "Cotes Chung",
+  "description": "MickeyMiao's personal blog based on Jekyll Chirpy theme",
+  "author": "Wang Simiao",
   "license": "MIT",
-  "homepage": "https://github.com/cotes2020/jekyll-theme-chirpy/",
+  "homepage": "https://blog.mickeymiao.cn",
   "scripts": {
     "build": "BUILD=production npx rollup -c --bundleConfigAsCjs",
-    "watch": "npx rollup -c --bundleConfigAsCjs -w"
+    "watch": "npx rollup -c --bundleConfigAsCjs -w",
+    "dev": "npm run build && bash _scripts/run.sh",
+    "test": "bash _scripts/test.sh"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",

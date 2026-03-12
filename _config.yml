@@ -14,7 +14,7 @@ timezone: Asia/Shanghai
 title: MickeyMiao
 tagline: code is cheap, show me your prompt
 description: >-
-  A minimal, responsive and feature-rich Jekyll theme for technical writing.
+  MickeyMiao 的个人博客，记录技术学习、图形学笔记和生活感悟。
 url: "https://blog.mickeymiao.cn"
 
 github:
@@ -130,6 +130,10 @@ exclude:
   - README.md
   - LICENSE
   - _javascript
+  - rollup.config.js
+  - package.json
+  - package-lock.json
+  - node_modules
 
 jekyll-archives:
   enabled: [categories, tags]
