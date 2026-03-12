@@ -42,6 +42,14 @@ jobs:
           ruby-version: 3.3
           bundler-cache: true
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build JavaScript
+        run: npm ci && npm run build
+
       - name: Generate gallery from R2
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
