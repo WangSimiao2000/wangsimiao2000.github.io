@@ -67,108 +67,14 @@ main {
   --color-neutral-emphasis: #8A8580;
 }
 
-main .gsc-comment-box {
-  border-color: var(--color-border-muted);
-  border-radius: 12px;
-  background-color: var(--color-canvas-default);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
-}
-
-main .gsc-comment-box textarea {
-  border-color: var(--color-border-muted);
-  border-radius: 8px;
-  background-color: var(--color-canvas-inset);
-}
-
-main .gsc-comment-box textarea:focus {
-  border-color: #C4956E;
-  box-shadow: 0 0 0 2px rgb(196 149 110 / 20%);
-}
-
-main .gsc-header .gsc-left-header em {
-  color: var(--color-fg-muted);
-}
-
+main .gsc-comment-box,
 main .gsc-comment {
-  border-color: var(--color-border-muted);
-  border-radius: 12px;
-}
-
-main .gsc-comment .gsc-comment-content {
-  background-color: var(--color-canvas-default);
-  border-color: var(--color-border-muted);
-}
-
-main .gsc-comment .gsc-comment-header {
-  background-color: var(--color-canvas-subtle);
-  border-color: var(--color-border-muted);
-  border-radius: 12px 12px 0 0;
-}
-
-main .gsc-comment .gsc-comment-header > div:first-child {
-  border-color: var(--color-border-muted);
-}
-
-main .gsc-timeline {
-  border-color: var(--color-border-muted);
-}
-
-main .gsc-replies {
-  border-color: var(--color-border-muted);
-}
-
-main .gsc-reply {
-  border-color: var(--color-border-muted);
-}
-
-main .gsc-main .gsc-comment:first-child {
-  border-top-color: var(--color-border-muted);
-}
-
-main .gsc-reactions-count {
-  color: var(--color-fg-muted);
+  border-radius: 8px;
 }
 
 main .gsc-reactions button,
 main .gsc-comment-reactions button {
-  border-color: var(--color-border-muted);
   border-radius: 20px;
-  background-color: var(--color-canvas-subtle);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-main .gsc-reactions button:hover,
-main .gsc-comment-reactions button:hover {
-  border-color: #C4956E;
-  background-color: rgb(196 149 110 / 10%);
-}
-
-main .gsc-reactions button.has-reacted,
-main .gsc-comment-reactions button.has-reacted {
-  border-color: #C4956E;
-  background-color: rgb(196 149 110 / 12%);
-  color: #C4956E;
-}
-
-main .gsc-comment-box-buttons button[type='submit'] {
-  border-radius: 8px;
-  background-color: #8FB896;
-  border-color: #8FB896;
-  color: #1E1D1B;
-}
-
-main .gsc-comment-box-buttons button[type='submit']:hover {
-  background-color: #7DA080;
-}
-
-main .gsc-comment-box-tabs {
-  border-color: var(--color-border-muted);
-  border-radius: 12px 12px 0 0;
-  background-color: var(--color-canvas-subtle);
-}
-
-main .gsc-comment-box-main {
-  border-color: var(--color-border-muted) !important;
 }
 
 main a {
