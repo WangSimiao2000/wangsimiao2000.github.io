@@ -460,6 +460,18 @@ mjx-container {
   }
 }
 
+@keyframes watermark-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-18deg) scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-18deg) scale(1);
+  }
+}
+
 #main-wrapper {
   position: relative;
   overflow: hidden;
@@ -470,7 +482,7 @@ mjx-container {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-18deg);
-    font-size: clamp(6rem, 12vw, 14rem);
+    font-size: clamp(3.5rem, 10vw, 14rem);
     font-family: 'Permanent Marker', cursive;
     font-weight: 400;
     letter-spacing: 0.06em;
@@ -479,6 +491,15 @@ mjx-container {
     pointer-events: none;
     user-select: none;
     z-index: 0;
+    opacity: 1;
+    transition: opacity 0.5s v.$ease-spring-soft,
+      transform 0.5s v.$ease-spring-soft;
+    animation: watermark-enter 0.8s v.$ease-spring both;
+  }
+
+  body[sidebar-display] &::after {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-18deg) scale(0.85);
   }
 
   @include mx.pl-pr(0);
