@@ -472,10 +472,7 @@ mjx-container {
   }
 }
 
-#main-wrapper {
-  position: relative;
-  overflow: hidden;
-
+body {
   &::after {
     content: 'MickeyMiao\'s Blog';
     position: fixed;
@@ -497,10 +494,15 @@ mjx-container {
     animation: watermark-enter 0.8s v.$ease-spring both;
   }
 
-  body[sidebar-display] &::after {
+  &[sidebar-display]::after {
     opacity: 0;
     transform: translate(-50%, -50%) rotate(-18deg) scale(0.85);
   }
+}
+
+#main-wrapper {
+  position: relative;
+  overflow: hidden;
 
   @include mx.pl-pr(0);
 
