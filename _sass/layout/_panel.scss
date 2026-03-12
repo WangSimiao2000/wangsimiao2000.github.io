@@ -3,10 +3,7 @@
 @use '../abstracts/placeholders';
 
 .access {
-  top: 3rem;
   padding-top: 3rem;
-  position: -webkit-sticky;
-  position: sticky;
 
   > section {
     @extend %panel-border;
@@ -24,6 +21,18 @@
 }
 
 #panel-wrapper {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 3rem;
+  align-self: start;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
   /* the headings */
   .panel-heading {
     font-family: inherit;

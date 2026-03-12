@@ -261,12 +261,7 @@ header {
 }
 
 #toc-wrapper {
-  top: 0;
-  transition: top 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-  overflow-y: auto;
-  max-height: 100vh;
-  scrollbar-width: none;
-  margin-top: 2rem;
+  padding-top: 2rem;
 
   &:not(.invisible) {
     -webkit-animation: fade-up 0.8s;
