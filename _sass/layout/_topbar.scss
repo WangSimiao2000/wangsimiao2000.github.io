@@ -6,6 +6,10 @@
 #topbar-wrapper {
   height: v.$topbar-height;
   background-color: var(--topbar-bg);
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
 
   @include bp.lt(bp.get(lg)) {
     @include mx.slide(top 0.25s cubic-bezier(0.22, 1, 0.36, 1));

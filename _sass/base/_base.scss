@@ -500,7 +500,7 @@ body {
 
 #main-wrapper {
   position: relative;
-  overflow: hidden;
+  overflow: clip;
 
   @include mx.pl-pr(0);
 

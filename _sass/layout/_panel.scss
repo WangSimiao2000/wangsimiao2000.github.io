@@ -3,14 +3,10 @@
 @use '../abstracts/placeholders';
 
 .access {
-  top: 2rem;
-  transition: top 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-  margin-top: 3rem;
-
-  &:only-child {
-    position: -webkit-sticky;
-    position: sticky;
-  }
+  top: 3rem;
+  padding-top: 3rem;
+  position: -webkit-sticky;
+  position: sticky;
 
   > section {
     @extend %panel-border;
