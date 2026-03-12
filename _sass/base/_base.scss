@@ -462,6 +462,25 @@ mjx-container {
 
 #main-wrapper {
   position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: 'MickeyMiao\'s Blog';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    font-size: clamp(6rem, 12vw, 14rem);
+    font-family: 'Lato', 'Source Sans Pro', sans-serif;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    color: var(--watermark-color, rgba(0, 0, 0, 0.03));
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
 
   @include mx.pl-pr(0);
 
