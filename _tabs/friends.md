@@ -20,7 +20,7 @@ comments: true
         <div class="card h-100 post-preview card-clickable" onclick="window.open('{{ friend.url }}','_blank')">
           <div class="card-body d-flex align-items-center card-body-inner">
             {% if friend.icon and friend.icon != "" %}
-              <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0 avatar-cover" width="48" height="48" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
+              <img src="{{ friend.icon }}" alt="{{ friend.name }}" class="rounded-circle me-3 flex-shrink-0 avatar-cover no-popup" width="48" height="48" onerror="this.outerHTML='<i class=\'fas fa-globe fa-2x me-3 text-muted\'></i>';" />
             {% else %}
               <i class="fas fa-globe fa-2x me-3 text-muted"></i>
             {% endif %}
