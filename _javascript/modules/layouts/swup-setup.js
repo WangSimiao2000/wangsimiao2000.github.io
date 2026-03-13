@@ -1,25 +1,26 @@
 import Swup from 'swup';
 import SwupHeadPlugin from '@swup/head-plugin';
-import SwupScriptsPlugin from '@swup/scripts-plugin';
+
+let swupInstance = null;
 
 export function initSwup() {
-  const swup = new Swup({
+  // Prevent multiple instances
+  if (swupInstance) return;
+
+  swupInstance = new Swup({
     containers: ['#swup'],
     animationSelector: '.swup-transition-main',
     cache: true,
+    animateHistoryBrowsing: true,
     plugins: [
       new SwupHeadPlugin({
-        persistAssets: true // keep existing CSS/JS, avoid re-downloading
-      }),
-      new SwupScriptsPlugin({
-        head: true,
-        body: true
+        persistAssets: true
       })
     ]
   });
 
   // Update sidebar active state after navigation
-  swup.hooks.on('page:view', () => {
+  swupInstance.hooks.on('page:view', () => {
     const currentPath = window.location.pathname;
     const navItems = document.querySelectorAll('#sidebar .nav-item');
 
