@@ -1,0 +1,12 @@
+/* Swup page transition */
+.swup-transition-main {
+  transition: opacity 0.2s ease-in-out;
+}
+
+html.is-changing .swup-transition-main {
+  opacity: 0;
+}
+
+html.is-animating .swup-transition-main {
+  opacity: 1;
+}
