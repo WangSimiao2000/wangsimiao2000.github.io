@@ -1,5 +1,7 @@
 /* PJAX page transition */
 #swup {
-  opacity: 1;
-  transition: opacity 0.15s ease-in-out;
+  main {
+    opacity: 1;
+    transition: opacity 0.15s ease-in-out;
+  }
 }

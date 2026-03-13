@@ -37,14 +37,21 @@ async function navigate(url, pushState = true) {
 
   const container = document.getElementById(CONTAINER_ID);
   if (!container) {
-    // Fallback to normal navigation
     window.location.href = url;
     return;
   }
 
+  // Only fade the main content area, not the sidebar
+  const mainContent = container.querySelector('main');
+
   try {
-    // Fade out
-    container.style.opacity = '0';
+    // Fade out main content only
+    if (mainContent) {
+      mainContent.style.transition = `opacity ${TRANSITION_DURATION}ms ease-in-out`;
+      mainContent.style.opacity = '0';
+    } else {
+      container.style.opacity = '0';
+    }
 
     // Fetch new page
     const response = await fetch(url);
@@ -66,8 +73,25 @@ async function navigate(url, pushState = true) {
     // Wait for fade out to finish
     await new Promise((r) => setTimeout(r, TRANSITION_DURATION));
 
-    // Replace content
-    container.innerHTML = newContainer.innerHTML;
+    // Replace main content
+    const newMain = newContainer.querySelector('main');
+    if (mainContent && newMain) {
+      mainContent.innerHTML = newMain.innerHTML;
+    }
+
+    // Silently replace sidebar (no animation)
+    const panel = container.querySelector('#panel-wrapper');
+    const newPanel = newContainer.querySelector('#panel-wrapper');
+    if (panel && newPanel) {
+      panel.innerHTML = newPanel.innerHTML;
+    }
+
+    // Replace tail/footer
+    const tail = container.querySelector('#tail-wrapper');
+    const newTail = newContainer.querySelector('#tail-wrapper');
+    if (tail && newTail) {
+      tail.innerHTML = newTail.innerHTML;
+    }
 
     // Update title
     document.title = doc.title;
@@ -83,10 +107,13 @@ async function navigate(url, pushState = true) {
     // Scroll to top
     window.scrollTo({ top: 0 });
 
-    // Fade in
-    container.style.opacity = '1';
+    // Fade in main content only
+    if (mainContent) {
+      mainContent.style.opacity = '1';
+    } else {
+      container.style.opacity = '1';
+    }
   } catch (e) {
-    // On any error, fall back to normal navigation
     window.location.href = url;
   } finally {
     isNavigating = false;
