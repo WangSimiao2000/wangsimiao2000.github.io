@@ -1,6 +1,6 @@
-import { basic, initSidebar, initTopbar, initSwup } from './modules/layouts';
+import { basic, initSidebar, initTopbar, initPjax } from './modules/layouts';
 
 initSidebar();
 initTopbar();
 basic();
-initSwup();
+initPjax();

@@ -1,9 +1,5 @@
-/* Swup page transition */
-.swup-transition-main {
+/* PJAX page transition */
+#swup {
   opacity: 1;
-  transition: opacity 0.2s ease-in-out;
-}
-
-html.is-changing .swup-transition-main {
-  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
 }
