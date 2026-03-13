@@ -11,6 +11,8 @@ footer {
   @extend %text-xs;
 
   @include bp.lt(bp.get(lg)) {
+    @include mx.slide;
+
     height: v.$footer-height-large;
     padding: 1.5rem 0;
   }

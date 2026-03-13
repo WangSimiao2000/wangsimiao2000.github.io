@@ -512,6 +512,10 @@ body {
 
   @include mx.pl-pr(0);
 
+  @include bp.lt(bp.get(lg)) {
+    @include mx.slide;
+  }
+
   @include bp.lg {
     margin-left: v.$sidebar-width;
   }

@@ -264,7 +264,12 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
 [#{$sidebar-display}] {
   #main-wrapper {
     @include bp.lt(bp.get(lg)) {
-      /* sidebar overlays content instead of pushing it */
+      transform: translateX(v.$sidebar-width);
     }
+  }
+
+  /* Lock body scroll when sidebar is open on narrow screens */
+  @include bp.lt(bp.get(lg)) {
+    overflow: hidden;
   }
 }
