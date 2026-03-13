@@ -59,8 +59,9 @@
     {%- unless page.layout == 'home' -%}
       {%- capture title -%}
         {%- if page.collection == 'tabs' -%}
-          {%- assign tab_key = page.title | downcase -%}
-          {{- site.data.locales[include.lang].tabs[tab_key] -}}
+          {%- assign tab_key = page.name | split: '.' | first | downcase -%}
+          {%- assign tab_title = site.data.locales[include.lang].tabs[tab_key] -%}
+          {{- tab_title | default: page.title -}}
         {%- else -%}
           {{- page.title -}}
         {%- endif -%}
