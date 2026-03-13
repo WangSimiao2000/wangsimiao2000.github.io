@@ -9,6 +9,8 @@ import {
   loadMermaid
 } from './modules/components';
 
+console.log('[Blog] post.js loaded');
+
 loadImg();
 initToc();
 imgPopup();
@@ -18,3 +20,5 @@ initClipboard();
 initTopbar();
 loadMermaid();
 basic();
+
+console.log('[Blog] Post page fully initialized');

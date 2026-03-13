@@ -32,11 +32,16 @@ function updateActiveNav(path) {
 }
 
 async function navigate(url, pushState = true) {
-  if (isNavigating) return;
+  if (isNavigating) {
+    console.log('[PJAX] Navigation skipped — already navigating');
+    return;
+  }
   isNavigating = true;
+  console.log(`[PJAX] Navigating to: ${url}`);
 
   const container = document.getElementById(CONTAINER_ID);
   if (!container) {
+    console.warn('[PJAX] #swup container not found, falling back to full page load');
     window.location.href = url;
     return;
   }
@@ -46,6 +51,7 @@ async function navigate(url, pushState = true) {
 
   try {
     // Fade out main content only
+    console.log('[PJAX] Fading out main content');
     if (mainContent) {
       mainContent.style.transition = `opacity ${TRANSITION_DURATION}ms ease-in-out`;
       mainContent.style.opacity = '0';
@@ -55,7 +61,9 @@ async function navigate(url, pushState = true) {
 
     // Fetch new page
     const response = await fetch(url);
+    console.log(`[PJAX] Fetch response: ${response.status}`);
     if (!response.ok) {
+      console.warn(`[PJAX] Fetch failed (${response.status}), falling back`);
       window.location.href = url;
       return;
     }
@@ -66,17 +74,22 @@ async function navigate(url, pushState = true) {
 
     const newContainer = doc.getElementById(CONTAINER_ID);
     if (!newContainer) {
+      console.warn('[PJAX] New page has no #swup container, falling back');
       window.location.href = url;
       return;
     }
 
     // Wait for fade out to finish
     await new Promise((r) => setTimeout(r, TRANSITION_DURATION));
+    console.log('[PJAX] Fade out complete, replacing DOM');
 
     // Replace main content
     const newMain = newContainer.querySelector('main');
     if (mainContent && newMain) {
       mainContent.innerHTML = newMain.innerHTML;
+      console.log('[PJAX] ✓ Main content replaced');
+    } else {
+      console.warn('[PJAX] ✗ Main content not found', { mainContent: !!mainContent, newMain: !!newMain });
     }
 
     // Silently replace sidebar (no animation)
@@ -84,6 +97,9 @@ async function navigate(url, pushState = true) {
     const newPanel = newContainer.querySelector('#panel-wrapper');
     if (panel && newPanel) {
       panel.innerHTML = newPanel.innerHTML;
+      console.log('[PJAX] ✓ Panel replaced (silent)');
+    } else {
+      console.warn('[PJAX] ✗ Panel not found', { panel: !!panel, newPanel: !!newPanel });
     }
 
     // Replace tail/footer
@@ -91,6 +107,9 @@ async function navigate(url, pushState = true) {
     const newTail = newContainer.querySelector('#tail-wrapper');
     if (tail && newTail) {
       tail.innerHTML = newTail.innerHTML;
+      console.log('[PJAX] ✓ Tail/footer replaced (silent)');
+    } else {
+      console.warn('[PJAX] ✗ Tail not found', { tail: !!tail, newTail: !!newTail });
     }
 
     // Update title
@@ -103,6 +122,7 @@ async function navigate(url, pushState = true) {
 
     // Update sidebar active state
     updateActiveNav(new URL(url, window.location.origin).pathname);
+    console.log('[PJAX] Sidebar nav updated');
 
     // Scroll to top
     window.scrollTo({ top: 0 });
@@ -113,7 +133,9 @@ async function navigate(url, pushState = true) {
     } else {
       container.style.opacity = '1';
     }
+    console.log(`[PJAX] ✓ Navigation complete: ${url}`);
   } catch (e) {
+    console.error('[PJAX] Navigation error:', e);
     window.location.href = url;
   } finally {
     isNavigating = false;
@@ -121,6 +143,8 @@ async function navigate(url, pushState = true) {
 }
 
 export function initPjax() {
+  console.log('[PJAX] Setting up event listeners');
+
   // Intercept clicks on internal links
   document.addEventListener('click', (e) => {
     const link = e.target.closest('a');
@@ -129,13 +153,18 @@ export function initPjax() {
     e.preventDefault();
 
     // Skip if same page
-    if (link.href === window.location.href) return;
+    if (link.href === window.location.href) {
+      console.log('[PJAX] Same page click ignored:', link.href);
+      return;
+    }
 
+    console.log('[PJAX] Link intercepted:', link.href);
     navigate(link.href);
   });
 
   // Handle browser back/forward
   window.addEventListener('popstate', () => {
+    console.log('[PJAX] Popstate (back/forward):', window.location.href);
     navigate(window.location.href, false);
   });
 }
