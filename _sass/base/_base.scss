@@ -457,6 +457,7 @@ mjx-container {
 
 #mask {
   inset: 0 0 0 0;
+  z-index: 1035; /* below sidebar (1040) but above all page content */
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s v.$ease-spring-soft;

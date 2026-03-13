@@ -28,6 +28,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
   }
 
   @include bp.lt(bp.get(lg)) {
+    z-index: 1040; /* above topbar (1030) and all page content */
     transform: translateX(-#{v.$sidebar-width}); /* hide */
     -webkit-transform: translateX(-#{v.$sidebar-width});
     transition: transform 0.45s v.$ease-spring;
