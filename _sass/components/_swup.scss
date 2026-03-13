@@ -1,5 +1,9 @@
 /* PJAX page transition */
 #swup {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+
   main {
     opacity: 1;
     transition: opacity 0.15s ease-in-out;
