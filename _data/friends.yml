@@ -1,11 +1,6 @@
 # 友情链接列表
 # 每条记录包含: name (必填), url (必填), icon (可选), description (可选)
 
-- name: "B3n1gn X"
-  url: "https://benign.host"
-  icon: "https://benign.host/_astro/24841247_iUHr3.webp"
-  description: "Overflow Stack Developer."
-
 - name: "Kazuha"
   url: "https://kaze-kazuha.top"
   # icon: (无图标，显示默认)
@@ -25,3 +20,13 @@
   url: "https://zzxzzk115.github.io"
   icon: "https://zzxzzk115.github.io/blog/logo.png"
   description: "Talk is cheap, show me the code."
+
+- name: "B3n1gn X"
+  url: "https://benign.host"
+  icon: "https://benign.host/_astro/24841247_iUHr3.webp"
+  description: "Overflow Stack Developer."
+
+- name: "雪梅"
+  url: "https://lifelong5.github.io"
+  # icon: (无图标，显示默认)
+  # description: "我的小女朋友的博客"
