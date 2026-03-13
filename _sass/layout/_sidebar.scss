@@ -34,7 +34,10 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     transition: transform 0.45s v.$ease-spring;
 
     /* Extend sidebar bg to the left to cover spring overshoot gap */
-    box-shadow: -100vw 0 0 0 var(--sidebar-bg);
+    $overshoot: 3rem;
+    margin-left: -$overshoot;
+    padding-left: $overshoot;
+    width: calc(#{v.$sidebar-width} + #{$overshoot});
 
     [#{$sidebar-display}] & {
       transform: translateX(0);
