@@ -15,6 +15,9 @@ tabs:
   tags: 标签
   archives: 归档
   about: 关于
+  friends: 友链
+  gallery: 相册
+  tools: 工具
 
 # the text displayed in the search bar & search results
 search:
