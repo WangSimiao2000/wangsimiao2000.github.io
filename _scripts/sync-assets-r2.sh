@@ -15,15 +15,15 @@ set -euo pipefail
 ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 echo "正在同步文章配图到 R2..."
-echo "  Endpoint: ${ENDPOINT}"
-echo "  Bucket: ${R2_CDN_BUCKET_NAME}"
 aws s3 sync assets/posts/ "s3://${R2_CDN_BUCKET_NAME}/assets/posts/" \
   --endpoint-url "$ENDPOINT" \
-  --size-only
+  --size-only \
+  --quiet
 
 echo "正在同步头像到 R2..."
 aws s3 sync assets/img/avatar/ "s3://${R2_CDN_BUCKET_NAME}/assets/img/avatar/" \
   --endpoint-url "$ENDPOINT" \
-  --size-only
+  --size-only \
+  --quiet
 
 echo "同步完成"
