@@ -2,13 +2,14 @@
 
 <aside aria-label="Sidebar" id="sidebar" class="d-flex flex-column align-items-end">
   <header class="profile-wrapper">
-    <a href="{{ '/' | relative_url }}" id="avatar" class="rounded-circle">
+    <a href="https://github.com/WangSimiao2000/wangsimiao2000.github.io/new/main/_posts" id="avatar" class="rounded-circle" style="position:relative;cursor:pointer;" onclick="openNewPost();return false;">
       {%- if site.avatar != empty and site.avatar -%}
         {%- capture avatar_url -%}
           {% include media-url.html src=site.avatar %}
         {%- endcapture -%}
         <img src="{{- avatar_url -}}" width="112" height="112" alt="avatar" onerror="this.style.display='none'">
       {%- endif -%}
+      <span class="avatar-tooltip" style="position:absolute;bottom:0.4rem;left:50%;transform:translateX(-50%);font-size:0.6rem;letter-spacing:0.08em;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.45);padding:0.1rem 0.45rem;border-radius:0.25rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.4s ease;">写文章</span>
     </a>
 
     <a class="site-title d-block" href="{{ '/' | relative_url }}">{{ site.title }}</a>
@@ -103,3 +104,24 @@
   <!-- .sidebar-bottom -->
 </aside>
 <!-- #sidebar -->
+
+<script>
+function openNewPost() {
+  var n = new Date();
+  var d = n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
+  var t = d + ' ' + String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + ':00 +0800';
+  var v = '---\ntitle: \ndate: ' + t + '\ncategories: []\ntags: []\n---\n\n';
+  var f = d + '-your-title.md';
+  var base = 'https://github.com/WangSimiao2000/wangsimiao2000.github.io/new/main/_posts';
+  window.open(base + '?filename=' + encodeURIComponent(f) + '&value=' + encodeURIComponent(v), '_blank');
+}
+
+(function() {
+  var avatar = document.getElementById('avatar');
+  var tip = document.querySelector('.avatar-tooltip');
+  if (avatar && tip) {
+    avatar.addEventListener('mouseenter', function() { tip.style.opacity = '1'; });
+    avatar.addEventListener('mouseleave', function() { tip.style.opacity = '0'; });
+  }
+})();
+</script>

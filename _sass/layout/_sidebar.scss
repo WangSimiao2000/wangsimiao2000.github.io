@@ -88,6 +88,7 @@ $sidebar-display: 'sidebar-display'; /* the attribute for sidebar display */
     padding-left: 2.5rem;
     padding-right: 1.25rem;
     width: 100%;
+    position: relative;
 
     @include bp.lg {
       margin-top: 3rem;
