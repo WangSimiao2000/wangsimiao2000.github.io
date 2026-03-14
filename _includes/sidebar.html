@@ -72,6 +72,8 @@
           {%- endcapture -%}
         {% when 'wechat' %}
           {%- assign url = 'javascript:void(0)' -%}
+        {% when 'qq' %}
+          {%- assign url = 'javascript:void(0)' -%}
         {% when 'rss' %}
           {% assign url = '/feed.xml' | relative_url %}
         {% else %}
@@ -89,6 +91,10 @@
             {% assign link_types = 'noopener noreferrer' %}
           {% endunless %}
 
+          {% if entry.type == 'email' %}
+            target="_self"
+          {% endif %}
+
           {% if entry.type == 'mastodon' %}
             {% assign link_types = link_types | append: ' me' | strip %}
           {% endif %}
@@ -99,6 +105,9 @@
 
           {% if entry.type == 'wechat' %}
             onclick="document.getElementById('wechat-modal').style.display='flex';return false;"
+          {% endif %}
+          {% if entry.type == 'qq' %}
+            onclick="document.getElementById('qq-modal').style.display='flex';return false;"
           {% endif %}
         >
           <i class="{{ entry.icon }}"></i>
@@ -115,6 +124,14 @@
   <div onclick="event.stopPropagation()" style="background:#fff;border-radius:12px;padding:1.5rem;text-align:center;max-width:280px;cursor:default;">
     <img src="/assets/img/wechat-qr.png" alt="微信二维码" style="width:220px;height:220px;border-radius:6px;">
     <p style="margin:0.8rem 0 0;font-size:0.85rem;color:#666;">微信扫码添加好友</p>
+  </div>
+</div>
+
+<!-- QQ QR Modal -->
+<div id="qq-modal" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;cursor:pointer;">
+  <div onclick="event.stopPropagation()" style="background:#fff;border-radius:12px;padding:1.5rem;text-align:center;max-width:280px;cursor:default;">
+    <img src="/assets/img/qq-qr.png" alt="QQ二维码" style="width:220px;height:220px;border-radius:6px;">
+    <p style="margin:0.8rem 0 0;font-size:0.85rem;color:#666;">QQ 扫码添加好友</p>
   </div>
 </div>
 

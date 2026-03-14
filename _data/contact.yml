@@ -25,7 +25,7 @@
 # 即时通讯
 - type: qq
   icon: "fab fa-qq"
-  url: "https://wpa.qq.com/msgrd?v=3&uin=1872557359&site=qq&menu=yes"
+  noblank: true
 
 - type: wechat
   icon: "fab fa-weixin"
