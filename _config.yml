@@ -34,6 +34,7 @@ webmaster_verifications:
   bing: "AED17E5D4F90FD73F2F67459465E4A3C"
 
 # Appearance
+cdn: "https://cdn.mickeymiao.cn"
 avatar: /assets/img/avatar/avatar.png
 toc: true
 
@@ -120,9 +121,9 @@ compress_html:
 # 配置你的 R2 公开访问域名和相册目录前缀
 r2_gallery:
   # R2 公开访问域名（自定义域名或 R2.dev 公开域名），不要以 / 结尾
-  public_url: "https://pub-7bf80453844047b1bd82b30ec1edd37e.r2.dev"
+  public_url: "https://cdn.mickeymiao.cn"
   # R2 bucket 中相册图片的前缀路径，留空表示根目录
-  prefix: ""
+  prefix: "gallery/"
 
 exclude:
   - "*.gem"
