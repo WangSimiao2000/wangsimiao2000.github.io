@@ -70,6 +70,8 @@
           {%- capture url -%}
             mailto:{{ site.social.email }}
           {%- endcapture -%}
+        {% when 'wechat' %}
+          {%- assign url = 'javascript:void(0)' -%}
         {% when 'rss' %}
           {% assign url = '/feed.xml' | relative_url %}
         {% else %}
@@ -94,6 +96,10 @@
           {% unless link_types == empty %}
             rel="{{ link_types }}"
           {% endunless %}
+
+          {% if entry.type == 'wechat' %}
+            onclick="document.getElementById('wechat-modal').style.display='flex';return false;"
+          {% endif %}
         >
           <i class="{{ entry.icon }}"></i>
         </a>
@@ -103,6 +109,14 @@
   <!-- .sidebar-bottom -->
 </aside>
 <!-- #sidebar -->
+
+<!-- WeChat QR Modal -->
+<div id="wechat-modal" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;cursor:pointer;">
+  <div onclick="event.stopPropagation()" style="background:#fff;border-radius:12px;padding:1.5rem;text-align:center;max-width:280px;cursor:default;">
+    <img src="/assets/img/wechat-qr.png" alt="微信二维码" style="width:220px;height:220px;border-radius:6px;">
+    <p style="margin:0.8rem 0 0;font-size:0.85rem;color:#666;">微信扫码添加好友</p>
+  </div>
+</div>
 
 <script>
 function openNewPost() {
