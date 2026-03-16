@@ -31,7 +31,7 @@ order: 4
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: 50% 50%;
 }
 .about-hero .hero-text h2 {
   margin: 0 0 0.4rem;
@@ -115,6 +115,7 @@ order: 4
 /* Full-width card (spans both columns) */
 .about-card.full {
   column-span: all;
+  margin-top: 1.2rem;
 }
 
 /* Tag cloud for travel */
@@ -144,18 +145,23 @@ order: 4
   gap: 0.5rem;
   padding: 0.6rem 1.4rem;
   border-radius: 8px;
-  background: var(--sidebar-btn-bg, var(--link-color));
-  color: #fff !important;
+  background: var(--card-bg);
+  color: var(--link-color) !important;
+  border: 1px solid var(--btn-border-color);
   font-size: 0.95rem;
   text-decoration: none !important;
-  border-bottom: none !important;
+  border-bottom: 1px solid var(--btn-border-color) !important;
+  box-shadow: var(--card-shadow);
   transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
-              box-shadow 0.3s ease;
+              box-shadow 0.3s ease,
+              background 0.3s ease;
 }
 .resume-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgb(120 110 100 / 15%);
+  background: var(--link-color);
   color: #fff !important;
+  border-color: var(--link-color) !important;
 }
 
 /* Edu / Work items */
