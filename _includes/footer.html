@@ -39,6 +39,10 @@
   </p>
 
   <p>
+    {%- capture _modified -%}
+      <a href="https://github.com/WangSimiao2000/wangsimiao2000.github.io" target="_blank" rel="noopener">魔改</a>
+    {%- endcapture -%}
+
     {%- capture _platform -%}
       <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a>
     {%- endcapture -%}
@@ -51,6 +55,6 @@
       >Chirpy</a>
     {%- endcapture -%}
 
-    {{ site.data.locales[include.lang].meta | replace: ':PLATFORM', _platform | replace: ':THEME', _theme }}
+    {{ site.data.locales[include.lang].meta | replace: ':MODIFIED', _modified | replace: ':PLATFORM', _platform | replace: ':THEME', _theme }}
   </p>
 </footer>
