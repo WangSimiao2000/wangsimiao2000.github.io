@@ -26,4 +26,9 @@ aws s3 sync assets/img/avatar/ "s3://${R2_CDN_BUCKET_NAME}/assets/img/avatar/" \
   --size-only \
   --quiet
 
+echo "正在同步个人照片到 R2..."
+aws s3 cp assets/img/photo.jpg "s3://${R2_CDN_BUCKET_NAME}/assets/img/photo.jpg" \
+  --endpoint-url "$ENDPOINT" \
+  --quiet
+
 echo "同步完成"

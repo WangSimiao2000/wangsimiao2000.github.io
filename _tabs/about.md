@@ -4,66 +4,286 @@ icon: fas fa-info-circle
 order: 4
 ---
 
-{% comment %}
-> Add Markdown syntax content to file `_tabs/about.md`{: .filepath } and it will show up on this page.
-{: .prompt-tip }
-{% endcomment %}
+<style>
+/* ===== About Page Layout ===== */
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+/* Photo card */
+.about-card.photo-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.photo-circle {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgb(120 110 100 / 12%);
+}
+.photo-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.about-hero .hero-text h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.6rem;
+}
+.about-hero .hero-text p {
+  margin: 0;
+  color: var(--text-muted-color);
+  font-size: 0.95rem;
+}
+.about-hero .hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
 
-## 嗨，我是王思淼！
+/* Masonry columns */
+.about-grid {
+  columns: 2;
+  column-gap: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+.about-grid > .about-card {
+  break-inside: avoid;
+  margin-bottom: 1.2rem;
+}
+@media (max-width: 768px) {
+  .about-grid {
+    columns: 1;
+  }
+  .about-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .about-hero .hero-badges {
+    justify-content: center;
+  }
+}
 
-[![Bilibili@鄙人米奇喵](https://img.shields.io/badge/Bilibili-鄙人米奇喵-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white)](https://space.bilibili.com/36913332)
-[![Steam: MickeyMiao](https://img.shields.io/badge/Steam-MickeyMiao-000000?style=for-the-badge&logo=steam&logoColor=white)](https://steamcommunity.com/id/MickeyMiao/)
+/* Card */
+.about-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.2rem 1.4rem;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.3s cubic-bezier(0.22,1,0.36,1);
+}
+.about-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgb(120 110 100 / 10%);
+}
+.about-card h3 {
+  margin: 0 0 0.7rem;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.about-card h3 i {
+  font-size: 1rem;
+  color: var(--link-color);
+}
+.about-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.about-card ul li {
+  padding: 0.25rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.about-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
 
----
+/* Full-width card (spans both columns) */
+.about-card.full {
+  column-span: all;
+}
 
-### 自我简介
+/* Tag cloud for travel */
+.travel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.travel-tag {
+  display: inline-block;
+  background: var(--tag-hover, rgba(0,0,0,0.04));
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.travel-tag:hover {
+  transform: translateY(-2px);
+}
 
-- **生日：** 2000年11月06日
-- **家乡：** 四川成都
-- **称谓：** He / Him
+/* Resume button */
+.resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  background: var(--sidebar-btn-bg, var(--link-color));
+  color: #fff !important;
+  font-size: 0.95rem;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.3s ease;
+}
+.resume-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(120 110 100 / 15%);
+  color: #fff !important;
+}
 
-### 教育背景
+/* Edu / Work items */
+.exp-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.95rem;
+}
+.exp-item .exp-flag {
+  flex-shrink: 0;
+}
+.exp-item .exp-org {
+  font-weight: 600;
+}
+.exp-item .exp-role {
+  color: var(--text-muted-color);
+  font-size: 0.88rem;
+}
+</style>
 
-- 🇬🇧 **University of Leeds** - 高性能图形与游戏工程硕士
-- 🇨🇳 **西南石油大学** - 软件工程学士
+<!-- Hero -->
+<div class="about-hero">
+  <div class="hero-text">
+    <h2>嗨，我是王思淼 👋</h2>
+    <p>图形渲染开发工程师 @ 小米 · He / Him · 2000.11.06 · 四川成都</p>
+    <div class="hero-badges">
+      <a href="https://space.bilibili.com/36913332" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/badge/Bilibili-鄙人米奇喵-00A1D6?style=flat-square&logo=bilibili&logoColor=white" alt="Bilibili">
+      </a>
+      <a href="https://steamcommunity.com/id/MickeyMiao/" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/badge/Steam-MickeyMiao-000?style=flat-square&logo=steam&logoColor=white" alt="Steam">
+      </a>
+      <a href="https://github.com/wangsimiao2000" target="_blank" rel="noopener">
+        <img src="https://img.shields.io/badge/GitHub-WangSimiao2000-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+      </a>
+    </div>
+  </div>
+</div>
 
-### 工作
+<div class="about-grid">
 
-- 🏢 **小米** - 图形渲染开发工程师
+  <!-- 照片 -->
+  <div class="about-card photo-card">
+    <div class="photo-circle">
+      <!-- 把这里换成你的生活照路径，任意尺寸都会自动居中裁圆 -->
+      <img src="https://cdn.mickeymiao.cn/assets/img/photo.jpg" alt="王思淼" loading="lazy">
+    </div>
+  </div>
 
-### 游戏
+  <!-- 教育背景 -->
+  <div class="about-card">
+    <h3><i class="fas fa-graduation-cap"></i> 教育背景</h3>
+    <div class="exp-item">
+      <span class="exp-flag">🇬🇧</span>
+      <div>
+        <span class="exp-org">University of Leeds</span><br>
+        <span class="exp-role">高性能图形与游戏工程硕士</span>
+      </div>
+    </div>
+    <div class="exp-item">
+      <span class="exp-flag">🇨🇳</span>
+      <div>
+        <span class="exp-org">西南石油大学</span><br>
+        <span class="exp-role">软件工程学士</span>
+      </div>
+    </div>
+  </div>
 
-最喜欢的游戏是 **Minecraft**，我也是一个B站小 up，主要更新 Minecraft 的视频，不过已经很久没更新了 😅
+  <!-- 工作 & 爱好 -->
+  <div class="about-card">
+    <h3><i class="fas fa-briefcase"></i> 工作 & 爱好</h3>
+    <div class="exp-item">
+      <span class="exp-flag">🏢</span>
+      <div>
+        <span class="exp-org">小米</span><br>
+        <span class="exp-role">图形渲染开发工程师</span>
+      </div>
+    </div>
+    <p style="margin-top:0.6rem;">除了写代码，还喜欢<strong>画画</strong>、<strong>做视频</strong>、<strong>玩游戏</strong>。闲暇时间喜欢和朋友们一起做游戏，目前参加过两次 Game Jam。欢迎美术、音效、策划大佬一起组队！</p>
+  </div>
 
-PC 上最近在玩**天国拯救2**，近几年觉得好玩的游戏：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井
+  <!-- 游戏 -->
+  <div class="about-card">
+    <h3><i class="fas fa-gamepad"></i> 游戏</h3>
+    <p>最喜欢的游戏是 <strong>Minecraft</strong>，也是一个B站小 up，主要更新 Minecraft 视频，不过已经很久没更新了 😅</p>
+    <p style="margin-top:0.5rem;">PC 上最近在玩<strong>天国拯救2</strong>。近几年觉得好玩的：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井</p>
+    <p style="margin-top:0.5rem; color:var(--text-muted-color); font-size:0.88rem;">社交手游：王者荣耀欧洲第66上官婉儿 · 和平精英多赛季战神 · 金铲铲多赛季大师</p>
+  </div>
 
-社交手游很久没玩了：王者荣耀欧洲第66上官婉儿、和平精英多赛季战神、金铲铲多赛季大师
+  <!-- 猫猫 -->
+  <div class="about-card">
+    <h3><i class="fas fa-cat"></i> 猫猫</h3>
+    <p>养了两只流浪猫猫，叫<strong>转转</strong>和<strong>圈圈</strong>。不过小狸花圈圈老在我床上尿尿，所以只能送回流浪基地了 😿</p>
+  </div>
 
-### 爱好
+  <!-- 旅行 -->
+  <div class="about-card full">
+    <h3><i class="fas fa-plane"></i> 旅行 · 8个国家 18个城市</h3>
+    <p>感谢父母给的机会，让我在学生时期有机会走过这些地方：</p>
+    <div class="travel-tags">
+      <span class="travel-tag">🇬🇧 利兹</span>
+      <span class="travel-tag">🇬🇧 曼彻斯特</span>
+      <span class="travel-tag">🇬🇧 伦敦</span>
+      <span class="travel-tag">🇬🇧 爱丁堡</span>
+      <span class="travel-tag">🇬🇧 赫尔河畔金斯顿</span>
+      <span class="travel-tag">🇫🇷 巴黎</span>
+      <span class="travel-tag">🇬🇷 雅典</span>
+      <span class="travel-tag">🇬🇷 圣托里尼岛</span>
+      <span class="travel-tag">🇮🇹 罗马</span>
+      <span class="travel-tag">🇻🇦 梵蒂冈</span>
+      <span class="travel-tag">🇪🇸 巴塞罗那</span>
+      <span class="travel-tag">🇪🇸 马德里</span>
+      <span class="travel-tag">🇵🇹 里斯本</span>
+      <span class="travel-tag">🇪🇬 开罗</span>
+      <span class="travel-tag">🇪🇬 卢克索</span>
+      <span class="travel-tag">🇪🇬 阿斯旺</span>
+      <span class="travel-tag">🇪🇬 吉萨</span>
+      <span class="travel-tag">🇪🇬 赫尔格达</span>
+    </div>
+  </div>
 
-除了写代码，我还喜欢**画画**、**做视频**、**玩游戏**。
+</div>
 
-闲暇时间喜欢和朋友们一起做游戏，目前参加过两次 Game Jam。欢迎美术、音效、策划大佬和我一起组队！
-
-### 旅行
-
-感谢父母给的机会，让我在学生时期有机会去过 **8个国家18个城市**：
-
-- 🇬🇧 **英国：** 利兹、曼彻斯特、伦敦、爱丁堡、赫尔河畔金斯顿
-- 🇫🇷 **法国：** 巴黎
-- 🇬🇷 **希腊：** 雅典、爱琴海圣托里尼岛
-- 🇮🇹 **意大利：** 罗马
-- 🇻🇦 **梵蒂冈**
-- 🇪🇸 **西班牙：** 巴塞罗那、马德里
-- 🇵🇹 **葡萄牙：** 里斯本
-- 🇪🇬 **埃及：** 开罗、卢克索、阿斯旺、吉萨、赫尔格达
-
-### 🐱 猫猫
-
-我养了两只流浪猫猫，叫**转转**和**圈圈**。不过小狸花圈圈老在我床上尿尿，所以只能送回流浪基地了 😿
-
----
-
-下载我的简历：
-
-[![下载我的简历](https://img.shields.io/badge/Resume-下载-blue?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](/assets/resume/WangSimiao_09.pdf)
+<!-- Resume -->
+<div style="text-align:center; margin-top:0.5rem;">
+  <a class="resume-btn" href="/assets/resume/WangSimiao_09.pdf" target="_blank" rel="noopener">
+    <i class="fas fa-file-pdf"></i> 下载我的简历
+  </a>
+</div>
