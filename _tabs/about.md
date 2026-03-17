@@ -191,13 +191,13 @@ order: 4
     <p>图形渲染开发工程师 @ 小米 · He / Him · 2000.11.06 · 四川成都</p>
     <div class="hero-badges">
       <a href="https://space.bilibili.com/36913332" target="_blank" rel="noopener">
-        <img src="https://img.shields.io/badge/Bilibili-鄙人米奇喵-00A1D6?style=flat-square&logo=bilibili&logoColor=white" alt="Bilibili">
+        <img class="no-popup" src="https://img.shields.io/badge/Bilibili-鄙人米奇喵-00A1D6?style=flat-square&logo=bilibili&logoColor=white" alt="Bilibili">
       </a>
       <a href="https://steamcommunity.com/id/MickeyMiao/" target="_blank" rel="noopener">
-        <img src="https://img.shields.io/badge/Steam-MickeyMiao-000?style=flat-square&logo=steam&logoColor=white" alt="Steam">
+        <img class="no-popup" src="https://img.shields.io/badge/Steam-MickeyMiao-000?style=flat-square&logo=steam&logoColor=white" alt="Steam">
       </a>
       <a href="https://github.com/wangsimiao2000" target="_blank" rel="noopener">
-        <img src="https://img.shields.io/badge/GitHub-WangSimiao2000-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+        <img class="no-popup" src="https://img.shields.io/badge/GitHub-WangSimiao2000-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
       </a>
     </div>
   </div>

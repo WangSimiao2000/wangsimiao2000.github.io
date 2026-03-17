@@ -3,6 +3,10 @@
 [![Build and Deploy](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/pages-deploy.yml/badge.svg)](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/pages-deploy.yml)
 [![Daily R2 Gallery Sync](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/r2-gallery-sync.yml/badge.svg)](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/r2-gallery-sync.yml)
 
+<a href="https://space.bilibili.com/36913332"><img src="https://img.shields.io/badge/Bilibili-鄙人米奇喵-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white" alt="Bilibili@鄙人米奇喵"></a>
+<a href="https://steamcommunity.com/id/MickeyMiao/"><img src="https://img.shields.io/badge/Steam-MickeyMiao-000000?style=for-the-badge&logo=steam&logoColor=white" alt="Steam: MickeyMiao"></a>
+<a href="https://github.com/WangSimiao2000"><img src="https://img.shields.io/badge/GitHub-WangSimiao2000-181717?style=for-the-badge&logo=github" alt="GitHub: WangSimiao2000"></a>
+
 基于 [Jekyll](https://jekyllrb.com/) + [Chirpy](https://github.com/cotes2020/jekyll-theme-chirpy) 主题的个人博客。
 
 🔗 **博客地址**: [https://blog.mickeymiao.cn](https://blog.mickeymiao.cn)
