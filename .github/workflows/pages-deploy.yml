@@ -96,6 +96,31 @@ jobs:
             \-\-disable-external \
             \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
 
+      - name: Verify pages
+        run: |
+          echo "Checking generated pages..."
+          pages=("index.html" "browse/index.html" "archives/index.html" "about/index.html" "gallery/index.html" "friends/index.html" "tools/index.html" "feed.xml" "sitemap.xml")
+          failed=0
+          for p in "${pages[@]}"; do
+            if [ -f "_site/$p" ]; then
+              echo "  ✓ $p"
+            else
+              echo "  ✗ $p (MISSING)"
+              failed=1
+            fi
+          done
+          post_count=$(find _site -path "*/posts/*" -name "*.html" | wc -l)
+          echo "  Posts: $post_count"
+          cat_count=$(find _site/categories -name "index.html" 2>/dev/null | wc -l)
+          echo "  Category pages: $cat_count"
+          tag_count=$(find _site/tags -name "index.html" 2>/dev/null | wc -l)
+          echo "  Tag pages: $tag_count"
+          if [ "$failed" -eq 1 ] || [ "$post_count" -eq 0 ]; then
+            echo "Page verification FAILED"
+            exit 1
+          fi
+          echo "All pages verified."
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4
         with:
