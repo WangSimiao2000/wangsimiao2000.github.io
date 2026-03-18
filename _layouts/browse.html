@@ -140,17 +140,22 @@ layout: page
 </div>
 
 <script>
-(function() {
-  var tabs = document.querySelectorAll('.browse-tab');
-  var panels = document.querySelectorAll('.browse-panel');
-  tabs.forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      tabs.forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-pressed', 'false'); });
-      panels.forEach(function(p) { p.style.display = 'none'; });
-      tab.classList.add('active');
-      tab.setAttribute('aria-pressed', 'true');
-      document.getElementById(tab.dataset.target).style.display = 'block';
+if (!window._browseTabsInit) {
+  window._browseTabsInit = true;
+  document.addEventListener('click', function(e) {
+    var tab = e.target.closest('.browse-tab');
+    if (!tab) return;
+    document.querySelectorAll('.browse-tab').forEach(function(t) {
+      t.classList.remove('active');
+      t.setAttribute('aria-pressed', 'false');
     });
+    document.querySelectorAll('.browse-panel').forEach(function(p) {
+      p.style.display = 'none';
+    });
+    tab.classList.add('active');
+    tab.setAttribute('aria-pressed', 'true');
+    var target = document.getElementById(tab.dataset.target);
+    if (target) target.style.display = 'block';
   });
-})();
+}
 </script>
