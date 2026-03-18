@@ -87,6 +87,18 @@ async function navigate(url, pushState = true) {
     const newMain = newContainer.querySelector('main');
     if (mainContent && newMain) {
       mainContent.innerHTML = newMain.innerHTML;
+
+      // Re-execute inline scripts in the new content
+      mainContent.querySelectorAll('script').forEach((oldScript) => {
+        const newScript = document.createElement('script');
+        if (oldScript.src) {
+          newScript.src = oldScript.src;
+        } else {
+          newScript.textContent = oldScript.textContent;
+        }
+        oldScript.replaceWith(newScript);
+      });
+
       console.log('[PJAX] ✓ Main content replaced');
     } else {
       console.warn('[PJAX] ✗ Main content not found', { mainContent: !!mainContent, newMain: !!newMain });
