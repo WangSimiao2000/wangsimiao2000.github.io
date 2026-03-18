@@ -2,17 +2,22 @@
 @use '../abstracts/breakpoints' as bp;
 
 .gallery-masonry {
-  columns: var(--gallery-columns, 2);
-  column-gap: 12px;
+  display: flex;
+  gap: 12px;
 
   @include bp.lt(bp.get(sm)) {
-    columns: 1;
+    flex-direction: column;
   }
 }
 
+.gallery-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .gallery-item {
-  break-inside: avoid;
-  margin-bottom: 12px;
   cursor: pointer;
   border-radius: 6px;
   overflow: hidden;
