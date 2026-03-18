@@ -120,8 +120,11 @@ async function navigate(url, pushState = true) {
       history.pushState({}, '', url);
     }
 
-    // Update sidebar active state
+    // Update sidebar active state (preserve scroll position)
+    const sidebar = document.getElementById('sidebar');
+    const sidebarScrollTop = sidebar ? sidebar.scrollTop : 0;
     updateActiveNav(new URL(url, window.location.origin).pathname);
+    if (sidebar) sidebar.scrollTop = sidebarScrollTop;
     console.log('[PJAX] Sidebar nav updated');
 
     // Scroll to top
