@@ -2,12 +2,31 @@
  * Lightweight PJAX-like navigation
  * Intercepts internal link clicks, fetches new page via AJAX,
  * replaces only the #swup container content, and updates title/URL.
+ *
+ * Falls back to full page load when navigating between different page types
+ * (e.g. browse → post) since each type loads a different JS bundle.
  */
 
 const CONTAINER_ID = 'swup';
 const TRANSITION_DURATION = 150; // ms
 
 let isNavigating = false;
+
+/**
+ * Detect the JS bundle name from a parsed document by looking at
+ * the <script> tag that loads from /assets/js/dist/*.min.js
+ */
+function detectBundle(doc) {
+  const scripts = doc.querySelectorAll('script[src]');
+  for (const s of scripts) {
+    const m = s.getAttribute('src').match(/\/assets\/js\/dist\/(\w+)\.min\.js/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/** The bundle loaded on the current (initial) page */
+const currentBundle = detectBundle(document);
 
 function shouldIntercept(el) {
   // Only intercept internal same-origin links
@@ -75,6 +94,14 @@ async function navigate(url, pushState = true) {
     const newContainer = doc.getElementById(CONTAINER_ID);
     if (!newContainer) {
       console.warn('[PJAX] New page has no #swup container, falling back');
+      window.location.href = url;
+      return;
+    }
+
+    // If the new page needs a different JS bundle, fall back to full load
+    const newBundle = detectBundle(doc);
+    if (newBundle !== currentBundle) {
+      console.log(`[PJAX] Bundle mismatch (${currentBundle} → ${newBundle}), full page load`);
       window.location.href = url;
       return;
     }
