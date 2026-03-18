@@ -30,9 +30,15 @@
 
           {% elsif page.layout == 'category' or page.layout == 'tag' %}
             <span>
-              <a href="{{ item | append: '/' | relative_url }}">
-                {{- site.data.locales[include.lang].tabs[item] | default: page.title -}}
-              </a>
+              {% if page.layout == 'category' %}
+                <a href="{{ '/browse/' | relative_url }}">
+                  {{- site.data.locales[include.lang].layout.category | default: 'Categories' -}}
+                </a>
+              {% else %}
+                <a href="{{ '/browse/' | relative_url }}">
+                  {{- site.data.locales[include.lang].layout.tag | default: 'Tags' -}}
+                </a>
+              {% endif %}
             </span>
           {% endif %}
         {% endfor %}
