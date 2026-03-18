@@ -127,6 +127,22 @@ async function navigate(url, pushState = true) {
     // Update title
     document.title = doc.title;
 
+    // Update breadcrumb from new page
+    const breadcrumb = document.getElementById('breadcrumb');
+    const newBreadcrumb = doc.getElementById('breadcrumb');
+    if (breadcrumb && newBreadcrumb) {
+      breadcrumb.innerHTML = newBreadcrumb.innerHTML;
+      console.log('[PJAX] ✓ Breadcrumb updated');
+    }
+
+    // Update topbar title from new page
+    const topbarTitle = document.getElementById('topbar-title');
+    const newTopbarTitle = doc.getElementById('topbar-title');
+    if (topbarTitle && newTopbarTitle) {
+      topbarTitle.innerHTML = newTopbarTitle.innerHTML;
+      console.log('[PJAX] ✓ Topbar title updated');
+    }
+
     // Update URL
     if (pushState) {
       history.pushState({}, '', url);

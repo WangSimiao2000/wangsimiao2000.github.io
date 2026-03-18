@@ -12,6 +12,42 @@
         <!-- index page -->
         <span>{{ site.data.locales[include.lang].tabs.home | capitalize }}</span>
 
+      {% elsif page.layout == 'category' %}
+        <span>
+          <a href="{{ '/' | relative_url }}">
+            {{- site.data.locales[include.lang].tabs.home | capitalize -}}
+          </a>
+        </span>
+        <span>
+          <a href="{{ '/browse/' | relative_url }}">
+            {{- site.data.locales[include.lang].tabs.browse | default: '浏览' -}}
+          </a>
+        </span>
+        <span>
+          <a href="{{ '/browse/' | relative_url }}">
+            {{- site.data.locales[include.lang].layout.category | default: '分类' -}}
+          </a>
+        </span>
+        <span>{{ page.title }}</span>
+
+      {% elsif page.layout == 'tag' %}
+        <span>
+          <a href="{{ '/' | relative_url }}">
+            {{- site.data.locales[include.lang].tabs.home | capitalize -}}
+          </a>
+        </span>
+        <span>
+          <a href="{{ '/browse/' | relative_url }}">
+            {{- site.data.locales[include.lang].tabs.browse | default: '浏览' -}}
+          </a>
+        </span>
+        <span>
+          <a href="{{ '/browse/' | relative_url }}">
+            {{- site.data.locales[include.lang].layout.tag | default: '标签' -}}
+          </a>
+        </span>
+        <span>{{ page.title }}</span>
+
       {% else %}
         {% for item in paths %}
           {% if forloop.first %}
@@ -27,24 +63,6 @@
             {% else %}
               <span>{{ page.title }}</span>
             {% endif %}
-
-          {% elsif page.layout == 'category' or page.layout == 'tag' %}
-            <span>
-              <a href="{{ '/browse/' | relative_url }}">
-                {{- site.data.locales[include.lang].tabs.browse | default: '浏览' -}}
-              </a>
-            </span>
-            <span>
-              {% if page.layout == 'category' %}
-                <a href="{{ '/browse/' | relative_url }}">
-                  {{- site.data.locales[include.lang].layout.category | default: '分类' -}}
-                </a>
-              {% else %}
-                <a href="{{ '/browse/' | relative_url }}">
-                  {{- site.data.locales[include.lang].layout.tag | default: '标签' -}}
-                </a>
-              {% endif %}
-            </span>
           {% endif %}
         {% endfor %}
       {% endif %}
