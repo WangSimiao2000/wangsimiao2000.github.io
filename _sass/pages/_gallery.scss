@@ -2,15 +2,11 @@
 @use '../abstracts/breakpoints' as bp;
 
 .gallery-masonry {
-  columns: 2;
+  columns: var(--gallery-columns, 2);
   column-gap: 12px;
 
   @include bp.lt(bp.get(sm)) {
     columns: 1;
-  }
-
-  @include bp.xl {
-    columns: 3;
   }
 }
 

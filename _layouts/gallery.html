@@ -9,7 +9,7 @@ layout: page
 {% assign remainder = total | modulo: per_page %}
 {% if remainder > 0 %}{% assign total_pages = total_pages | plus: 1 %}{% endif %}
 
-<div class="gallery-masonry" id="gallery-grid">
+<div class="gallery-masonry" id="gallery-grid" style="--gallery-columns: {{ page.columns | default: 2 }}">
   {% for photo in site.data.gallery limit: per_page %}
     <div class="gallery-item" onclick="openLB('{{ photo.image }}')">
       <img src="{{ photo.image }}" alt="{{ photo.title | default: '照片' }}" loading="lazy" />

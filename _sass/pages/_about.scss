@@ -93,7 +93,7 @@
 }
 
 .about-grid {
-  columns: 2;
+  columns: var(--about-columns, 2);
   column-gap: 1.2rem;
   margin-bottom: 1.5rem;
 
