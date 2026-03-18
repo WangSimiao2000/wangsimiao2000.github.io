@@ -12,7 +12,7 @@
         <!-- index page -->
         <span>{{ site.data.locales[include.lang].tabs.home | capitalize }}</span>
 
-      {% elsif page.layout == 'category' %}
+      {% elsif page.layout == 'category' or page.layout == 'tag' %}
         <span>
           <a href="{{ '/' | relative_url }}">
             {{- site.data.locales[include.lang].tabs.home | capitalize -}}
@@ -21,29 +21,6 @@
         <span>
           <a href="{{ '/browse/' | relative_url }}">
             {{- site.data.locales[include.lang].tabs.browse | default: '浏览' -}}
-          </a>
-        </span>
-        <span>
-          <a href="{{ '/browse/' | relative_url }}">
-            {{- site.data.locales[include.lang].layout.category | default: '分类' -}}
-          </a>
-        </span>
-        <span>{{ page.title }}</span>
-
-      {% elsif page.layout == 'tag' %}
-        <span>
-          <a href="{{ '/' | relative_url }}">
-            {{- site.data.locales[include.lang].tabs.home | capitalize -}}
-          </a>
-        </span>
-        <span>
-          <a href="{{ '/browse/' | relative_url }}">
-            {{- site.data.locales[include.lang].tabs.browse | default: '浏览' -}}
-          </a>
-        </span>
-        <span>
-          <a href="{{ '/browse/' | relative_url }}">
-            {{- site.data.locales[include.lang].layout.tag | default: '标签' -}}
           </a>
         </span>
         <span>{{ page.title }}</span>

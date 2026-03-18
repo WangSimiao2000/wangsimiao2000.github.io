@@ -111,9 +111,9 @@ jobs:
           done
           post_count=$(find _site -path "*/posts/*" -name "*.html" | wc -l)
           echo "  Posts: $post_count"
-          cat_count=$(find _site/categories -name "index.html" 2>/dev/null | wc -l)
+          cat_count=$(find _site/browse/categories -name "index.html" 2>/dev/null | wc -l)
           echo "  Category pages: $cat_count"
-          tag_count=$(find _site/tags -name "index.html" 2>/dev/null | wc -l)
+          tag_count=$(find _site/browse/tags -name "index.html" 2>/dev/null | wc -l)
           echo "  Tag pages: $tag_count"
           if [ "$failed" -eq 1 ] || [ "$post_count" -eq 0 ]; then
             echo "Page verification FAILED"

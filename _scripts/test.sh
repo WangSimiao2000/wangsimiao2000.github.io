@@ -86,7 +86,7 @@ check_pages() {
 
   # Check that category pages exist
   local cat_count
-  cat_count=$(find "$base/categories" -name "index.html" 2>/dev/null | wc -l)
+  cat_count=$(find "$base/browse/categories" -name "index.html" 2>/dev/null | wc -l)
   if [[ $cat_count -gt 1 ]]; then
     echo "  ✓ category pages ($cat_count found)"
   else
@@ -96,7 +96,7 @@ check_pages() {
 
   # Check that tag pages exist
   local tag_count
-  tag_count=$(find "$base/tags" -name "index.html" 2>/dev/null | wc -l)
+  tag_count=$(find "$base/browse/tags" -name "index.html" 2>/dev/null | wc -l)
   if [[ $tag_count -gt 1 ]]; then
     echo "  ✓ tag pages ($tag_count found)"
   else
