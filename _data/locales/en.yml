@@ -11,8 +11,7 @@ layout:
 tabs:
   # format: <filename_without_extension>: <value>
   home: Home
-  categories: Categories
-  tags: Tags
+  browse: Browse
   archives: Archives
   about: About
   friends: Friends

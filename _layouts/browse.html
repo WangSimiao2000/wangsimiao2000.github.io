@@ -1,6 +1,6 @@
 ---
 layout: page
-# All the Categories of posts
+# Combined Categories & Tags browser
 ---
 
 {% include lang.html %}
@@ -8,8 +8,20 @@ layout: page
 {% assign HEAD_PREFIX = 'h_' %}
 {% assign LIST_PREFIX = 'l_' %}
 
-{% assign group_index = 0 %}
+<div class="browse-tabs mb-4">
+  <button class="browse-tab active" data-target="browse-categories" aria-pressed="true">
+    <i class="fas fa-stream me-1"></i>
+    {{ site.data.locales[lang].layout.category | default: "分类" }}
+  </button>
+  <button class="browse-tab" data-target="browse-tags" aria-pressed="false">
+    <i class="fas fa-tags me-1"></i>
+    {{ site.data.locales[lang].layout.tag | default: "标签" }}
+  </button>
+</div>
 
+<!-- Categories View -->
+<div id="browse-categories" class="browse-panel">
+{% assign group_index = 0 %}
 {% assign sort_categories = site.categories | sort %}
 
 {% for category in sort_categories %}
@@ -33,7 +45,6 @@ layout: page
     {% assign sub_categories_size = sub_categories | size %}
 
     <div class="card categories">
-      <!-- top-category -->
       <div
         id="{{ HEAD_PREFIX }}{{ group_index }}"
         class="card-header d-flex justify-content-between hide-border-bottom"
@@ -44,42 +55,25 @@ layout: page
           {% capture _category_url %}/categories/{{ category_name | slugify | url_encode }}/{% endcapture %}
           <a href="{{ _category_url | relative_url }}" class="mx-2">{{ category_name }}</a>
 
-          <!-- content count -->
           {% assign top_posts_size = site.categories[category_name] | size %}
           <span class="text-muted small font-weight-light">
             {% if sub_categories_size > 0 %}
               {{ sub_categories_size }}
               {% if sub_categories_size > 1 %}
-                {{
-                  site.data.locales[lang].categories.category_measure.plural
-                  | default: site.data.locales[lang].categories.category_measure
-                }}
+                {{ site.data.locales[lang].categories.category_measure.plural | default: site.data.locales[lang].categories.category_measure }}
               {% else %}
-                {{
-                  site.data.locales[lang].categories.category_measure.singular
-                  | default: site.data.locales[lang].categories.category_measure
-                }}
-              {% endif -%}
-              ,
+                {{ site.data.locales[lang].categories.category_measure.singular | default: site.data.locales[lang].categories.category_measure }}
+              {% endif -%},
             {% endif %}
-
             {{ top_posts_size }}
-
             {% if top_posts_size > 1 %}
-              {{
-                site.data.locales[lang].categories.post_measure.plural
-                | default: site.data.locales[lang].categories.post_measure
-              }}
+              {{ site.data.locales[lang].categories.post_measure.plural | default: site.data.locales[lang].categories.post_measure }}
             {% else %}
-              {{
-                site.data.locales[lang].categories.post_measure.singular
-                | default: site.data.locales[lang].categories.post_measure
-              }}
+              {{ site.data.locales[lang].categories.post_measure.singular | default: site.data.locales[lang].categories.post_measure }}
             {% endif %}
           </span>
         </span>
 
-        <!-- arrow -->
         {% if sub_categories_size > 0 %}
           <a
             href="#{{ LIST_PREFIX }}{{ group_index }}"
@@ -96,33 +90,22 @@ layout: page
           </span>
         {% endif %}
       </div>
-      <!-- .card-header -->
 
-      <!-- Sub-categories -->
       {% if sub_categories_size > 0 %}
         <div id="{{ LIST_PREFIX }}{{ group_index }}" class="collapse show" aria-expanded="true">
           <ul class="list-group">
             {% for sub_category in sub_categories %}
               <li class="list-group-item">
                 <i class="far fa-folder fa-fw"></i>
-
                 {% capture _sub_ctg_url %}/categories/{{ sub_category | slugify | url_encode }}/{% endcapture %}
                 <a href="{{ _sub_ctg_url | relative_url }}" class="mx-2">{{ sub_category }}</a>
-
                 {% assign posts_size = site.categories[sub_category] | size %}
                 <span class="text-muted small font-weight-light">
                   {{ posts_size }}
-
                   {% if posts_size > 1 %}
-                    {{
-                      site.data.locales[lang].categories.post_measure.plural
-                      | default: site.data.locales[lang].categories.post_measure
-                    }}
+                    {{ site.data.locales[lang].categories.post_measure.plural | default: site.data.locales[lang].categories.post_measure }}
                   {% else %}
-                    {{
-                      site.data.locales[lang].categories.post_measure.singular
-                      | default: site.data.locales[lang].categories.post_measure
-                    }}
+                    {{ site.data.locales[lang].categories.post_measure.singular | default: site.data.locales[lang].categories.post_measure }}
                   {% endif %}
                 </span>
               </li>
@@ -131,8 +114,43 @@ layout: page
         </div>
       {% endif %}
     </div>
-    <!-- .card -->
 
     {% assign group_index = group_index | plus: 1 %}
   {% endif %}
 {% endfor %}
+</div>
+
+<!-- Tags View -->
+<div id="browse-tags" class="browse-panel" style="display:none;">
+  <div id="tags" class="d-flex flex-wrap mx-xl-2">
+    {% assign tags = '' | split: '' %}
+    {% for t in site.tags %}
+      {% assign tags = tags | push: t[0] %}
+    {% endfor %}
+    {% assign sorted_tags = tags | sort_natural %}
+    {% for t in sorted_tags %}
+      <div>
+        <a class="tag" href="{{ t | slugify | url_encode | prepend: '/tags/' | append: '/' | relative_url }}">
+          {{ t -}}
+          <span class="text-muted">{{ site.tags[t].size }}</span>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+(function() {
+  var tabs = document.querySelectorAll('.browse-tab');
+  var panels = document.querySelectorAll('.browse-panel');
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tabs.forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-pressed', 'false'); });
+      panels.forEach(function(p) { p.style.display = 'none'; });
+      tab.classList.add('active');
+      tab.setAttribute('aria-pressed', 'true');
+      document.getElementById(tab.dataset.target).style.display = 'block';
+    });
+  });
+})();
+</script>

@@ -1,7 +1,7 @@
 ---
 title: 相册
 icon: fas fa-camera-retro
-order: 5
+order: 4
 ---
 
 <style>
