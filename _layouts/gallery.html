@@ -4,22 +4,26 @@ layout: page
 ---
 
 {% assign per_page = page.per_page | default: 20 %}
-{% assign cols = page.columns | default: 2 %}
 {% assign total = site.data.gallery | size %}
+{% assign total_pages = total | divided_by: per_page %}
+{% assign remainder = total | modulo: per_page %}
+{% if remainder > 0 %}{% assign total_pages = total_pages | plus: 1 %}{% endif %}
 
-<div class="gallery-masonry" id="gallery-grid">
-  {% for i in (1..cols) %}
-    <div class="gallery-column" data-col="{{ i }}"></div>
+<div class="gallery-masonry" id="gallery-grid" style="--gallery-columns: {{ page.columns | default: 2 }}">
+  {% for photo in site.data.gallery limit: per_page %}
+    <div class="gallery-item" onclick="openLB('{{ photo.image }}')">
+      <img src="{{ photo.image }}" alt="{{ photo.title | default: '照片' }}" loading="lazy" />
+    </div>
   {% endfor %}
 </div>
 
 {% if total > per_page %}
 <div class="gallery-load-more text-center mt-4 mb-2">
-  <button id="gallery-more-btn" class="btn btn-outline-secondary btn-sm">
+  <button id="gallery-more-btn" class="btn btn-outline-secondary btn-sm" data-page="1" data-per="{{ per_page }}" data-total="{{ total }}">
     加载更多
   </button>
   <span class="gallery-counter text-muted small ms-2">
-    <span id="gallery-shown">0</span> / {{ total }}
+    <span id="gallery-shown">{{ per_page }}</span> / {{ total }}
   </span>
 </div>
 {% endif %}
@@ -38,43 +42,35 @@ layout: page
   window.closeLB = function() { lb.classList.remove('on'); document.body.style.overflow = ''; };
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLB(); });
 
+  /* Load-more pagination (all data is in DOM-hidden JSON) */
   var allPhotos = [
     {% for photo in site.data.gallery %}
       { image: "{{ photo.image }}", title: "{{ photo.title | default: '照片' }}" }{% unless forloop.last %},{% endunless %}
     {% endfor %}
   ];
-
-  var cols = document.querySelectorAll('.gallery-column');
-  var colCount = cols.length;
-  var perPage = {{ per_page }};
-  var shown = 0;
-  var counter = document.getElementById('gallery-shown');
   var btn = document.getElementById('gallery-more-btn');
-
-  function addPhotos(count) {
-    var end = Math.min(shown + count, allPhotos.length);
-    for (var i = shown; i < end; i++) {
-      var div = document.createElement('div');
-      div.className = 'gallery-item';
-      div.onclick = (function(src) { return function() { openLB(src); }; })(allPhotos[i].image);
-      var img = document.createElement('img');
-      img.src = allPhotos[i].image;
-      img.alt = allPhotos[i].title;
-      img.loading = 'lazy';
-      div.appendChild(img);
-      cols[i % colCount].appendChild(div);
-    }
-    shown = end;
-    if (counter) counter.textContent = shown;
-    if (btn && shown >= allPhotos.length) btn.style.display = 'none';
-  }
-
-  // Initial load
-  addPhotos(perPage);
-
-  // Load more
   if (btn) {
-    btn.addEventListener('click', function() { addPhotos(perPage); });
+    var perPage = parseInt(btn.dataset.per, 10);
+    var shown = perPage;
+    var grid = document.getElementById('gallery-grid');
+    var counter = document.getElementById('gallery-shown');
+    btn.addEventListener('click', function() {
+      var end = Math.min(shown + perPage, allPhotos.length);
+      for (var i = shown; i < end; i++) {
+        var div = document.createElement('div');
+        div.className = 'gallery-item';
+        div.onclick = (function(src) { return function() { openLB(src); }; })(allPhotos[i].image);
+        var img = document.createElement('img');
+        img.src = allPhotos[i].image;
+        img.alt = allPhotos[i].title;
+        img.loading = 'lazy';
+        div.appendChild(img);
+        grid.appendChild(div);
+      }
+      shown = end;
+      counter.textContent = shown;
+      if (shown >= allPhotos.length) btn.style.display = 'none';
+    });
   }
 })();
 </script>
