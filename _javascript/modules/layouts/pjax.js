@@ -3,8 +3,8 @@
  * Intercepts internal link clicks, fetches new page via AJAX,
  * replaces only the #swup container content, and updates title/URL.
  *
- * Falls back to full page load when navigating between different page types
- * (e.g. browse → post) since each type loads a different JS bundle.
+ * After DOM replacement, calls reinitPage() to set up page-specific
+ * components (TOC, clipboard, image popup, etc.) without a full reload.
  */
 
 const CONTAINER_ID = 'swup';
@@ -12,28 +12,10 @@ const TRANSITION_DURATION = 150; // ms
 
 let isNavigating = false;
 
-/**
- * Detect the JS bundle name from a parsed document by looking at
- * the <script> tag that loads from /assets/js/dist/*.min.js
- */
-function detectBundle(doc) {
-  const scripts = doc.querySelectorAll('script[src]');
-  for (const s of scripts) {
-    const m = s.getAttribute('src').match(/\/assets\/js\/dist\/(\w+)\.min\.js/);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-/** The bundle loaded on the current (initial) page */
-const currentBundle = detectBundle(document);
-
 function shouldIntercept(el) {
-  // Only intercept internal same-origin links
   if (!el || el.tagName !== 'A') return false;
   if (el.target === '_blank' || el.hasAttribute('download')) return false;
   if (el.origin !== window.location.origin) return false;
-  // Skip anchor links on same page
   if (el.pathname === window.location.pathname && el.hash) return false;
   return true;
 }
@@ -50,6 +32,36 @@ function updateActiveNav(path) {
   });
 }
 
+/**
+ * Load external scripts that the new page needs but the current page doesn't have.
+ * Compares <script> tags in <head> between current doc and new doc.
+ */
+function loadNewHeadScripts(doc) {
+  const currentSrcs = new Set(
+    [...document.querySelectorAll('head script[src]')].map((s) =>
+      s.getAttribute('src')
+    )
+  );
+
+  const promises = [];
+  doc.querySelectorAll('head script[src]').forEach((s) => {
+    const src = s.getAttribute('src');
+    if (!currentSrcs.has(src)) {
+      console.log('[PJAX] Loading new script:', src);
+      const script = document.createElement('script');
+      script.src = src;
+      const p = new Promise((resolve) => {
+        script.onload = resolve;
+        script.onerror = resolve;
+      });
+      document.head.appendChild(script);
+      promises.push(p);
+    }
+  });
+
+  return Promise.all(promises);
+}
+
 async function navigate(url, pushState = true) {
   if (isNavigating) {
     console.log('[PJAX] Navigation skipped — already navigating');
@@ -60,17 +72,15 @@ async function navigate(url, pushState = true) {
 
   const container = document.getElementById(CONTAINER_ID);
   if (!container) {
-    console.warn('[PJAX] #swup container not found, falling back to full page load');
+    console.warn('[PJAX] #swup container not found, falling back');
     window.location.href = url;
     return;
   }
 
-  // Only fade the main content area, not the sidebar
   const mainContent = container.querySelector('main');
 
   try {
-    // Fade out main content only
-    console.log('[PJAX] Fading out main content');
+    // Fade out
     if (mainContent) {
       mainContent.style.transition = `opacity ${TRANSITION_DURATION}ms ease-in-out`;
       mainContent.style.opacity = '0';
@@ -78,11 +88,8 @@ async function navigate(url, pushState = true) {
       container.style.opacity = '0';
     }
 
-    // Fetch new page
     const response = await fetch(url);
-    console.log(`[PJAX] Fetch response: ${response.status}`);
     if (!response.ok) {
-      console.warn(`[PJAX] Fetch failed (${response.status}), falling back`);
       window.location.href = url;
       return;
     }
@@ -93,29 +100,18 @@ async function navigate(url, pushState = true) {
 
     const newContainer = doc.getElementById(CONTAINER_ID);
     if (!newContainer) {
-      console.warn('[PJAX] New page has no #swup container, falling back');
       window.location.href = url;
       return;
     }
 
-    // If the new page needs a different JS bundle, fall back to full load
-    const newBundle = detectBundle(doc);
-    if (newBundle !== currentBundle) {
-      console.log(`[PJAX] Bundle mismatch (${currentBundle} → ${newBundle}), full page load`);
-      window.location.href = url;
-      return;
-    }
-
-    // Wait for fade out to finish
     await new Promise((r) => setTimeout(r, TRANSITION_DURATION));
-    console.log('[PJAX] Fade out complete, replacing DOM');
 
     // Replace main content
     const newMain = newContainer.querySelector('main');
     if (mainContent && newMain) {
       mainContent.innerHTML = newMain.innerHTML;
 
-      // Re-execute inline scripts in the new content
+      // Re-execute inline scripts
       mainContent.querySelectorAll('script').forEach((oldScript) => {
         const newScript = document.createElement('script');
         if (oldScript.src) {
@@ -125,20 +121,13 @@ async function navigate(url, pushState = true) {
         }
         oldScript.replaceWith(newScript);
       });
-
-      console.log('[PJAX] ✓ Main content replaced');
-    } else {
-      console.warn('[PJAX] ✗ Main content not found', { mainContent: !!mainContent, newMain: !!newMain });
     }
 
-    // Silently replace sidebar (no animation)
+    // Replace panel
     const panel = container.querySelector('#panel-wrapper');
     const newPanel = newContainer.querySelector('#panel-wrapper');
     if (panel && newPanel) {
       panel.innerHTML = newPanel.innerHTML;
-      console.log('[PJAX] ✓ Panel replaced (silent)');
-    } else {
-      console.warn('[PJAX] ✗ Panel not found', { panel: !!panel, newPanel: !!newPanel });
     }
 
     // Replace tail/footer
@@ -146,29 +135,27 @@ async function navigate(url, pushState = true) {
     const newTail = newContainer.querySelector('#tail-wrapper');
     if (tail && newTail) {
       tail.innerHTML = newTail.innerHTML;
-      console.log('[PJAX] ✓ Tail/footer replaced (silent)');
-    } else {
-      console.warn('[PJAX] ✗ Tail not found', { tail: !!tail, newTail: !!newTail });
     }
 
     // Update title
     document.title = doc.title;
 
-    // Update breadcrumb from new page
+    // Update breadcrumb
     const breadcrumb = document.getElementById('breadcrumb');
     const newBreadcrumb = doc.getElementById('breadcrumb');
     if (breadcrumb && newBreadcrumb) {
       breadcrumb.innerHTML = newBreadcrumb.innerHTML;
-      console.log('[PJAX] ✓ Breadcrumb updated');
     }
 
-    // Update topbar title from new page
+    // Update topbar title
     const topbarTitle = document.getElementById('topbar-title');
     const newTopbarTitle = doc.getElementById('topbar-title');
     if (topbarTitle && newTopbarTitle) {
       topbarTitle.innerHTML = newTopbarTitle.innerHTML;
-      console.log('[PJAX] ✓ Topbar title updated');
     }
+
+    // Load any new external scripts (e.g. tocbot, dayjs, glightbox)
+    await loadNewHeadScripts(doc);
 
     // Update URL
     if (pushState) {
@@ -180,17 +167,22 @@ async function navigate(url, pushState = true) {
     const sidebarScrollTop = sidebar ? sidebar.scrollTop : 0;
     updateActiveNav(new URL(url, window.location.origin).pathname);
     if (sidebar) sidebar.scrollTop = sidebarScrollTop;
-    console.log('[PJAX] Sidebar nav updated');
+
+    // Reinitialize page-specific components
+    if (typeof window.__reinitPage === 'function') {
+      window.__reinitPage();
+    }
 
     // Scroll to top
     window.scrollTo({ top: 0 });
 
-    // Fade in main content only
+    // Fade in
     if (mainContent) {
       mainContent.style.opacity = '1';
     } else {
       container.style.opacity = '1';
     }
+
     console.log(`[PJAX] ✓ Navigation complete: ${url}`);
   } catch (e) {
     console.error('[PJAX] Navigation error:', e);
@@ -201,28 +193,15 @@ async function navigate(url, pushState = true) {
 }
 
 export function initPjax() {
-  console.log('[PJAX] Setting up event listeners');
-
-  // Intercept clicks on internal links
   document.addEventListener('click', (e) => {
     const link = e.target.closest('a');
     if (!shouldIntercept(link)) return;
-
     e.preventDefault();
-
-    // Skip if same page
-    if (link.href === window.location.href) {
-      console.log('[PJAX] Same page click ignored:', link.href);
-      return;
-    }
-
-    console.log('[PJAX] Link intercepted:', link.href);
+    if (link.href === window.location.href) return;
     navigate(link.href);
   });
 
-  // Handle browser back/forward
   window.addEventListener('popstate', () => {
-    console.log('[PJAX] Popstate (back/forward):', window.location.href);
     navigate(window.location.href, false);
   });
 }
