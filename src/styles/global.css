@@ -51,6 +51,9 @@
     flex: 1;
     width: 100%;
     padding: 2rem 1.5rem;
+    view-transition-name: main-content;
+    position: relative;
+    z-index: 1;
   }
 
   /* 滚动条 */
@@ -115,6 +118,10 @@
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 0.25s;
+  }
+
+  ::view-transition-group(main-content) {
+    z-index: 1;
   }
 
   /* 工具类 */

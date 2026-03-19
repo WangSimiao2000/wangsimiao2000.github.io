@@ -125,7 +125,7 @@ const ogImageUrl = ogImage
         <Topbar />
 
         <!-- Main content area with fade transition -->
-        <main id="swup" class="content-wrapper" transition:animate="fade">
+        <main id="swup" class="content-wrapper" transition:animate="fade" transition:name="main-content">
           <div class="content-with-panel">
             <div class="content-main">
               <slot />
@@ -166,7 +166,7 @@ const ogImageUrl = ogImage
     <Lightbox />
 
     <!-- Mobile sidebar overlay -->
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay" transition:persist></div>
 
     <!-- PWA Update Notification (conditional on siteConfig.pwa.enabled) -->
     {pwaEnabled && <PWAUpdateNotification />}
@@ -274,6 +274,9 @@ const ogImageUrl = ogImage
     max-width: 52rem;
     margin: 0 auto;
     min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   .sidebar-overlay {
@@ -294,7 +297,8 @@ const ogImageUrl = ogImage
     font-size: 0.8125rem;
     color: var(--text-muted);
     border-top: 1px solid var(--border-color);
-    margin-top: 2rem;
+    margin-top: auto;
+    padding-top: 2rem;
   }
 
   .site-footer p { margin: 0.25rem 0; }
