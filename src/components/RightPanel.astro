@@ -58,13 +58,13 @@ const trendingTags = [...tagMap.entries()]
   .right-panel {
     width: 240px;
     flex-shrink: 0;
-    position: sticky;
-    top: 3rem;
-    align-self: start;
-    max-height: calc(100vh - 3rem);
+    position: fixed;
+    right: 1.5rem;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
     overflow-y: auto;
     scrollbar-width: none;
-    padding: 1rem 0;
+    padding: 0;
   }
 
   .right-panel::-webkit-scrollbar { display: none; }

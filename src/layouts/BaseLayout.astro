@@ -214,27 +214,32 @@ const ogImageUrl = ogImage
         const overlay = document.getElementById('sidebar-overlay');
         if (!toggle || !sidebar || !overlay) return;
 
+        function lockScroll() {
+          document.documentElement.style.overflow = 'hidden';
+          document.body.style.overflow = 'hidden';
+          overlay.style.touchAction = 'none';
+        }
+
+        function unlockScroll() {
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          overlay.style.touchAction = '';
+        }
+
         function closeSidebar() {
           sidebar!.classList.remove('open');
           overlay!.classList.remove('active');
-          document.body.style.overflow = '';
+          unlockScroll();
         }
 
         toggle.addEventListener('click', () => {
           const opening = !sidebar.classList.contains('open');
           sidebar.classList.toggle('open');
           overlay.classList.toggle('active');
-          document.body.style.overflow = opening ? 'hidden' : '';
+          opening ? lockScroll() : unlockScroll();
         });
 
         overlay.addEventListener('click', closeSidebar);
-
-        // Close on any nav link click
-        sidebar.addEventListener('click', (e: Event) => {
-          if ((e.target as HTMLElement).closest('.sidebar-nav a')) {
-            closeSidebar();
-          }
-        });
       })();
 
       function updateSidebarActiveState(): void {
@@ -262,14 +267,13 @@ const ogImageUrl = ogImage
 
 <style>
   .content-with-panel {
-    display: flex;
-    gap: 2rem;
+    position: relative;
   }
 
   .content-main {
-    flex: 1;
-    min-width: 0;
     max-width: 52rem;
+    margin: 0 auto;
+    min-width: 0;
   }
 
   .sidebar-overlay {
