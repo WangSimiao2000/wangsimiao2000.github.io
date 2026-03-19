@@ -40,7 +40,10 @@ const giscus = siteConfig.comments.giscus;
     // Determine current theme based on data-mode attribute
     function getGiscusTheme() {
       const mode = document.documentElement.getAttribute('data-mode');
-      return mode === 'dark' ? 'dark' : 'light';
+      const base = window.location.origin;
+      return mode === 'dark'
+        ? base + '/assets/css/giscus-morandi-dark.css'
+        : base + '/assets/css/giscus-morandi-light.css';
     }
 
     // Send theme update to Giscus iframe via postMessage

@@ -2,7 +2,6 @@
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Pagination from '../../components/Pagination.astro';
-import RightPanel from '../../components/RightPanel.astro';
 import { siteConfig } from '../../config';
 import { getAllPosts, sortPosts, paginatePosts, getPostUrl } from '../../utils/posts';
 import { formatDate } from '../../utils/date';
@@ -25,9 +24,8 @@ const pagination = paginatePosts(sortedPosts, pageNum);
 ---
 
 <BaseLayout title={`第 ${pageNum} 页 | ${siteConfig.title}`} description={siteConfig.description}>
-  <div class="home-layout">
-    <div class="home-main">
-      <div id="post-list">
+  <div class="home-main">
+    <div id="post-list">
         {pagination.items.map((post) => (
           <article class="card-wrapper card">
             <a href={getPostUrl(post.slug)} class="post-preview">
@@ -55,21 +53,11 @@ const pagination = paginatePosts(sortedPosts, pageNum);
         ))}
       </div>
       <Pagination currentPage={pageNum} totalPages={pagination.totalPages} basePath="/" />
-    </div>
-    <RightPanel />
   </div>
 </BaseLayout>
 
 <style>
-  .home-layout {
-    display: flex;
-    gap: 2rem;
-    max-width: 64rem;
-    margin: 0 auto;
-    padding: 1.5rem 1rem;
-  }
-
-  .home-main { flex: 1; min-width: 0; }
+  .home-main { min-width: 0; }
 
   #post-list {
     display: flex;

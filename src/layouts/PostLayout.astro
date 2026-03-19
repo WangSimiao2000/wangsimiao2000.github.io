@@ -5,6 +5,7 @@ import CodeCopy from '../components/CodeCopy.astro';
 import PostNav from '../components/PostNav.astro';
 import RelatedPosts from '../components/RelatedPosts.astro';
 import Comment from '../components/Comment.astro';
+import SharePost from '../components/SharePost.astro';
 import { siteConfig } from '../config';
 import { formatDate } from '../utils/date';
 import { calculateReadingTime } from '../utils/reading-time';
@@ -55,7 +56,7 @@ const licenseName = t('copyright.license.name', locale);
 const licenseLink = t('copyright.license.link', locale);
 ---
 
-<BaseLayout title={title} description={description} ogImage={image}>
+<BaseLayout title={title} description={description} ogImage={image} hidePanel={true}>
   <Fragment set:html={jsonLdHtml} slot="head" />
 
   <div class="post-layout">
@@ -99,10 +100,13 @@ const licenseLink = t('copyright.license.link', locale);
 
       <CodeCopy />
 
-      <!-- Copyright -->
-      <footer class="post-copyright">
-        <p set:html={licenseTemplate.replace(':LICENSE_NAME', `<a href="${licenseLink}" target="_blank" rel="noopener">${licenseName}</a>`)} />
-      </footer>
+      <!-- Copyright + Share -->
+      <div class="post-tail">
+        <footer class="post-copyright">
+          <p set:html={licenseTemplate.replace(':LICENSE_NAME', `<a href="${licenseLink}" target="_blank" rel="noopener">${licenseName}</a>`)} />
+        </footer>
+        <SharePost postUrl={postUrl} postTitle={title} />
+      </div>
 
       <PostNav prev={prev} next={next} />
       <RelatedPosts posts={relatedPosts} />
@@ -165,14 +169,25 @@ const licenseLink = t('copyright.license.link', locale);
 
   .post-body { line-height: 1.75; color: var(--text-primary); }
 
-  .post-copyright {
+  .post-tail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-top: 2rem;
-    padding: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .post-copyright {
+    padding: 0.75rem 1rem;
     background: var(--bg-tertiary);
     border-radius: 0.5rem;
     font-size: 0.8125rem;
     color: var(--text-secondary);
     border-left: 3px solid var(--btn-primary-bg);
+    flex: 1;
   }
 
   .post-copyright p { margin: 0; }

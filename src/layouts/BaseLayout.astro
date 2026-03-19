@@ -18,6 +18,9 @@ import { siteConfig } from '../config';
 import { shouldEnablePWA } from '../utils/pwa';
 import Sidebar from '../components/Sidebar.astro';
 import Topbar from '../components/Topbar.astro';
+import RightPanel from '../components/RightPanel.astro';
+import BackToTop from '../components/BackToTop.astro';
+import Lightbox from '../components/Lightbox.astro';
 import SearchModal from '../components/SearchModal.astro';
 import PWAUpdateNotification from '../components/PWAUpdateNotification.astro';
 import '../styles/global.css';
@@ -29,6 +32,7 @@ interface Props {
   description?: string;
   ogImage?: string;
   noindex?: boolean;
+  hidePanel?: boolean;
 }
 
 const {
@@ -36,6 +40,7 @@ const {
   description = siteConfig.description,
   ogImage,
   noindex = false,
+  hidePanel = false,
 } = Astro.props;
 
 const canonicalUrl = new URL(Astro.url.pathname, siteConfig.url).href;
@@ -97,8 +102,12 @@ const ogImageUrl = ogImage
       crossorigin="anonymous"
     />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://cdn.mickeymiao.cn/assets/img/avatar/avatar.png" />
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/assets/img/favicons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/assets/img/favicons/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png" />
+    <link rel="shortcut icon" href="/assets/img/favicons/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-touch-icon.png" />
 
     <!-- Client Router (View Transitions) -->
     <ClientRouter />
@@ -119,7 +128,12 @@ const ogImageUrl = ogImage
 
         <!-- Main content area with fade transition -->
         <main id="swup" class="content-wrapper" transition:animate="fade">
-          <slot />
+          <div class="content-with-panel">
+            <div class="content-main">
+              <slot />
+            </div>
+            {!hidePanel && <RightPanel />}
+          </div>
         </main>
 
         <!-- Footer -->
@@ -144,6 +158,12 @@ const ogImageUrl = ogImage
 
     <!-- Search Modal (client:load) -->
     <SearchModal />
+
+    <!-- Back to top button -->
+    <BackToTop />
+
+    <!-- Lightbox for images -->
+    <Lightbox />
 
     <!-- Mobile sidebar overlay -->
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
@@ -185,33 +205,34 @@ const ogImageUrl = ogImage
        */
       document.addEventListener('astro:page-load', () => {
         updateSidebarActiveState();
-        initSidebarToggle();
       });
 
-      function initSidebarToggle(): void {
+      // Sidebar toggle — bind once using event delegation (works with transition:persist)
+      (function initSidebarToggle() {
         const toggle = document.getElementById('sidebar-toggle');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         if (!toggle || !sidebar || !overlay) return;
+
+        function closeSidebar() {
+          sidebar!.classList.remove('open');
+          overlay!.classList.remove('active');
+        }
 
         toggle.addEventListener('click', () => {
           sidebar.classList.toggle('open');
           overlay.classList.toggle('active');
         });
 
-        overlay.addEventListener('click', () => {
-          sidebar.classList.remove('open');
-          overlay.classList.remove('active');
-        });
+        overlay.addEventListener('click', closeSidebar);
 
-        // Close sidebar on nav link click (mobile)
-        sidebar.querySelectorAll('.sidebar-nav a').forEach((link) => {
-          link.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-          });
+        // Close on any nav link click
+        sidebar.addEventListener('click', (e: Event) => {
+          if ((e.target as HTMLElement).closest('.sidebar-nav a')) {
+            closeSidebar();
+          }
         });
-      }
+      })();
 
       function updateSidebarActiveState(): void {
         const currentPath = window.location.pathname;
@@ -237,6 +258,16 @@ const ogImageUrl = ogImage
 </html>
 
 <style>
+  .content-with-panel {
+    display: flex;
+    gap: 2rem;
+  }
+
+  .content-main {
+    flex: 1;
+    min-width: 0;
+  }
+
   .sidebar-overlay {
     display: none;
     position: fixed;

@@ -35,6 +35,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 const { entry, post, sortedPosts } = Astro.props;
 const { Content } = await render(entry);
 
+
 // Get navigation and related posts
 const navigation = getPostNavigation(sortedPosts, post.slug);
 const relatedPosts = getRelatedPosts(sortedPosts, post, 5);
