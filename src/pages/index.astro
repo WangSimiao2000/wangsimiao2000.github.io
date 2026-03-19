@@ -7,18 +7,17 @@
  *
  * Requirements: 2.5, 3.1, 3.2
  */
-import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Pagination from '../components/Pagination.astro';
 import { siteConfig } from '../config';
-import { sortPosts, paginatePosts, getPostUrl } from '../utils/posts';
+import { getAllPosts, sortPosts, paginatePosts, getPostUrl } from '../utils/posts';
 import { formatDate } from '../utils/date';
 import type { Locale } from '../types';
 
 const locale = siteConfig.lang as Locale;
 
 // Fetch and sort all posts
-const allPosts = await getCollection('posts');
+const allPosts = await getAllPosts();
 const sortedPosts = sortPosts(allPosts);
 
 // Page 1 is always shown at /

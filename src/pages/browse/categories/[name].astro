@@ -8,16 +8,15 @@
  * Requirements: 3.1
  */
 import type { GetStaticPaths } from 'astro';
-import { getCollection } from 'astro:content';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { siteConfig } from '../../../config';
-import { sortPosts, getCategories, getPostsByCategory, getPostUrl } from '../../../utils/posts';
+import { getAllPosts, sortPosts, getCategories, getPostsByCategory, getPostUrl } from '../../../utils/posts';
 import { formatDate } from '../../../utils/date';
 import { t } from '../../../utils/i18n';
 import type { Locale } from '../../../types';
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const allPosts = await getCollection('posts');
+  const allPosts = await getAllPosts();
   const categories = getCategories(allPosts);
 
   return [...categories.keys()].map((name) => ({
@@ -28,7 +27,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 const locale = siteConfig.lang as Locale;
 const { name } = Astro.params;
 
-const allPosts = await getCollection('posts');
+const allPosts = await getAllPosts();
 const sortedAll = sortPosts(allPosts);
 const categoryPosts = getPostsByCategory(sortedAll, name!);
 ---

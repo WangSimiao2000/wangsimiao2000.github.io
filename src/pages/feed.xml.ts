@@ -1,18 +1,11 @@
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
-import { getCollection } from 'astro:content';
 import { siteConfig } from '../config';
-import { sortPosts, getPostUrl } from '../utils/posts';
+import { getAllPosts, sortPosts, getPostUrl } from '../utils/posts';
 
 export async function GET(context: APIContext) {
-  const allPosts = await getCollection('posts');
-
-  const sorted = sortPosts(
-    allPosts.map((post) => ({
-      slug: post.id,
-      data: post.data,
-    })),
-  );
+  const allPosts = await getAllPosts();
+  const sorted = sortPosts(allPosts);
 
   return rss({
     title: siteConfig.title,

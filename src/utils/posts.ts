@@ -7,6 +7,7 @@ import { siteConfig } from '../config';
 
 /** 文章接口 - 与 Astro CollectionEntry 兼容的最小接口 */
 export interface Post {
+  id: string;
   slug: string;
   data: {
     title: string;
@@ -14,7 +15,13 @@ export interface Post {
     categories: string[];
     tags: string[];
     pin?: boolean;
+    description?: string;
+    image?: string;
+    toc?: boolean;
+    comments?: boolean;
+    last_modified_at?: Date;
   };
+  body?: string;
 }
 
 /** 分页结果 */
@@ -192,5 +199,21 @@ export function generateSlug(filename: string): string {
  */
 export function getPostUrl(slug: string): string {
   return `/posts/${slug}/`;
+}
+
+
+/**
+ * 从 Astro content collection 获取所有文章并映射为 Post 接口
+ * 将 Astro 5 的 entry.id（含日期前缀）转换为 URL-friendly slug
+ */
+export async function getAllPosts(): Promise<Post[]> {
+  const { getCollection } = await import('astro:content');
+  const entries = await getCollection('posts');
+  return entries.map((entry: any) => ({
+    id: entry.id,
+    slug: generateSlug(entry.id),
+    data: entry.data,
+    body: entry.body,
+  }));
 }
 

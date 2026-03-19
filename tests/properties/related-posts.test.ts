@@ -9,6 +9,7 @@ import { test, fc } from '@fast-check/vitest';
 import { getRelatedPosts, type Post } from '@/utils/posts';
 
 const postArb = fc.record({
+  id: fc.string({ minLength: 1, maxLength: 20 }).filter(s => s.trim().length > 0),
   slug: fc.string({ minLength: 1, maxLength: 20 }).filter(s => s.trim().length > 0),
   data: fc.record({
     title: fc.string({ minLength: 1 }),

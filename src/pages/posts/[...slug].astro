@@ -8,25 +8,32 @@
  * Requirements: 2.5, 3.1, 3.3, 3.4
  */
 import type { GetStaticPaths } from 'astro';
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import PostLayout from '../../layouts/PostLayout.astro';
-import { sortPosts, getPostNavigation, getRelatedPosts } from '../../utils/posts';
+import { sortPosts, getPostNavigation, getRelatedPosts, generateSlug, type Post } from '../../utils/posts';
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const allPosts = await getCollection('posts');
-  const sortedPosts = sortPosts(allPosts);
+  const mapped: Post[] = allPosts.map((p) => ({
+    id: p.id,
+    slug: generateSlug(p.id),
+    data: p.data,
+    body: p.body,
+  }));
+  const sortedPosts = sortPosts(mapped);
 
-  return allPosts.map((post) => ({
-    params: { slug: post.slug },
+  return allPosts.map((entry) => ({
+    params: { slug: generateSlug(entry.id) },
     props: {
-      post,
+      entry,
+      post: mapped.find((p) => p.id === entry.id)!,
       sortedPosts,
     },
   }));
 };
 
-const { post, sortedPosts } = Astro.props;
-const { Content } = await post.render();
+const { entry, post, sortedPosts } = Astro.props;
+const { Content } = await render(entry);
 
 // Get navigation and related posts
 const navigation = getPostNavigation(sortedPosts, post.slug);
