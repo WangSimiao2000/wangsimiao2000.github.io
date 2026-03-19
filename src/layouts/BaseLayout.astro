@@ -207,6 +207,18 @@ const ogImageUrl = ogImage
         updateSidebarActiveState();
       });
 
+      // Disable view transition animation when mobile sidebar is open
+      document.addEventListener('astro:before-preparation', () => {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar?.classList.contains('open')) {
+          document.documentElement.classList.add('no-transition');
+        }
+      });
+
+      document.addEventListener('astro:after-swap', () => {
+        document.documentElement.classList.remove('no-transition');
+      });
+
       // Sidebar toggle — bind once using event delegation (works with transition:persist)
       (function initSidebarToggle() {
         const toggle = document.getElementById('sidebar-toggle');
@@ -268,13 +280,13 @@ const ogImageUrl = ogImage
 <style>
   .content-with-panel {
     display: flex;
-    gap: 2rem;
   }
 
   .content-main {
     flex: 1;
     min-width: 0;
     max-width: 52rem;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
   }

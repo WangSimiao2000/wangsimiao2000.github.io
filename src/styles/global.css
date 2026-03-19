@@ -124,6 +124,11 @@
     z-index: 1;
   }
 
+  .no-transition::view-transition-old(*),
+  .no-transition::view-transition-new(*) {
+    animation: none !important;
+  }
+
   /* 工具类 */
   .sr-only {
     position: absolute;
