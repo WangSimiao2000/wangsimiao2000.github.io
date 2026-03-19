@@ -41,6 +41,19 @@ export function loadFriends(): FriendLink[] {
   return loadYaml<FriendLink[]>('friends.yml');
 }
 
+/** 友链检查结果 */
+export interface FriendsChecked {
+  alive: FriendLink[];
+  dead: FriendLink[];
+}
+
+/** 加载友链检查结果（如果存在） */
+export function loadFriendsChecked(): FriendsChecked | null {
+  const fullPath = path.resolve(getDataDir(), 'friends_checked.yml');
+  if (!fs.existsSync(fullPath)) return null;
+  return loadYaml<FriendsChecked>('friends_checked.yml');
+}
+
 /** 加载相册数据 */
 export function loadGallery(): GalleryItem[] {
   return loadYaml<GalleryItem[]>('gallery.yml');

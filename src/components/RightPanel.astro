@@ -1,0 +1,113 @@
+---
+/**
+ * RightPanel - 右侧面板（最近更新 + 热门标签）
+ * 显示在首页右侧
+ */
+import { siteConfig } from '../config';
+import { getAllPosts, sortPosts, getTags, getPostUrl } from '../utils/posts';
+import { t } from '../utils/i18n';
+import type { Locale } from '../types';
+
+const locale = siteConfig.lang as Locale;
+const allPosts = await getAllPosts();
+const sorted = sortPosts(allPosts);
+
+// 最近更新：按 last_modified_at 或 date 排序取前5
+const recentUpdated = [...allPosts]
+  .sort((a, b) => {
+    const da = (a.data.last_modified_at ?? a.data.date).getTime();
+    const db = (b.data.last_modified_at ?? b.data.date).getTime();
+    return db - da;
+  })
+  .slice(0, 5);
+
+// 热门标签：按文章数量排序取前10
+const tagMap = getTags(allPosts);
+const trendingTags = [...tagMap.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 10);
+---
+
+<aside class="right-panel">
+  {recentUpdated.length > 0 && (
+    <section class="panel-section">
+      <h2 class="panel-heading">{t('panel.lastmod', locale)}</h2>
+      <ul class="update-list">
+        {recentUpdated.map((post) => (
+          <li><a href={getPostUrl(post.slug)}>{post.data.title}</a></li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {trendingTags.length > 0 && (
+    <section class="panel-section">
+      <h2 class="panel-heading">{t('panel.trending_tags', locale)}</h2>
+      <div class="trending-tags">
+        {trendingTags.map(([tag]) => (
+          <a class="tag" href={`/browse/tags/${encodeURIComponent(tag)}/`}>{tag}</a>
+        ))}
+      </div>
+    </section>
+  )}
+</aside>
+
+<style>
+  .right-panel {
+    width: 240px;
+    flex-shrink: 0;
+    padding: 1rem 0;
+  }
+
+  .panel-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .update-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .update-list li {
+    padding: 0.3rem 0;
+    line-height: 1.4;
+  }
+
+  .update-list a {
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .update-list a:hover {
+    color: var(--link-color);
+  }
+
+  .trending-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  @media (max-width: 1200px) {
+    .right-panel {
+      display: none;
+    }
+  }
+</style>

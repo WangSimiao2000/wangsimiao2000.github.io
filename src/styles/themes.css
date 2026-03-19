@@ -2,108 +2,132 @@
  * CSS 变量主题定义
  * :root = 明亮模式（默认）
  * [data-mode="dark"] = 暗黑模式
- * Chirpy-inspired 配色方案
+ * Morandi 暖色调配色方案（与旧版 Chirpy 一致）
  */
 @layer base {
   :root {
-    /* 背景色 */
-    --bg-primary: #f8f9fa;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f0f1f3;
+    /* 背景色 — Morandi warm gray */
+    --bg-primary: #F5F0EB;
+    --bg-secondary: #FDFBF9;
+    --bg-tertiary: #EFEBE7;
 
     /* 文字色 */
-    --text-primary: #1a1a2e;
-    --text-secondary: #555555;
-    --text-muted: #868e96;
+    --text-primary: #3D3D3D;
+    --text-secondary: #6B6B6B;
+    --text-muted: #8E8E8E;
 
-    /* 链接 */
-    --link-color: #2a6496;
-    --link-hover: #1a4a70;
+    /* 链接 — terracotta */
+    --link-color: #B07D62;
+    --link-hover: #96654D;
 
     /* 卡片 */
-    --card-bg: #ffffff;
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --card-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.12);
-    --card-border: #e9ecef;
+    --card-bg: #FDFBF9;
+    --card-shadow: rgb(120 110 100 / 6%) 0 1px 3px 0;
+    --card-shadow-hover: 0 6px 20px rgba(120, 110, 100, 0.15);
+    --card-border: #E5DED6;
+    --card-hover-bg: #EDE7E0;
 
-    /* 侧边栏 */
-    --sidebar-bg: #1e1e2e;
-    --sidebar-text: #e8e8e8;
-    --sidebar-active: #6c5ce7;
-    --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+    /* 侧边栏 — Morandi warm gray */
+    --sidebar-bg: #E8E0D8;
+    --sidebar-text: #4A4A4A;
+    --sidebar-active: #6B8F71;
+    --sidebar-hover-bg: rgb(215 207 198 / 64%);
+    --sidebar-muted-color: #6B6360;
 
     /* 代码块 */
-    --code-bg: #f5f5f5;
-    --code-text: #d63384;
+    --code-bg: #F0EAE4;
+    --code-text: #B07D62;
     --code-block-bg: #282c34;
 
     /* 边框与分割线 */
-    --border-color: #e9ecef;
-    --divider-color: #dee2e6;
+    --border-color: #E5DED6;
+    --divider-color: #DDD6CE;
 
     /* 标签与徽章 */
-    --tag-bg: #e9ecef;
-    --tag-text: #495057;
-    --tag-hover-bg: #dee2e6;
+    --tag-bg: #EDE7E0;
+    --tag-text: #6B6B6B;
+    --tag-hover-bg: #DDD6CE;
 
-    /* 按钮 */
-    --btn-primary-bg: #6c5ce7;
+    /* 按钮 — sage green */
+    --btn-primary-bg: #6B8F71;
     --btn-primary-text: #ffffff;
-    --btn-primary-hover: #5a4bd1;
+    --btn-primary-hover: #5A7D60;
+
+    /* TOC */
+    --toc-highlight: #7D9B8A;
 
     /* 滚动条 */
-    --scrollbar-track: #f1f1f1;
-    --scrollbar-thumb: #c1c1c1;
+    --scrollbar-track: #F0EAE4;
+    --scrollbar-thumb: #C8C1B9;
 
     /* 遮罩 */
     --overlay-bg: rgba(0, 0, 0, 0.5);
+
+    /* 面板 */
+    --panel-bg: #FDFBF9;
+    --panel-border: #E5DED6;
   }
 
   [data-mode="dark"] {
-    /* 背景色 */
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #252540;
-    --bg-tertiary: #2d2d4a;
+    /* 背景色 — Morandi warm dark */
+    --bg-primary: #1E1D1B;
+    --bg-secondary: #262422;
+    --bg-tertiary: #2A2826;
 
     /* 文字色 */
-    --text-primary: #e8e8e8;
-    --text-secondary: #b0b0c0;
-    --text-muted: #7a7a8e;
+    --text-primary: #D4CFC9;
+    --text-secondary: #B8B4AF;
+    --text-muted: #8A8580;
 
-    /* 链接 */
-    --link-color: #6cb4ee;
-    --link-hover: #8ec8f6;
+    /* 链接 — terracotta */
+    --link-color: #C4956E;
+    --link-hover: #D4A57E;
 
     /* 卡片 */
-    --card-bg: #252540;
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --card-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.4);
-    --card-border: #3a3a5c;
+    --card-bg: #262422;
+    --card-shadow: rgb(15 14 12 / 50%) 0 1px 3px 0;
+    --card-shadow-hover: 0 6px 20px rgba(15, 14, 12, 0.6);
+    --card-border: #3A3632;
+    --card-hover-bg: #3A3632;
+
+    /* 侧边栏 */
+    --sidebar-bg: #252320;
+    --sidebar-text: #B8B4AF;
+    --sidebar-active: #8FB896;
+    --sidebar-hover-bg: #302E2A;
+    --sidebar-muted-color: #8A8580;
 
     /* 代码块 */
-    --code-bg: #2d2d4a;
-    --code-text: #f0a8c8;
-    --code-block-bg: #1e1e30;
+    --code-bg: #2A2826;
+    --code-text: #C4956E;
+    --code-block-bg: #1E1E30;
 
     /* 边框与分割线 */
-    --border-color: #3a3a5c;
-    --divider-color: #3a3a5c;
+    --border-color: #3A3632;
+    --divider-color: #3A3632;
 
     /* 标签与徽章 */
-    --tag-bg: #2d2d4a;
-    --tag-text: #b0b0c0;
-    --tag-hover-bg: #3a3a5c;
+    --tag-bg: #302E2A;
+    --tag-text: #B8B4AF;
+    --tag-hover-bg: #3A3632;
 
-    /* 按钮 */
-    --btn-primary-bg: #7c6cf7;
-    --btn-primary-text: #ffffff;
-    --btn-primary-hover: #6c5ce7;
+    /* 按钮 — sage green */
+    --btn-primary-bg: #8FB896;
+    --btn-primary-text: #1E1D1B;
+    --btn-primary-hover: #7DA886;
+
+    /* TOC */
+    --toc-highlight: #8FB896;
 
     /* 滚动条 */
-    --scrollbar-track: #252540;
-    --scrollbar-thumb: #3a3a5c;
+    --scrollbar-track: #252320;
+    --scrollbar-thumb: #3A3632;
 
     /* 遮罩 */
     --overlay-bg: rgba(0, 0, 0, 0.7);
+
+    /* 面板 */
+    --panel-bg: #262422;
+    --panel-border: #3A3632;
   }
 }
