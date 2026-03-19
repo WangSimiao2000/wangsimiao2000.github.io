@@ -1,0 +1,389 @@
+---
+/**
+ * SearchModal - 全文搜索模态框组件
+ *
+ * 使用 Pagefind 实现客户端全文搜索：
+ * - 运行时加载 Pagefind JS（构建时生成索引）
+ * - 即时搜索（300ms 防抖）
+ * - 搜索结果渲染与关键词高亮（<mark> 标签）
+ * - 搜索索引加载失败时的降级提示
+ * - 支持中英文搜索（Pagefind 原生支持中文分词）
+ * - Escape 键和点击遮罩关闭
+ *
+ * Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
+ */
+import { t } from '../utils/i18n';
+
+const noResultsText = t('search.no_results');
+---
+
+<div id="search-modal" class="search-modal" role="dialog" aria-modal="true" aria-label={t('search.hint')} hidden>
+  <div class="search-overlay" data-search-close></div>
+  <div class="search-container">
+    <div class="search-header">
+      <div class="search-input-wrapper">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          id="search-input"
+          type="search"
+          class="search-input"
+          placeholder={t('search.hint')}
+          autocomplete="off"
+          autofocus
+        />
+        <button class="search-cancel" type="button" data-search-close>
+          {t('search.cancel')}
+        </button>
+      </div>
+    </div>
+    <div id="search-results" class="search-results">
+      <!-- Results rendered by JS -->
+    </div>
+    <div id="search-status" class="search-status" data-no-results={noResultsText} hidden></div>
+  </div>
+</div>
+
+<script>
+  /**
+   * SearchModal client-side logic
+   * Loads Pagefind at runtime, implements debounced search with keyword highlighting.
+   */
+  let pagefind: any = null;
+  let pagefindLoaded = false;
+  let pagefindError = false;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const DEBOUNCE_MS = 300;
+  const FALLBACK_MSG = '搜索暂不可用 / Search is currently unavailable';
+
+  /** Load Pagefind JS on first modal open */
+  async function loadPagefind(): Promise<boolean> {
+    if (pagefindLoaded) return true;
+    if (pagefindError) return false;
+
+    try {
+      pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
+      if (pagefind.init) {
+        await pagefind.init();
+      }
+      pagefindLoaded = true;
+      return true;
+    } catch (_e) {
+      pagefindError = true;
+      return false;
+    }
+  }
+
+  // escapeRegex and highlightKeywords are defined in src/utils/search.ts
+  // but since Astro inline <script> cannot use ESM imports from src/,
+  // we duplicate the logic here. The canonical implementation lives in
+  // src/utils/search.ts and is covered by property tests.
+
+  /** Escape special regex characters in a string */
+  function escapeRegex(str: string): string {
+    return str.replace(/[-.*+?^${}()|[\]\\]/g, (match) => '\\' + match);
+  }
+
+  /** Highlight keywords in text using <mark> tags */
+  function highlightKeywords(text: string, query: string): string {
+    if (!query.trim() || !text) return text;
+
+    const escaped = escapeRegex(query);
+    const words = escaped.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return text;
+
+    const pattern = new RegExp('(' + words.join('|') + ')', 'gi');
+    return text.replace(pattern, '<mark>$1</mark>');
+  }
+
+  /** Perform search and render results */
+  async function performSearch(query: string): Promise<void> {
+    const resultsEl = document.getElementById('search-results');
+    const statusEl = document.getElementById('search-status');
+    if (!resultsEl || !statusEl) return;
+
+    // Empty query — clear results
+    if (!query.trim()) {
+      resultsEl.innerHTML = '';
+      statusEl.hidden = true;
+      return;
+    }
+
+    // Load Pagefind if not yet loaded
+    const loaded = await loadPagefind();
+    if (!loaded) {
+      resultsEl.innerHTML = '';
+      statusEl.textContent = FALLBACK_MSG;
+      statusEl.hidden = false;
+      return;
+    }
+
+    try {
+      const search = await pagefind.search(query);
+
+      if (!search.results || search.results.length === 0) {
+        resultsEl.innerHTML = '';
+        statusEl.textContent = statusEl.dataset.noResults || FALLBACK_MSG;
+        statusEl.hidden = false;
+        return;
+      }
+
+      statusEl.hidden = true;
+
+      // Load first 10 results
+      const resultData = await Promise.all(
+        search.results.slice(0, 10).map((r: any) => r.data())
+      );
+
+      resultsEl.innerHTML = resultData
+        .map((item: any) => {
+          const title = highlightKeywords(item.meta?.title || '', query);
+          const excerpt = item.excerpt || item.content?.substring(0, 200) || '';
+          const url = item.url || '#';
+
+          return '<a href="' + url + '" class="search-result-item" data-search-close>'
+            + '<div class="search-result-title">' + title + '</div>'
+            + '<div class="search-result-excerpt">' + excerpt + '</div>'
+            + '</a>';
+        })
+        .join('');
+    } catch (_e) {
+      resultsEl.innerHTML = '';
+      statusEl.textContent = FALLBACK_MSG;
+      statusEl.hidden = false;
+    }
+  }
+
+  /** Open the search modal */
+  function openSearchModal(): void {
+    const modal = document.getElementById('search-modal');
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    if (!modal) return;
+
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    // Focus input after a tick (for transition)
+    requestAnimationFrame(() => {
+      input?.focus();
+    });
+  }
+
+  /** Close the search modal */
+  function closeSearchModal(): void {
+    const modal = document.getElementById('search-modal');
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    const resultsEl = document.getElementById('search-results');
+    const statusEl = document.getElementById('search-status');
+    if (!modal) return;
+
+    modal.hidden = true;
+    document.body.style.overflow = '';
+
+    // Clear state
+    if (input) input.value = '';
+    if (resultsEl) resultsEl.innerHTML = '';
+    if (statusEl) statusEl.hidden = true;
+  }
+
+  /** Initialize search modal event listeners */
+  function initSearchModal(): void {
+    // Search trigger button
+    document.addEventListener('click', (e) => {
+      const trigger = (e.target as Element)?.closest('#search-trigger');
+      if (trigger) {
+        e.preventDefault();
+        openSearchModal();
+      }
+    });
+
+    // Close buttons and overlay
+    document.addEventListener('click', (e) => {
+      const closeTarget = (e.target as Element)?.closest('[data-search-close]');
+      if (closeTarget) {
+        // If it's a result link, let navigation happen first
+        if (closeTarget.tagName === 'A') {
+          closeSearchModal();
+          return;
+        }
+        e.preventDefault();
+        closeSearchModal();
+      }
+    });
+
+    // Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('search-modal');
+        if (modal && !modal.hidden) {
+          e.preventDefault();
+          closeSearchModal();
+        }
+      }
+    });
+
+    // Debounced search on input
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    input?.addEventListener('input', () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        performSearch(input.value);
+      }, DEBOUNCE_MS);
+    });
+  }
+
+  // Initialize on first load
+  initSearchModal();
+
+  // Re-initialize after View Transitions page swap
+  document.addEventListener('astro:after-swap', () => {
+    initSearchModal();
+  });
+</script>
+
+<style>
+  .search-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+  }
+
+  .search-modal[hidden] {
+    display: none;
+  }
+
+  .search-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg);
+  }
+
+  .search-container {
+    position: relative;
+    width: 90%;
+    max-width: 640px;
+    max-height: 70vh;
+    background: var(--bg-secondary);
+    border-radius: 0.75rem;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .search-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .search-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1rem;
+    color: var(--text-primary);
+    padding: 0.25rem 0;
+  }
+
+  .search-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .search-cancel {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  .search-cancel:hover {
+    color: var(--text-primary);
+  }
+
+  .search-results {
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
+
+  .search-status {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .search-status[hidden] {
+    display: none;
+  }
+</style>
+
+<style is:global>
+  .search-result-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: background-color 0.15s ease;
+  }
+
+  .search-result-item:hover {
+    background-color: var(--tag-bg);
+  }
+
+  .search-result-title {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .search-result-excerpt {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .search-result-item mark {
+    background-color: rgba(108, 92, 231, 0.2);
+    color: inherit;
+    padding: 0 0.125rem;
+    border-radius: 0.125rem;
+  }
+
+  [data-mode="dark"] .search-result-item mark {
+    background-color: rgba(124, 108, 247, 0.3);
+  }
+</style>

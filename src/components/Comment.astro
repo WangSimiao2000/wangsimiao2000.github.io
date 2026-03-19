@@ -1,0 +1,115 @@
+---
+/**
+ * Comment - Giscus 评论组件
+ *
+ * 功能:
+ * - 根据 siteConfig.comments.giscus 配置渲染 Giscus script 标签
+ * - 通过 enabled prop 控制评论区显示/隐藏
+ * - 根据当前主题模式动态设置 Giscus 主题
+ * - 主题切换时通过 postMessage 通知 Giscus iframe 更新主题
+ *
+ * Requirements: 7.1, 7.2, 7.3, 7.4
+ */
+import { siteConfig } from '../config';
+
+interface Props {
+  enabled?: boolean;
+}
+
+const { enabled = true } = Astro.props;
+const giscus = siteConfig.comments.giscus;
+---
+
+{enabled && (
+  <section id="comments" class="giscus-container">
+    <div class="giscus"></div>
+  </section>
+)}
+
+{enabled && (
+  <script
+    is:inline
+    data-repo={giscus.repo}
+    data-repo-id={giscus.repoId}
+    data-category={giscus.category}
+    data-category-id={giscus.categoryId}
+    data-mapping={giscus.mapping}
+    data-lang={giscus.lang}
+    id="giscus-config"
+  >
+    // Determine current theme based on data-mode attribute
+    function getGiscusTheme() {
+      const mode = document.documentElement.getAttribute('data-mode');
+      return mode === 'dark' ? 'dark' : 'light';
+    }
+
+    // Send theme update to Giscus iframe via postMessage
+    function updateGiscusTheme(theme) {
+      const iframe = document.querySelector('iframe.giscus-frame');
+      if (iframe) {
+        iframe.contentWindow.postMessage(
+          { giscus: { setConfig: { theme: theme } } },
+          'https://giscus.app'
+        );
+      }
+    }
+
+    // Load Giscus script with current theme
+    function loadGiscus() {
+      const container = document.querySelector('.giscus');
+      if (!container) return;
+
+      // Remove existing Giscus elements to avoid duplicates on navigation
+      const existingScript = document.getElementById('giscus-script');
+      if (existingScript) existingScript.remove();
+      const existingIframe = container.querySelector('iframe');
+      if (existingIframe) existingIframe.remove();
+
+      const configEl = document.getElementById('giscus-config');
+      if (!configEl) return;
+
+      const script = document.createElement('script');
+      script.id = 'giscus-script';
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', configEl.getAttribute('data-repo'));
+      script.setAttribute('data-repo-id', configEl.getAttribute('data-repo-id'));
+      script.setAttribute('data-category', configEl.getAttribute('data-category'));
+      script.setAttribute('data-category-id', configEl.getAttribute('data-category-id'));
+      script.setAttribute('data-mapping', configEl.getAttribute('data-mapping'));
+      script.setAttribute('data-lang', configEl.getAttribute('data-lang'));
+      script.setAttribute('data-theme', getGiscusTheme());
+      script.setAttribute('data-reactions-enabled', '1');
+      script.setAttribute('data-emit-metadata', '0');
+      script.setAttribute('data-input-position', 'bottom');
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+
+      container.appendChild(script);
+    }
+
+    // Observe theme changes via MutationObserver on data-mode attribute
+    function observeThemeChanges() {
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'data-mode') {
+            updateGiscusTheme(getGiscusTheme());
+          }
+        }
+      });
+
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-mode'],
+      });
+    }
+
+    // Initialize
+    loadGiscus();
+    observeThemeChanges();
+
+    // Re-initialize after View Transitions page swap
+    document.addEventListener('astro:after-swap', () => {
+      loadGiscus();
+    });
+  </script>
+)}

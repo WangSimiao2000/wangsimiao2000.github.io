@@ -1,0 +1,76 @@
+---
+/**
+ * 工具列表页 - 卡片网格展示工具列表
+ *
+ * URL: /tools/
+ * 从 data/tools.yml 读取数据，自动渲染工具卡片网格
+ * 添加新工具只需：1) 在 data/tools.yml 添加记录 2) 创建对应目录
+ *
+ * Requirements: 3.1, 3.7, 12.3, 12.6, 12.8
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { siteConfig } from '../../config';
+import { loadTools } from '../../utils/data';
+import { t } from '../../utils/i18n';
+
+const tools = loadTools();
+---
+
+<BaseLayout title={t('tabs.tools')} description={`${siteConfig.title} - ${t('tabs.tools')}`}>
+  <div class="tools-page">
+    <h1 class="page-title">{t('tabs.tools')}</h1>
+
+    <div class="card-grid">
+      {tools.map((tool) => (
+        <a href={tool.url} class="card tool-card">
+          <div class="card-body">
+            <div class="tool-icon">
+              <i class={tool.icon}></i>
+            </div>
+            <h2 class="card-title">{tool.name}</h2>
+            <p class="card-description">{tool.description}</p>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .tools-page {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem;
+  }
+
+  .tool-card {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .tool-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.5rem;
+    background: var(--bg-tertiary);
+    color: var(--btn-primary-bg);
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  @media (max-width: 768px) {
+    .tools-page {
+      padding: 1rem 0.75rem;
+    }
+  }
+</style>

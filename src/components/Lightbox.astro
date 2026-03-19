@@ -1,0 +1,131 @@
+---
+/**
+ * Lightbox - 图片弹窗预览组件
+ *
+ * 点击图片后全屏弹窗展示，支持键盘 Esc 关闭
+ * 使用 client:visible 延迟加载交互逻辑
+ *
+ * Requirements: 3.5
+ */
+---
+
+<div id="lightbox-overlay" class="lightbox-overlay" role="dialog" aria-modal="true" aria-label="图片预览">
+  <button class="lightbox-close" aria-label="关闭预览">&times;</button>
+  <img class="lightbox-image" src="" alt="" />
+</div>
+
+<script>
+  /**
+   * Initialize lightbox functionality.
+   * Attaches click handlers to gallery images and manages the overlay.
+   */
+  function initLightboxComponent(): void {
+    const overlay = document.getElementById('lightbox-overlay');
+    const lightboxImg = overlay?.querySelector('.lightbox-image') as HTMLImageElement | null;
+    const closeBtn = overlay?.querySelector('.lightbox-close') as HTMLButtonElement | null;
+
+    if (!overlay || !lightboxImg || !closeBtn) return;
+
+    function openLightbox(src: string, alt: string): void {
+      if (!overlay || !lightboxImg) return;
+      lightboxImg.src = src;
+      lightboxImg.alt = alt;
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox(): void {
+      if (!overlay || !lightboxImg) return;
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      lightboxImg.src = '';
+    }
+
+    // Close on button click
+    closeBtn.addEventListener('click', closeLightbox);
+
+    // Close on overlay background click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        closeLightbox();
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay.classList.contains('active')) {
+        closeLightbox();
+      }
+    });
+
+    // Attach click handlers to all gallery trigger images
+    function bindGalleryImages(): void {
+      const triggers = document.querySelectorAll('[data-lightbox]');
+      triggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+          const src = (trigger as HTMLElement).dataset.lightboxSrc || (trigger as HTMLImageElement).src;
+          const alt = (trigger as HTMLElement).dataset.lightboxAlt || (trigger as HTMLImageElement).alt || '';
+          openLightbox(src, alt);
+        });
+      });
+    }
+
+    bindGalleryImages();
+
+    // Expose for View Transitions re-initialization
+    (window as any).initLightbox = bindGalleryImages;
+  }
+
+  // Run on initial load and after View Transitions
+  initLightboxComponent();
+  document.addEventListener('astro:after-swap', initLightboxComponent);
+</script>
+
+<style>
+  .lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    cursor: zoom-out;
+  }
+
+  .lightbox-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem;
+    z-index: 1;
+    opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+
+  .lightbox-close:hover {
+    opacity: 1;
+  }
+
+  .lightbox-image {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 0.25rem;
+    cursor: default;
+  }
+</style>

@@ -1,0 +1,197 @@
+/**
+ * 排版样式
+ * 定义全局字体、标题、段落、列表、引用等排版规则
+ */
+@layer base {
+  /* 字体栈 */
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+    --font-mono: "Fira Code", "JetBrains Mono", "Source Code Pro", Consolas,
+      "Courier New", monospace;
+    --font-serif: Georgia, "Noto Serif SC", "Times New Roman", serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 标题 */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-primary);
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+  }
+
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.625rem; }
+  h3 { font-size: 1.375rem; }
+  h4 { font-size: 1.125rem; }
+  h5 { font-size: 1rem; }
+  h6 { font-size: 0.875rem; }
+
+  /* 段落 */
+  p {
+    margin-bottom: 1.25rem;
+    color: var(--text-primary);
+  }
+
+  /* 链接 */
+  a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+  }
+
+  /* 列表 */
+  ul, ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+
+  li > ul, li > ol {
+    margin-bottom: 0;
+  }
+
+  /* 引用块 */
+  blockquote {
+    border-left: 4px solid var(--btn-primary-bg);
+    padding: 0.75rem 1rem;
+    margin: 1.25rem 0;
+    background: var(--bg-tertiary);
+    border-radius: 0 0.5rem 0.5rem 0;
+    color: var(--text-secondary);
+  }
+
+  blockquote p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* 行内代码 */
+  :not(pre) > code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    padding: 0.15em 0.4em;
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 0.25rem;
+    word-break: break-word;
+  }
+
+  /* 代码块 */
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    background: var(--code-block-bg);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1.25rem 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+    border-radius: 0;
+  }
+
+  /* 水平线 */
+  hr {
+    border: none;
+    border-top: 1px solid var(--divider-color);
+    margin: 2rem 0;
+  }
+
+  /* 表格 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.25rem 0;
+    font-size: 0.9375rem;
+  }
+
+  th, td {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--border-color);
+    text-align: left;
+  }
+
+  th {
+    background: var(--bg-tertiary);
+    font-weight: 600;
+  }
+
+  tr:hover {
+    background: var(--bg-tertiary);
+  }
+
+  /* 图片 */
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+  }
+
+  /* 选中文本 */
+  ::selection {
+    background: var(--btn-primary-bg);
+    color: #ffffff;
+  }
+
+  /* 响应式排版 */
+  @media (max-width: 768px) {
+    body {
+      font-size: 0.9375rem;
+      line-height: 1.7;
+    }
+
+    h1 { font-size: 1.625rem; }
+    h2 { font-size: 1.375rem; }
+    h3 { font-size: 1.1875rem; }
+    h4 { font-size: 1.0625rem; }
+  }
+
+  @media (max-width: 480px) {
+    body {
+      font-size: 0.875rem;
+    }
+
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.125rem; }
+
+    pre {
+      font-size: 0.8125rem;
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+    }
+
+    table {
+      font-size: 0.8125rem;
+    }
+
+    th, td {
+      padding: 0.5rem;
+    }
+  }
+}

@@ -1,0 +1,101 @@
+---
+/**
+ * PostNav - 文章底部上一篇/下一篇导航
+ *
+ * Requirements: 3.3
+ */
+import { t } from '../utils/i18n';
+import { getPostUrl } from '../utils/posts';
+import type { Post } from '../utils/posts';
+
+interface Props {
+  prev: Post | null;
+  next: Post | null;
+}
+
+const { prev, next } = Astro.props;
+const prevLabel = t('post.button.previous') || '上一篇';
+const nextLabel = t('post.button.next') || '下一篇';
+---
+
+{(prev || next) && (
+  <nav class="post-nav" aria-label="文章导航">
+    <div class="post-nav-item post-nav-prev">
+      {prev && (
+        <a href={getPostUrl(prev.slug)}>
+          <span class="post-nav-label">{prevLabel}</span>
+          <span class="post-nav-title">{prev.data.title}</span>
+        </a>
+      )}
+    </div>
+    <div class="post-nav-item post-nav-next">
+      {next && (
+        <a href={getPostUrl(next.slug)}>
+          <span class="post-nav-label">{nextLabel}</span>
+          <span class="post-nav-title">{next.data.title}</span>
+        </a>
+      )}
+    </div>
+  </nav>
+)}
+
+<style>
+  .post-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .post-nav-item a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+  }
+
+  .post-nav-item a:hover {
+    background: var(--tag-bg);
+  }
+
+  .post-nav-next {
+    text-align: right;
+  }
+
+  .post-nav-next a {
+    align-items: flex-end;
+  }
+
+  .post-nav-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .post-nav-title {
+    font-size: 0.9375rem;
+    color: var(--link-color);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 480px) {
+    .post-nav {
+      grid-template-columns: 1fr;
+    }
+
+    .post-nav-next {
+      text-align: left;
+    }
+
+    .post-nav-next a {
+      align-items: flex-start;
+    }
+  }
+</style>

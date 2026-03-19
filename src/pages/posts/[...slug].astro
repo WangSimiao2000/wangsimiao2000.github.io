@@ -1,0 +1,53 @@
+---
+/**
+ * 文章详情页
+ *
+ * URL: /posts/{slug}/
+ * 使用 PostLayout 布局，集成 TOC、CodeCopy、PostNav、RelatedPosts、Comment
+ *
+ * Requirements: 2.5, 3.1, 3.3, 3.4
+ */
+import type { GetStaticPaths } from 'astro';
+import { getCollection } from 'astro:content';
+import PostLayout from '../../layouts/PostLayout.astro';
+import { sortPosts, getPostNavigation, getRelatedPosts } from '../../utils/posts';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const allPosts = await getCollection('posts');
+  const sortedPosts = sortPosts(allPosts);
+
+  return allPosts.map((post) => ({
+    params: { slug: post.slug },
+    props: {
+      post,
+      sortedPosts,
+    },
+  }));
+};
+
+const { post, sortedPosts } = Astro.props;
+const { Content } = await post.render();
+
+// Get navigation and related posts
+const navigation = getPostNavigation(sortedPosts, post.slug);
+const relatedPosts = getRelatedPosts(sortedPosts, post, 5);
+---
+
+<PostLayout
+  title={post.data.title}
+  date={post.data.date}
+  categories={post.data.categories}
+  tags={post.data.tags}
+  description={post.data.description}
+  image={post.data.image}
+  lastModifiedAt={post.data.last_modified_at}
+  comments={post.data.comments}
+  toc={post.data.toc}
+  content={post.body || ''}
+  slug={post.slug}
+  prev={navigation.prev}
+  next={navigation.next}
+  relatedPosts={relatedPosts}
+>
+  <Content />
+</PostLayout>

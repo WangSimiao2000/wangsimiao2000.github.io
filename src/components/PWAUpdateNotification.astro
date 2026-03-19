@@ -1,0 +1,136 @@
+---
+/**
+ * PWAUpdateNotification - Service Worker 更新通知组件
+ *
+ * 当新版本的 Service Worker 可用时，显示通知提示用户刷新页面。
+ * 使用 @vite-pwa/astro 的 registerType: 'prompt' 模式。
+ *
+ * Requirements: 8.3 (notify user when new SW available)
+ */
+---
+
+<div id="pwa-update-notification" class="pwa-notification" role="alert" aria-live="polite" hidden>
+  <span class="pwa-notification-text">有新版本可用</span>
+  <button id="pwa-update-btn" class="pwa-notification-btn" type="button">
+    刷新
+  </button>
+  <button id="pwa-dismiss-btn" class="pwa-notification-dismiss" type="button" aria-label="关闭">
+    ✕
+  </button>
+</div>
+
+<script>
+  /**
+   * Listen for the @vite-pwa/astro custom event that fires when
+   * a new Service Worker is waiting to activate.
+   */
+  function initPWAUpdateNotification() {
+    // @vite-pwa/astro with registerType: 'prompt' exposes a custom event
+    // or we can use the workbox lifecycle directly via the virtual module
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        // Check if there's already a waiting SW
+        if (registration.waiting) {
+          showUpdateNotification(registration.waiting);
+        }
+
+        // Listen for new SW installing
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New SW is installed and waiting - show notification
+              showUpdateNotification(newWorker);
+            }
+          });
+        });
+      });
+
+      // Handle controller change (after skipWaiting)
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+  }
+
+  function showUpdateNotification(waitingSW: ServiceWorker) {
+    const notification = document.getElementById('pwa-update-notification');
+    const updateBtn = document.getElementById('pwa-update-btn');
+    const dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+    if (!notification || !updateBtn || !dismissBtn) return;
+
+    notification.hidden = false;
+
+    updateBtn.addEventListener('click', () => {
+      waitingSW.postMessage({ type: 'SKIP_WAITING' });
+      notification.hidden = true;
+    }, { once: true });
+
+    dismissBtn.addEventListener('click', () => {
+      notification.hidden = true;
+    }, { once: true });
+  }
+
+  // Initialize on first load and after View Transitions
+  initPWAUpdateNotification();
+  document.addEventListener('astro:page-load', initPWAUpdateNotification);
+</script>
+
+<style>
+  .pwa-notification {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg, #ffffff);
+    color: var(--text-primary, #1a1a2e);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 0.875rem;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .pwa-notification[hidden] {
+    display: none;
+  }
+
+  .pwa-notification-btn {
+    padding: 0.375rem 0.75rem;
+    background: var(--link-color, #0969da);
+    color: #fff;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  .pwa-notification-btn:hover {
+    opacity: 0.9;
+  }
+
+  .pwa-notification-dismiss {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary, #666);
+    font-size: 0.875rem;
+    padding: 0.25rem;
+    line-height: 1;
+  }
+
+  .pwa-notification-dismiss:hover {
+    color: var(--text-primary, #1a1a2e);
+  }
+</style>

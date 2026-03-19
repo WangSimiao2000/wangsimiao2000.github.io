@@ -1,0 +1,7 @@
+# 工具列表数据
+# 每条记录包含: name (必填), description (必填), url (必填), icon (必填)
+
+- name: "称骨算命"
+  description: "传统称骨算命小工具"
+  url: "/tools/bazi-fortune/"
+  icon: "fas fa-balance-scale"

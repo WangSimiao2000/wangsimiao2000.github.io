@@ -1,0 +1,91 @@
+---
+/**
+ * ToolLayout - 工具页面布局（样式隔离）
+ *
+ * 提供样式隔离的工具页面布局：
+ * - 工具页面的自定义 CSS/JS 不受博客全局样式干扰
+ * - 可选择性复用博客布局框架（侧边栏、导航栏等）
+ * - 通过 `isolated` prop 控制是否完全隔离（不使用博客框架）
+ *
+ * Requirements: 12.7, 12.9
+ */
+import BaseLayout from './BaseLayout.astro';
+import { siteConfig } from '../config';
+
+interface Props {
+  /** 工具页面标题 */
+  title: string;
+  /** 页面描述 */
+  description?: string;
+  /**
+   * 是否完全隔离样式（不复用博客布局框架）
+   * - false (default): 复用博客的侧边栏和导航栏
+   * - true: 完全独立页面，不加载博客全局样式
+   */
+  isolated?: boolean;
+}
+
+const {
+  title,
+  description = '',
+  isolated = false,
+} = Astro.props;
+---
+
+{isolated ? (
+  <!-- Fully isolated mode: standalone page without blog framework -->
+  <html lang={siteConfig.lang}>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>{title} | {siteConfig.title}</title>
+      {description && <meta name="description" content={description} />}
+      <link rel="icon" type="image/png" href="/assets/img/avatar/avatar.png" />
+    </head>
+    <body>
+      <div class="tool-page tool-page--isolated">
+        <slot />
+      </div>
+    </body>
+  </html>
+) : (
+  <!-- Integrated mode: reuse blog layout framework (sidebar, topbar) -->
+  <BaseLayout title={title} description={description}>
+    <div class="tool-page tool-page--integrated">
+      <slot />
+    </div>
+  </BaseLayout>
+)}
+
+<style>
+  /*
+   * Tool page container provides style isolation.
+   * Tool-specific CSS/JS injected via <slot /> won't leak to the blog,
+   * and blog global styles won't interfere with tool content.
+   */
+  .tool-page {
+    /* Reset common inherited styles to prevent blog style interference */
+    all: initial;
+    display: block;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #333;
+    line-height: 1.6;
+    box-sizing: border-box;
+  }
+
+  .tool-page :global(*),
+  .tool-page :global(*::before),
+  .tool-page :global(*::after) {
+    box-sizing: border-box;
+  }
+
+  .tool-page--integrated {
+    max-width: 100%;
+    padding: 1.5rem;
+  }
+
+  .tool-page--isolated {
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+</style>

@@ -1,56 +1,46 @@
-name: "Daily R2 Gallery Sync"
+name: "R2 Gallery Sync"
 
 on:
   schedule:
-    # 每天 UTC 16:00（北京时间 00:00）检查一次
-    - cron: "0 16 * * *"
+    # 每日 UTC 00:00 定时执行
+    - cron: "0 0 * * *"
 
-  # 也支持手动触发
+  # 支持手动触发
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  sync:
+  sync-gallery:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Install AWS CLI
         run: pip install awscli --quiet
 
-      - name: Generate gallery from R2
+      - name: Generate gallery data from R2
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_CDN_BUCKET_NAME }}
-          R2_PUBLIC_URL: ${{ secrets.R2_CDN_PUBLIC_URL }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-        run: bash _scripts/generate-gallery-r2.sh
+          R2_ENDPOINT_URL: "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          R2_CDN_PUBLIC_URL: ${{ secrets.R2_CDN_PUBLIC_URL }}
+        run: bash scripts/generate-gallery-r2.sh
 
       - name: Check for changes
         id: diff
         run: |
-          if git diff --quiet _data/gallery.yml; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "R2 照片无变化，跳过更新"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "检测到 R2 照片更新："
-            git diff --stat _data/gallery.yml
-          fi
+          git diff --quiet data/gallery.yml && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Commit and push
+      - name: Commit and push updates
         if: steps.diff.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _data/gallery.yml
-          git commit -m "chore: sync gallery from R2 [auto]"
+          git add data/gallery.yml
+          git commit -m "chore: update gallery data from R2"
           git push

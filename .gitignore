@@ -1,21 +1,11 @@
-# Bundler cache
-.bundle
-vendor
-Gemfile.lock
-
-# Jekyll cache
-.jekyll-cache
-.jekyll-metadata
-_site
-
-# RubyGems
-*.gem
-
 # NPM dependencies
 node_modules
 
 # Build output
-assets/js/dist
+dist/
+
+# Astro
+.astro/
 
 # IDE configurations
 .idea

@@ -1,0 +1,98 @@
+---
+/**
+ * 友链页 - 卡片网格展示友情链接
+ *
+ * URL: /friends/
+ * 从 data/friends.yml 读取数据，复用 .card / .card-grid 共享样式
+ *
+ * Requirements: 3.1, 3.6, 12.1
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { siteConfig } from '../../config';
+import { loadFriends } from '../../utils/data';
+import { t } from '../../utils/i18n';
+
+const friends = loadFriends();
+---
+
+<BaseLayout title={t('tabs.friends')} description={`${siteConfig.title} - ${t('tabs.friends')}`}>
+  <div class="friends-page">
+    <h1 class="page-title">{t('tabs.friends')}</h1>
+
+    <div class="card-grid">
+      {friends.map((friend) => (
+        <a href={friend.url} target="_blank" rel="noopener noreferrer" class="card friend-card">
+          <div class="card-body">
+            <div class="friend-header">
+              {friend.icon ? (
+                <img
+                  src={friend.icon}
+                  alt={friend.name}
+                  class="card-avatar"
+                  loading="lazy"
+                />
+              ) : (
+                <div class="card-icon">
+                  <span>{friend.name.charAt(0)}</span>
+                </div>
+              )}
+              <div class="friend-info">
+                <h2 class="card-title">{friend.name}</h2>
+                {friend.description && (
+                  <p class="card-description">{friend.description}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .friends-page {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem;
+  }
+
+  .friend-card {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .friend-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .friend-info {
+    min-width: 0;
+  }
+
+  .friend-card .card-title {
+    margin-bottom: 0.25rem;
+  }
+
+  .friend-card .card-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  @media (max-width: 768px) {
+    .friends-page {
+      padding: 1rem 0.75rem;
+    }
+  }
+</style>

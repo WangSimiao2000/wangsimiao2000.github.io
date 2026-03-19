@@ -1,0 +1,50 @@
+---
+/**
+ * 称骨算命 - 示例工具页面
+ *
+ * URL: /tools/bazi-fortune/
+ * 使用 ToolLayout 实现样式隔离，自定义 CSS/JS 不受博客全局样式干扰
+ *
+ * Requirements: 12.7, 12.9
+ */
+import ToolLayout from '../../../layouts/ToolLayout.astro';
+---
+
+<ToolLayout title="称骨算命" description="传统称骨算命小工具">
+  <div class="bazi-fortune">
+    <h1>称骨算命</h1>
+    <p>传统称骨算命小工具，根据出生年月日时推算命运。</p>
+
+    <div class="bazi-form">
+      <p>工具内容区域 — 此处可放置自定义 HTML、CSS 和 JS。</p>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .bazi-fortune {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .bazi-fortune h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+    color: #1a1a2e;
+  }
+
+  .bazi-fortune p {
+    color: #555;
+    line-height: 1.8;
+  }
+
+  .bazi-form {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+  }
+</style>

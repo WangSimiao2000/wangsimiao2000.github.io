@@ -1,0 +1,39 @@
+---
+/**
+ * ReadTime - 阅读时间估算显示
+ *
+ * Requirements: 4.7
+ */
+import { t } from '../utils/i18n';
+
+interface Props {
+  /** Estimated reading time in minutes */
+  minutes: number;
+  /** Word count */
+  words: number;
+}
+
+const { minutes, words } = Astro.props;
+
+const unit = t('post.read_time.unit') || 'min';
+const prompt = t('post.read_time.prompt') || '';
+const wordsLabel = t('post.words') || 'words';
+---
+
+<span class="read-time" title={`${words} ${wordsLabel}`}>
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+  <span>{minutes} {unit} {prompt}</span>
+</span>
+
+<style>
+  .read-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+</style>

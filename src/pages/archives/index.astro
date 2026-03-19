@@ -1,0 +1,137 @@
+---
+/**
+ * 归档页 - 按年份分组展示所有文章
+ *
+ * URL: /archives/
+ * 按年份倒序分组，每组内按日期倒序排列
+ *
+ * Requirements: 3.1
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { siteConfig } from '../../config';
+import { sortPosts, getPostUrl } from '../../utils/posts';
+import { formatDate } from '../../utils/date';
+import { t } from '../../utils/i18n';
+import type { Locale } from '../../types';
+
+const locale = siteConfig.lang as Locale;
+
+const allPosts = await getCollection('posts');
+const sortedPosts = sortPosts(allPosts);
+
+// Group posts by year (descending)
+const postsByYear = new Map<number, typeof sortedPosts>();
+for (const post of sortedPosts) {
+  const year = post.data.date.getFullYear();
+  if (!postsByYear.has(year)) {
+    postsByYear.set(year, []);
+  }
+  postsByYear.get(year)!.push(post);
+}
+
+// Sort years descending
+const years = [...postsByYear.keys()].sort((a, b) => b - a);
+---
+
+<BaseLayout title={t('tabs.archives')} description={`${siteConfig.title} - ${t('tabs.archives')}`}>
+  <div class="archives-page">
+    <h1 class="page-title">{t('tabs.archives')}</h1>
+    <p class="post-count">{sortedPosts.length} {locale === 'zh-CN' ? '篇文章' : sortedPosts.length === 1 ? 'post' : 'posts'}</p>
+
+    {years.map((year) => (
+      <section class="year-group">
+        <h2 class="year-heading">{year}</h2>
+        <ul class="year-posts">
+          {postsByYear.get(year)!.map((post) => (
+            <li class="archive-item">
+              <time datetime={post.data.date.toISOString()}>
+                {formatDate(post.data.date, locale)}
+              </time>
+              <a href={getPostUrl(post.slug)}>{post.data.title}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+</BaseLayout>
+
+<style>
+  .archives-page {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+  }
+
+  .post-count {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0 0 2rem;
+  }
+
+  .year-group {
+    margin-bottom: 2rem;
+  }
+
+  .year-heading {
+    font-size: 1.375rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--border-color, #e5e5e5);
+  }
+
+  .year-posts {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .archive-item {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .archive-item time {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 5.5rem;
+  }
+
+  .archive-item a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .archive-item a:hover {
+    color: var(--link-color);
+  }
+
+  @media (max-width: 768px) {
+    .archives-page {
+      padding: 1rem 0.75rem;
+    }
+
+    .archive-item {
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .archive-item time {
+      min-width: auto;
+    }
+  }
+</style>

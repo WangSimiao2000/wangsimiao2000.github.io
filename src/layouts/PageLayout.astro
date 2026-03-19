@@ -1,0 +1,66 @@
+---
+/**
+ * PageLayout - 通用页面布局
+ *
+ * 用于非文章页面（关于、友链、相册、归档等）的通用布局。
+ * 基于 BaseLayout，提供标题和内容区域。
+ *
+ * Requirements: 3.1
+ */
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+const { title, description, ogImage, noindex } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} ogImage={ogImage} noindex={noindex}>
+  <div class="page-content">
+    <header class="page-header">
+      <h1 class="page-title">{title}</h1>
+    </header>
+
+    <div class="page-body">
+      <slot />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-content {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .page-body {
+    line-height: 1.75;
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 768px) {
+    .page-content {
+      padding: 1rem 0.75rem;
+    }
+
+    .page-title {
+      font-size: 1.375rem;
+    }
+  }
+</style>

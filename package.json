@@ -1,29 +1,46 @@
 {
   "name": "wangsimiao2000.github.io",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "MickeyMiao's personal blog based on Jekyll Chirpy theme",
+  "type": "module",
+  "description": "MickeyMiao's personal blog - Astro",
   "author": "Wang Simiao",
   "license": "MIT",
   "homepage": "https://blog.mickeymiao.cn",
   "scripts": {
-    "build": "BUILD=production npx rollup -c --bundleConfigAsCjs",
-    "watch": "npx rollup -c --bundleConfigAsCjs -w",
-    "dev": "npm run build && bash _scripts/run.sh",
-    "test": "bash _scripts/test.sh",
-    "clean": "rm -rf assets/js/dist _site .jekyll-cache .jekyll-metadata node_modules && echo '✅ 已清理所有构建产物'"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.24.0",
-    "@babel/plugin-transform-class-properties": "^7.24.0",
-    "@babel/plugin-transform-private-methods": "^7.24.0",
-    "@babel/preset-env": "^7.24.0",
-    "@rollup/plugin-babel": "^6.0.4",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.12.0"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.astro",
+    "format": "prettier --write ."
   },
   "dependencies": {
-    "bootstrap": "^5.3.3"
+    "@astrojs/check": "^0.9.8",
+    "@astrojs/rss": "^4.0.17",
+    "@astrojs/sitemap": "^3.7.1",
+    "@vite-pwa/astro": "^1.2.0",
+    "astro": "^5.18.1",
+    "astro-pagefind": "^1.8.5",
+    "js-yaml": "^4.1.1",
+    "mermaid": "^11.13.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@fast-check/vitest": "^0.3.0",
+    "@types/js-yaml": "^4.0.9",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
+    "eslint": "^10.0.3",
+    "eslint-plugin-astro": "^1.6.0",
+    "fast-check": "^4.6.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-astro": "^0.14.1",
+    "vitest": "^4.1.0"
   }
 }

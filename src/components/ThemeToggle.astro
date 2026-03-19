@@ -1,0 +1,105 @@
+---
+/**
+ * ThemeToggle - 明暗主题切换按钮
+ *
+ * 行为:
+ * 1. 首次访问: 检查 localStorage，回退到 prefers-color-scheme
+ * 2. 通过 data-mode 属性切换 CSS 变量
+ * 3. 手动切换后持久化到 localStorage
+ *
+ * Requirements: 5.1, 5.2, 5.3
+ */
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  aria-label="切换主题"
+  title="切换明暗主题"
+  class="theme-toggle-btn"
+>
+  <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+  <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+</button>
+
+<style>
+  .theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .theme-toggle-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--tag-bg);
+  }
+
+  /* Light mode: show moon icon (click to go dark), hide sun */
+  .icon-sun {
+    display: none;
+  }
+  .icon-moon {
+    display: block;
+  }
+
+  /* Dark mode: show sun icon (click to go light), hide moon */
+  :global([data-mode="dark"]) .icon-sun {
+    display: block;
+  }
+  :global([data-mode="dark"]) .icon-moon {
+    display: none;
+  }
+</style>
+
+<script>
+  import { saveTheme, applyTheme, resolveTheme } from '../utils/theme';
+  import type { ThemeMode } from '../utils/theme';
+
+  function initTheme(): void {
+    const theme = resolveTheme();
+    applyTheme(theme);
+  }
+
+  function toggleTheme(): void {
+    const current = document.documentElement.getAttribute('data-mode');
+    const next: ThemeMode = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    saveTheme(next);
+  }
+
+  // Initialize on first load
+  initTheme();
+
+  // Bind click handler
+  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+
+  // Re-initialize after View Transitions page swap
+  document.addEventListener('astro:after-swap', () => {
+    initTheme();
+  });
+
+  document.addEventListener('astro:page-load', () => {
+    document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+  });
+</script>

@@ -1,0 +1,109 @@
+/**
+ * CSS 变量主题定义
+ * :root = 明亮模式（默认）
+ * [data-mode="dark"] = 暗黑模式
+ * Chirpy-inspired 配色方案
+ */
+@layer base {
+  :root {
+    /* 背景色 */
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f0f1f3;
+
+    /* 文字色 */
+    --text-primary: #1a1a2e;
+    --text-secondary: #555555;
+    --text-muted: #868e96;
+
+    /* 链接 */
+    --link-color: #2a6496;
+    --link-hover: #1a4a70;
+
+    /* 卡片 */
+    --card-bg: #ffffff;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.12);
+    --card-border: #e9ecef;
+
+    /* 侧边栏 */
+    --sidebar-bg: #1e1e2e;
+    --sidebar-text: #e8e8e8;
+    --sidebar-active: #6c5ce7;
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+
+    /* 代码块 */
+    --code-bg: #f5f5f5;
+    --code-text: #d63384;
+    --code-block-bg: #282c34;
+
+    /* 边框与分割线 */
+    --border-color: #e9ecef;
+    --divider-color: #dee2e6;
+
+    /* 标签与徽章 */
+    --tag-bg: #e9ecef;
+    --tag-text: #495057;
+    --tag-hover-bg: #dee2e6;
+
+    /* 按钮 */
+    --btn-primary-bg: #6c5ce7;
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: #5a4bd1;
+
+    /* 滚动条 */
+    --scrollbar-track: #f1f1f1;
+    --scrollbar-thumb: #c1c1c1;
+
+    /* 遮罩 */
+    --overlay-bg: rgba(0, 0, 0, 0.5);
+  }
+
+  [data-mode="dark"] {
+    /* 背景色 */
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #252540;
+    --bg-tertiary: #2d2d4a;
+
+    /* 文字色 */
+    --text-primary: #e8e8e8;
+    --text-secondary: #b0b0c0;
+    --text-muted: #7a7a8e;
+
+    /* 链接 */
+    --link-color: #6cb4ee;
+    --link-hover: #8ec8f6;
+
+    /* 卡片 */
+    --card-bg: #252540;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --card-border: #3a3a5c;
+
+    /* 代码块 */
+    --code-bg: #2d2d4a;
+    --code-text: #f0a8c8;
+    --code-block-bg: #1e1e30;
+
+    /* 边框与分割线 */
+    --border-color: #3a3a5c;
+    --divider-color: #3a3a5c;
+
+    /* 标签与徽章 */
+    --tag-bg: #2d2d4a;
+    --tag-text: #b0b0c0;
+    --tag-hover-bg: #3a3a5c;
+
+    /* 按钮 */
+    --btn-primary-bg: #7c6cf7;
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: #6c5ce7;
+
+    /* 滚动条 */
+    --scrollbar-track: #252540;
+    --scrollbar-thumb: #3a3a5c;
+
+    /* 遮罩 */
+    --overlay-bg: rgba(0, 0, 0, 0.7);
+  }
+}

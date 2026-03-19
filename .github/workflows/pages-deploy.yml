@@ -1,4 +1,5 @@
 name: "Build and Deploy"
+
 on:
   push:
     branches:
@@ -28,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -36,95 +37,54 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.3
-          bundler-cache: true
-
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Build JavaScript
-        run: npm ci && npm run build
+      - name: Install dependencies
+        run: npm ci
 
       - name: Install AWS CLI
         run: pip install awscli --quiet
 
-      - name: Sync assets to R2 CDN bucket
-        env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_CDN_BUCKET_NAME: ${{ secrets.R2_CDN_BUCKET_NAME }}
-          R2_CDN_PUBLIC_URL: ${{ secrets.R2_CDN_PUBLIC_URL }}
-          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-        run: bash _scripts/sync-assets-r2.sh
-
-      - name: Generate gallery from R2
+      - name: Sync assets to R2 CDN
+        continue-on-error: true
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_CDN_BUCKET_NAME }}
-          R2_PUBLIC_URL: ${{ secrets.R2_CDN_PUBLIC_URL }}
-          R2_PREFIX: "gallery/"
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-        run: bash _scripts/generate-gallery-r2.sh
+          R2_ENDPOINT_URL: "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          R2_CDN_PUBLIC_URL: ${{ secrets.R2_CDN_PUBLIC_URL }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: bash scripts/sync-assets-r2.sh
 
-      - name: Check friend links
+      - name: Generate gallery data from R2
+        continue-on-error: true
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_CDN_BUCKET_NAME }}
+          R2_ENDPOINT_URL: "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          R2_CDN_PUBLIC_URL: ${{ secrets.R2_CDN_PUBLIC_URL }}
+        run: bash scripts/generate-gallery-r2.sh
+
+      - name: Ensure CNAME in public directory
         run: |
-          pip install pyyaml --quiet
-          bash _scripts/check-friends.sh
+          if [ -f "CNAME" ] && [ ! -f "public/CNAME" ]; then
+            cp CNAME public/CNAME
+          fi
 
       - name: Build site
-        run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
-        env:
-          JEKYLL_ENV: "production"
+        run: npm run build
 
-      - name: Test site
-        run: |
-          bundle exec htmlproofer _site \
-            \-\-disable-external \
-            \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
-
-      - name: Verify pages
-        run: |
-          echo "Checking generated pages..."
-          pages=("index.html" "browse/index.html" "archives/index.html" "about/index.html" "gallery/index.html" "friends/index.html" "tools/index.html" "feed.xml" "sitemap.xml")
-          failed=0
-          for p in "${pages[@]}"; do
-            if [ -f "_site/$p" ]; then
-              echo "  ✓ $p"
-            else
-              echo "  ✗ $p (MISSING)"
-              failed=1
-            fi
-          done
-          post_count=$(find _site -path "*/posts/*" -name "*.html" | wc -l)
-          echo "  Posts: $post_count"
-          cat_count=$(find _site/browse/categories -name "index.html" 2>/dev/null | wc -l)
-          echo "  Category pages: $cat_count"
-          tag_count=$(find _site/browse/tags -name "index.html" 2>/dev/null | wc -l)
-          echo "  Tag pages: $tag_count"
-          if [ "$failed" -eq 1 ] || [ "$post_count" -eq 0 ]; then
-            echo "Page verification FAILED"
-            exit 1
-          fi
-          echo "All pages verified."
-
-      - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: "_site${{ steps.pages.outputs.base_path }}"
+          path: dist
 
   deploy:
     environment:

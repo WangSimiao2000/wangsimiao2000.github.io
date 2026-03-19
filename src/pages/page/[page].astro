@@ -1,0 +1,172 @@
+---
+/**
+ * 分页页面 - 第 2 页及以后
+ *
+ * URL: /page/{n}/
+ * 使用 getStaticPaths 生成所有分页路由
+ *
+ * Requirements: 3.2
+ */
+import type { GetStaticPaths } from 'astro';
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Pagination from '../../components/Pagination.astro';
+import { siteConfig } from '../../config';
+import { sortPosts, paginatePosts, getPostUrl } from '../../utils/posts';
+import { formatDate } from '../../utils/date';
+import type { Locale } from '../../types';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const allPosts = await getCollection('posts');
+  const sortedPosts = sortPosts(allPosts);
+  const totalPages = Math.max(1, Math.ceil(sortedPosts.length / siteConfig.paginate));
+
+  // Generate paths for page 2+, page 1 is handled by index.astro
+  return Array.from({ length: totalPages - 1 }, (_, i) => ({
+    params: { page: String(i + 2) },
+  }));
+};
+
+const locale = siteConfig.lang as Locale;
+const pageNum = Number(Astro.params.page);
+
+const allPosts = await getCollection('posts');
+const sortedPosts = sortPosts(allPosts);
+const pagination = paginatePosts(sortedPosts, pageNum);
+---
+
+<BaseLayout title={`第 ${pageNum} 页 | ${siteConfig.title}`} description={siteConfig.description}>
+  <div class="home-page">
+    <section class="post-list">
+      {pagination.items.length > 0 ? (
+        <ul class="posts">
+          {pagination.items.map((post) => (
+            <li class="post-item">
+              <article>
+                {post.data.pin && <span class="pin-badge">📌</span>}
+                <h2 class="post-item-title">
+                  <a href={getPostUrl(post.slug)}>{post.data.title}</a>
+                </h2>
+                <div class="post-item-meta">
+                  <time datetime={post.data.date.toISOString()}>
+                    {formatDate(post.data.date, locale)}
+                  </time>
+                  {post.data.categories.length > 0 && (
+                    <span class="post-item-categories">
+                      {post.data.categories.map((cat) => (
+                        <a href={`/browse/categories/${cat}/`}>{cat}</a>
+                      ))}
+                    </span>
+                  )}
+                </div>
+                {post.data.description && (
+                  <p class="post-item-summary">{post.data.description}</p>
+                )}
+              </article>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="no-posts">暂无文章</p>
+      )}
+    </section>
+
+    <Pagination currentPage={pageNum} totalPages={pagination.totalPages} basePath="/" />
+  </div>
+</BaseLayout>
+
+<style>
+  .home-page {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .posts {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .post-item {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--border-color, #e5e5e5);
+  }
+
+  .post-item:last-child {
+    border-bottom: none;
+  }
+
+  .post-item article {
+    position: relative;
+  }
+
+  .pin-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 1rem;
+  }
+
+  .post-item-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    line-height: 1.4;
+  }
+
+  .post-item-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .post-item-title a:hover {
+    color: var(--link-color);
+  }
+
+  .post-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .post-item-categories {
+    display: flex;
+    gap: 0.375rem;
+  }
+
+  .post-item-categories a {
+    color: var(--link-color);
+    text-decoration: none;
+  }
+
+  .post-item-categories a:hover {
+    text-decoration: underline;
+  }
+
+  .post-item-summary {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .no-posts {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 3rem 0;
+  }
+
+  @media (max-width: 768px) {
+    .home-page {
+      padding: 1rem 0.75rem;
+    }
+
+    .post-item-title {
+      font-size: 1.125rem;
+    }
+  }
+</style>

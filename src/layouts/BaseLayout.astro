@@ -1,0 +1,189 @@
+---
+/**
+ * BaseLayout - 基础布局组件
+ *
+ * 负责:
+ * - <head> 标签（SEO meta、Open Graph、JSON-LD、KaTeX CSS）
+ * - ViewTransitions 客户端路由
+ * - Sidebar（transition:persist）
+ * - Topbar（transition:persist）
+ * - <main id="swup"> 内容容器（fade 过渡动画）
+ * - 全局样式引入
+ * - astro:after-swap / astro:page-load 事件监听
+ *
+ * Requirements: 3.8, 3.9, 3.10, 3.11, 3.12, 10.1
+ */
+import { ClientRouter } from 'astro:transitions';
+import { siteConfig } from '../config';
+import { shouldEnablePWA } from '../utils/pwa';
+import Sidebar from '../components/Sidebar.astro';
+import Topbar from '../components/Topbar.astro';
+import SearchModal from '../components/SearchModal.astro';
+import PWAUpdateNotification from '../components/PWAUpdateNotification.astro';
+import '../styles/global.css';
+
+const pwaEnabled = shouldEnablePWA(siteConfig);
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = siteConfig.description,
+  ogImage,
+  noindex = false,
+} = Astro.props;
+
+const canonicalUrl = new URL(Astro.url.pathname, siteConfig.url).href;
+const pageTitle = title === siteConfig.title
+  ? siteConfig.title
+  : `${title} | ${siteConfig.title}`;
+const ogImageUrl = ogImage
+  ? new URL(ogImage, siteConfig.url).href
+  : undefined;
+---
+
+<!doctype html>
+<html lang={siteConfig.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- SEO Meta -->
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content={siteConfig.title} />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content={ogImageUrl ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+
+    <!-- Search Engine Verification -->
+    {siteConfig.seo.google && (
+      <meta name="google-site-verification" content={siteConfig.seo.google} />
+    )}
+    {siteConfig.seo.bing && (
+      <meta name="msvalidate.01" content={siteConfig.seo.bing} />
+    )}
+
+    <!-- KaTeX CSS for math rendering -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+      integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+"
+      crossorigin="anonymous"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/img/avatar/avatar.png" />
+
+    <!-- Client Router (View Transitions) -->
+    <ClientRouter />
+  </head>
+
+  <body>
+    <!-- Skip to content link (accessibility) -->
+    <a href="#swup" class="skip-link">跳到主要内容</a>
+
+    <div class="site-wrapper">
+      <Sidebar />
+
+      <div id="main-wrapper" class="main-wrapper">
+        <Topbar />
+
+        <!-- Main content area with fade transition -->
+        <main id="swup" class="content-wrapper" transition:animate="fade">
+          <slot />
+        </main>
+      </div>
+    </div>
+
+    <!-- Search Modal (client:load) -->
+    <SearchModal />
+
+    <!-- PWA Update Notification (conditional on siteConfig.pwa.enabled) -->
+    {pwaEnabled && <PWAUpdateNotification />}
+
+    <!-- Page transition & component re-initialization scripts -->
+    <script>
+      /**
+       * Re-initialize page-specific components after View Transitions swap.
+       * Requirement 3.11: TOC, CodeCopy, Lightbox, Mermaid re-init after page swap.
+       */
+      document.addEventListener('astro:after-swap', () => {
+        // Re-initialize TOC scroll highlighting
+        if (typeof window.initTOC === 'function') {
+          window.initTOC();
+        }
+
+        // Re-initialize code copy buttons
+        if (typeof window.initCodeCopy === 'function') {
+          window.initCodeCopy();
+        }
+
+        // Re-initialize lightbox for gallery images
+        if (typeof window.initLightbox === 'function') {
+          window.initLightbox();
+        }
+
+        // Re-render Mermaid diagrams
+        if (typeof window.renderMermaid === 'function') {
+          window.renderMermaid();
+        }
+      });
+
+      /**
+       * Update sidebar active state after page load.
+       * Requirement 3.12: Sidebar nav active state reflects current page.
+       */
+      document.addEventListener('astro:page-load', () => {
+        updateSidebarActiveState();
+      });
+
+      function updateSidebarActiveState(): void {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('#sidebar .sidebar-nav a');
+
+        navLinks.forEach((link) => {
+          const anchor = link as HTMLAnchorElement;
+          const href = anchor.getAttribute('href') || '';
+
+          // Remove existing active class
+          anchor.classList.remove('active');
+
+          // Match exact path or path prefix for sub-pages
+          if (href === '/' && currentPath === '/') {
+            anchor.classList.add('active');
+          } else if (href !== '/' && currentPath.startsWith(href)) {
+            anchor.classList.add('active');
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  /* Responsive: hide sidebar on mobile */
+  @media (max-width: 768px) {
+    .site-wrapper {
+      flex-direction: column;
+    }
+  }
+</style>
