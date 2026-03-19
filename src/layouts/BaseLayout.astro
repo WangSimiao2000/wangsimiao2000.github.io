@@ -129,30 +129,30 @@ const ogImageUrl = ogImage
           <div class="content-with-panel">
             <div class="content-main">
               <slot />
+
+              <!-- Footer -->
+              <footer class="site-footer" aria-label="Site Info">
+                <p>© <time>{new Date().getFullYear()}</time> <a href={siteConfig.url}>{siteConfig.social.name}</a></p>
+                <p class="busuanzi-stats">
+                  <span id="busuanzi_container_site_pv">
+                    本站总浏览量 <span id="busuanzi_value_site_pv"><i class="fas fa-spinner fa-spin"></i></span> 次
+                  </span>
+                  &nbsp;|&nbsp;
+                  <span id="busuanzi_container_site_uv">
+                    总访客数 <span id="busuanzi_value_site_uv"><i class="fas fa-spinner fa-spin"></i></span> 人
+                  </span>
+                </p>
+          <p class="site-credit">
+            基于 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 构建，
+            灵感来自 <a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a> 主题
+          </p>
+        </footer>
             </div>
             <RightPanel>
               <slot name="panel-extra" />
             </RightPanel>
           </div>
         </main>
-
-        <!-- Footer -->
-        <footer class="site-footer" aria-label="Site Info">
-          <p>© <time>{new Date().getFullYear()}</time> <a href={siteConfig.url}>{siteConfig.social.name}</a></p>
-          <p class="busuanzi-stats">
-            <span id="busuanzi_container_site_pv">
-              本站总浏览量 <span id="busuanzi_value_site_pv"><i class="fas fa-spinner fa-spin"></i></span> 次
-            </span>
-            &nbsp;|&nbsp;
-            <span id="busuanzi_container_site_uv">
-              总访客数 <span id="busuanzi_value_site_uv"><i class="fas fa-spinner fa-spin"></i></span> 人
-            </span>
-          </p>
-          <p class="site-credit">
-            基于 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 构建，
-            灵感来自 <a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a> 主题
-          </p>
-        </footer>
       </div>
     </div>
 
@@ -217,11 +217,14 @@ const ogImageUrl = ogImage
         function closeSidebar() {
           sidebar!.classList.remove('open');
           overlay!.classList.remove('active');
+          document.body.style.overflow = '';
         }
 
         toggle.addEventListener('click', () => {
+          const opening = !sidebar.classList.contains('open');
           sidebar.classList.toggle('open');
           overlay.classList.toggle('active');
+          document.body.style.overflow = opening ? 'hidden' : '';
         });
 
         overlay.addEventListener('click', closeSidebar);
@@ -266,6 +269,7 @@ const ogImageUrl = ogImage
   .content-main {
     flex: 1;
     min-width: 0;
+    max-width: 52rem;
   }
 
   .sidebar-overlay {

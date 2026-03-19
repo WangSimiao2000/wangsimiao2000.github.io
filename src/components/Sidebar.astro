@@ -41,34 +41,32 @@ const navItems = [
     <div class="sidebar-bottom">
       <ThemeToggle />
       <span class="icon-border"></span>
-      <div class="sidebar-social" aria-label="社交链接">
-        {contacts.map((contact) => {
-          const isWechat = contact.type === 'wechat';
-          const isQQ = contact.type === 'qq';
-          const href = contact.url
-            ? contact.url
-            : contact.type === 'email'
-              ? `mailto:${siteConfig.social.email}`
-              : contact.type === 'rss'
-                ? '/feed.xml'
-                : contact.type === 'github'
-                  ? `https://github.com/${siteConfig.social.github}`
-                  : '#';
-          return (
-            <a
-              href={isWechat || isQQ ? 'javascript:void(0)' : href}
-              class="social-link"
-              title={contact.type}
-              target={contact.noblank || isWechat || isQQ ? undefined : '_blank'}
-              rel={contact.noblank || isWechat || isQQ ? undefined : 'noopener noreferrer'}
-              aria-label={contact.type}
-              data-modal={isWechat ? 'wechat-modal' : isQQ ? 'qq-modal' : undefined}
-            >
-              <i class={contact.icon} aria-hidden="true"></i>
-            </a>
-          );
-        })}
-      </div>
+      {contacts.map((contact) => {
+        const isWechat = contact.type === 'wechat';
+        const isQQ = contact.type === 'qq';
+        const href = contact.url
+          ? contact.url
+          : contact.type === 'email'
+            ? `mailto:${siteConfig.social.email}`
+            : contact.type === 'rss'
+              ? '/feed.xml'
+              : contact.type === 'github'
+                ? `https://github.com/${siteConfig.social.github}`
+                : '#';
+        return (
+          <a
+            href={isWechat || isQQ ? 'javascript:void(0)' : href}
+            class="social-link"
+            title={contact.type}
+            target={contact.noblank || isWechat || isQQ ? undefined : '_blank'}
+            rel={contact.noblank || isWechat || isQQ ? undefined : 'noopener noreferrer'}
+            aria-label={contact.type}
+            data-modal={isWechat ? 'wechat-modal' : isQQ ? 'qq-modal' : undefined}
+          >
+            <i class={contact.icon} aria-hidden="true"></i>
+          </a>
+        );
+      })}
     </div>
   </div>
 </aside>
@@ -186,7 +184,7 @@ const navItems = [
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     padding-top: 1rem;
     width: 100%;
   }
@@ -197,13 +195,6 @@ const navItems = [
     height: 1.25rem;
     background: var(--sidebar-muted-color, var(--text-muted));
     opacity: 0.3;
-  }
-
-  .sidebar-social {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.25rem;
   }
 
   .social-link {
