@@ -4,6 +4,7 @@ import pagefind from 'astro-pagefind';
 import AstroPWA from '@vite-pwa/astro';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import { rehypeCdnAssets } from './src/utils/rehype-cdn-assets';
 
 export default defineConfig({
   site: 'https://blog.mickeymiao.cn',
@@ -26,7 +27,7 @@ export default defineConfig({
       wrap: true,
     },
     remarkPlugins: [remarkMath],
-    rehypePlugins: [rehypeKatex],
+    rehypePlugins: [rehypeKatex, rehypeCdnAssets],
     // Mermaid diagrams are rendered client-side via the mermaid package
   },
 

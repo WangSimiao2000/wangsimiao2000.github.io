@@ -90,8 +90,15 @@ const ogImageUrl = ogImage
       crossorigin="anonymous"
     />
 
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"
+      crossorigin="anonymous"
+    />
+
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/assets/img/avatar/avatar.png" />
+    <link rel="icon" type="image/png" href="https://cdn.mickeymiao.cn/assets/img/avatar/avatar.png" />
 
     <!-- Client Router (View Transitions) -->
     <ClientRouter />
@@ -138,6 +145,9 @@ const ogImageUrl = ogImage
     <!-- Search Modal (client:load) -->
     <SearchModal />
 
+    <!-- Mobile sidebar overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
     <!-- PWA Update Notification (conditional on siteConfig.pwa.enabled) -->
     {pwaEnabled && <PWAUpdateNotification />}
 
@@ -175,7 +185,33 @@ const ogImageUrl = ogImage
        */
       document.addEventListener('astro:page-load', () => {
         updateSidebarActiveState();
+        initSidebarToggle();
       });
+
+      function initSidebarToggle(): void {
+        const toggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (!toggle || !sidebar || !overlay) return;
+
+        toggle.addEventListener('click', () => {
+          sidebar.classList.toggle('open');
+          overlay.classList.toggle('active');
+        });
+
+        overlay.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        });
+
+        // Close sidebar on nav link click (mobile)
+        sidebar.querySelectorAll('.sidebar-nav a').forEach((link) => {
+          link.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+          });
+        });
+      }
 
       function updateSidebarActiveState(): void {
         const currentPath = window.location.pathname;
@@ -201,6 +237,18 @@ const ogImageUrl = ogImage
 </html>
 
 <style>
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+
   .site-footer {
     text-align: center;
     padding: 1.5rem 1rem;

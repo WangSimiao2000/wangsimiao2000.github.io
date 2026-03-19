@@ -11,7 +11,7 @@ export const siteConfig: SiteConfig = {
   url: 'https://blog.mickeymiao.cn',
   lang: 'zh-CN',
   timezone: 'Asia/Shanghai',
-  avatar: '/assets/img/avatar/avatar.png',
+  avatar: 'https://cdn.mickeymiao.cn/assets/img/avatar/avatar.png',
   cdn: 'https://cdn.mickeymiao.cn',
   paginate: 10,
   toc: true,

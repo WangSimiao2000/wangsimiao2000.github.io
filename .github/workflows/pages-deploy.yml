@@ -78,6 +78,10 @@ jobs:
             cp CNAME public/CNAME
           fi
 
+      - name: Check friend links
+        continue-on-error: true
+        run: bash scripts/check-friends.sh
+
       - name: Build site
         run: npm run build
 

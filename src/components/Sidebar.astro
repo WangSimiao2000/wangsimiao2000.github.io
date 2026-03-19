@@ -1,12 +1,4 @@
 ---
-/**
- * Sidebar - 侧边栏组件
- *
- * 包含头像、站点标题、导航菜单、社交链接
- * 社交链接从 data/contact.yml 读取
- *
- * Requirements: 4.1, 12.4
- */
 import { siteConfig } from '../config';
 import { loadContact } from '../utils/data';
 import { t } from '../utils/i18n';
@@ -27,21 +19,12 @@ const navItems = [
 
 <aside id="sidebar" class="sidebar" transition:persist>
   <div class="sidebar-inner">
-    <!-- Avatar & Title -->
     <a href="/" class="sidebar-profile">
-      <img
-        src={siteConfig.avatar}
-        alt={siteConfig.title}
-        class="sidebar-avatar"
-        width="112"
-        height="112"
-        loading="eager"
-      />
+      <img src={siteConfig.avatar} alt={siteConfig.title} class="sidebar-avatar" width="112" height="112" loading="eager" />
     </a>
     <h1 class="sidebar-title">{siteConfig.title}</h1>
     <p class="sidebar-tagline">{siteConfig.tagline}</p>
 
-    <!-- Navigation -->
     <nav class="sidebar-nav" aria-label="主导航">
       <ul>
         {navItems.map((item) => (
@@ -55,10 +38,13 @@ const navItems = [
       </ul>
     </nav>
 
-    <!-- Bottom section: social links + theme toggle -->
     <div class="sidebar-bottom">
+      <ThemeToggle />
+      <span class="icon-border"></span>
       <div class="sidebar-social" aria-label="社交链接">
         {contacts.map((contact) => {
+          const isWechat = contact.type === 'wechat';
+          const isQQ = contact.type === 'qq';
           const href = contact.url
             ? contact.url
             : contact.type === 'email'
@@ -70,29 +56,62 @@ const navItems = [
                   : '#';
           return (
             <a
-              href={href}
+              href={isWechat || isQQ ? 'javascript:void(0)' : href}
               class="social-link"
               title={contact.type}
-              target={contact.noblank ? undefined : '_blank'}
-              rel={contact.noblank ? undefined : 'noopener noreferrer'}
+              target={contact.noblank || isWechat || isQQ ? undefined : '_blank'}
+              rel={contact.noblank || isWechat || isQQ ? undefined : 'noopener noreferrer'}
               aria-label={contact.type}
+              data-modal={isWechat ? 'wechat-modal' : isQQ ? 'qq-modal' : undefined}
             >
               <i class={contact.icon} aria-hidden="true"></i>
             </a>
           );
         })}
       </div>
-      <ThemeToggle />
     </div>
   </div>
 </aside>
+
+<!-- WeChat QR Modal -->
+<div id="wechat-modal" class="qr-modal" style="display:none;">
+  <div class="qr-modal-inner">
+    <img src="https://cdn.mickeymiao.cn/assets/img/wechat-qr.png" alt="微信二维码" />
+    <p>微信扫码添加好友</p>
+  </div>
+</div>
+
+<!-- QQ QR Modal -->
+<div id="qq-modal" class="qr-modal" style="display:none;">
+  <div class="qr-modal-inner">
+    <img src="https://cdn.mickeymiao.cn/assets/img/qq-qr.png" alt="QQ二维码" />
+    <p>QQ 扫码添加好友</p>
+  </div>
+</div>
+
+<script>
+  // QR modal open/close
+  document.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest('[data-modal]') as HTMLElement | null;
+    if (link) {
+      e.preventDefault();
+      const modal = document.getElementById(link.dataset.modal!);
+      if (modal) modal.style.display = 'flex';
+      return;
+    }
+    const modal = (e.target as HTMLElement).closest('.qr-modal') as HTMLElement | null;
+    if (modal && !(e.target as HTMLElement).closest('.qr-modal-inner')) {
+      modal.style.display = 'none';
+    }
+  });
+</script>
 
 <style>
   .sidebar {
     width: 260px;
     min-height: 100vh;
     background: var(--sidebar-bg);
-    color: var(--sidebar-text);
+    color: var(--sidebar-text, var(--text-primary));
     padding: 2rem 1.25rem;
     display: flex;
     flex-direction: column;
@@ -110,9 +129,7 @@ const navItems = [
     height: 100%;
   }
 
-  .sidebar-profile {
-    text-decoration: none;
-  }
+  .sidebar-profile { text-decoration: none; }
 
   .sidebar-avatar {
     width: 112px;
@@ -122,82 +139,71 @@ const navItems = [
     transition: transform 0.3s ease;
   }
 
-  .sidebar-avatar:hover {
-    transform: scale(1.05);
-  }
+  .sidebar-avatar:hover { transform: scale(1.05); }
 
   .sidebar-title {
     font-size: 1.25rem;
     font-weight: 700;
     margin: 0;
-    color: var(--sidebar-text);
+    color: var(--sidebar-text, var(--text-primary));
   }
 
   .sidebar-tagline {
     font-size: 0.8125rem;
-    color: var(--text-muted);
+    color: var(--sidebar-muted-color, var(--text-muted));
     text-align: center;
     margin: 0;
     line-height: 1.4;
   }
 
-  .sidebar-nav {
-    width: 100%;
-    margin-top: 0.5rem;
-  }
-
-  .sidebar-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .sidebar-nav li {
-    margin: 0;
-  }
+  .sidebar-nav { width: 100%; margin-top: 0.5rem; }
+  .sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
 
   .sidebar-nav a {
     display: flex;
     align-items: center;
     gap: 0.625rem;
     padding: 0.5rem 0.75rem;
-    color: var(--sidebar-text);
+    color: var(--sidebar-text, var(--text-primary));
     text-decoration: none;
     border-radius: 0.375rem;
     font-size: 0.9375rem;
     transition: background-color 0.2s ease;
   }
 
-  .sidebar-nav a:hover {
-    background: var(--sidebar-hover-bg);
-  }
+  .sidebar-nav a:hover { background: var(--sidebar-hover-bg); }
 
-  .sidebar-nav a :global(.active) {
+  .sidebar-nav a.active {
     background: var(--sidebar-active);
     color: #fff;
   }
 
-  .sidebar-nav i {
-    width: 1.25rem;
-    text-align: center;
-    font-size: 0.875rem;
-  }
+  .sidebar-nav i { width: 1.25rem; text-align: center; font-size: 0.875rem; }
 
   .sidebar-bottom {
     margin-top: auto;
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: center;
+    gap: 0.5rem;
     padding-top: 1rem;
     width: 100%;
+  }
+
+  .icon-border {
+    display: inline-block;
+    width: 1px;
+    height: 1.25rem;
+    background: var(--sidebar-muted-color, var(--text-muted));
+    opacity: 0.3;
   }
 
   .sidebar-social {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
   .social-link {
@@ -206,7 +212,7 @@ const navItems = [
     justify-content: center;
     width: 2rem;
     height: 2rem;
-    color: var(--sidebar-text);
+    color: var(--sidebar-text, var(--text-primary));
     opacity: 0.7;
     text-decoration: none;
     border-radius: 0.375rem;
@@ -218,10 +224,51 @@ const navItems = [
     background: var(--sidebar-hover-bg);
   }
 
-  /* Responsive: hide sidebar on mobile */
+  /* QR Modals */
+  .qr-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .qr-modal-inner {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    max-width: 280px;
+    cursor: default;
+  }
+
+  .qr-modal-inner img {
+    width: 220px;
+    height: 220px;
+    border-radius: 6px;
+  }
+
+  .qr-modal-inner p {
+    margin: 0.8rem 0 0;
+    font-size: 0.85rem;
+    color: #666;
+  }
+
   @media (max-width: 768px) {
     .sidebar {
-      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      width: 260px;
+    }
+
+    .sidebar.open {
+      transform: translateX(0);
     }
   }
 </style>

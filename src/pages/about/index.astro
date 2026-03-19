@@ -1,11 +1,4 @@
 ---
-/**
- * 关于页 - 个人介绍
- *
- * URL: /about/
- *
- * Requirements: 3.1
- */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { siteConfig } from '../../config';
 import { t } from '../../utils/i18n';
@@ -13,124 +6,242 @@ import { t } from '../../utils/i18n';
 
 <BaseLayout title={t('tabs.about')} description={`${siteConfig.title} - ${t('tabs.about')}`}>
   <div class="about-page">
-    <div class="about-header">
-      <img
-        src={siteConfig.avatar}
-        alt={siteConfig.social.name}
-        class="about-avatar"
-      />
-      <h1 class="about-name">{siteConfig.social.name}</h1>
-      <p class="about-tagline">{siteConfig.tagline}</p>
+    <!-- Hero -->
+    <div class="about-hero">
+      <div class="hero-text">
+        <h2>嗨，我是王思淼 👋</h2>
+        <p>图形渲染开发工程师 @ 小米 · He / Him · 2000.11.06 · 四川成都</p>
+        <div class="hero-badges">
+          <a href="https://space.bilibili.com/36913332" target="_blank" rel="noopener">
+            <img src="https://img.shields.io/badge/Bilibili-鄙人米奇喵-00A1D6?style=flat-square&logo=bilibili&logoColor=white" alt="Bilibili" />
+          </a>
+          <a href="https://steamcommunity.com/id/MickeyMiao/" target="_blank" rel="noopener">
+            <img src="https://img.shields.io/badge/Steam-MickeyMiao-000?style=flat-square&logo=steam&logoColor=white" alt="Steam" />
+          </a>
+          <a href="https://github.com/wangsimiao2000" target="_blank" rel="noopener">
+            <img src="https://img.shields.io/badge/GitHub-WangSimiao2000-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub" />
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div class="about-content">
-      <section class="about-section">
-        <h2>{siteConfig.lang === 'zh-CN' ? '关于我' : 'About Me'}</h2>
-        <p>{siteConfig.description}</p>
-      </section>
+    <div class="about-grid">
+      <!-- 照片 -->
+      <div class="about-card photo-card">
+        <div class="photo-circle">
+          <img src="https://cdn.mickeymiao.cn/assets/img/photo.jpg" alt="王思淼" loading="lazy" />
+        </div>
+      </div>
 
-      <section class="about-section">
-        <h2>{siteConfig.lang === 'zh-CN' ? '联系方式' : 'Contact'}</h2>
-        <ul class="contact-list">
-          <li>
-            <strong>GitHub:</strong>
-            <a href={`https://github.com/${siteConfig.social.github}`} target="_blank" rel="noopener noreferrer">
-              {siteConfig.social.github}
-            </a>
-          </li>
-          <li>
-            <strong>Email:</strong>
-            <a href={`mailto:${siteConfig.social.email}`}>{siteConfig.social.email}</a>
-          </li>
-        </ul>
-      </section>
+      <!-- 教育背景 -->
+      <div class="about-card">
+        <h3><i class="fas fa-graduation-cap"></i> 教育背景</h3>
+        <div class="exp-item">
+          <span class="exp-flag">🇬🇧</span>
+          <div>
+            <span class="exp-org">University of Leeds</span><br />
+            <span class="exp-role">高性能图形与游戏工程硕士</span>
+          </div>
+        </div>
+        <div class="exp-item">
+          <span class="exp-flag">🇨🇳</span>
+          <div>
+            <span class="exp-org">西南石油大学</span><br />
+            <span class="exp-role">软件工程学士</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工作 & 爱好 -->
+      <div class="about-card">
+        <h3><i class="fas fa-briefcase"></i> 工作 & 爱好</h3>
+        <div class="exp-item">
+          <span class="exp-flag">🏢</span>
+          <div>
+            <span class="exp-org">小米</span><br />
+            <span class="exp-role">图形渲染开发工程师</span>
+          </div>
+        </div>
+        <p style="margin-top:0.6rem;">除了写代码，还喜欢<strong>画画</strong>、<strong>做视频</strong>、<strong>玩游戏</strong>。闲暇时间喜欢和朋友们一起做游戏，目前参加过两次 Game Jam。欢迎美术、音效、策划大佬一起组队！</p>
+      </div>
+
+      <!-- 游戏 -->
+      <div class="about-card">
+        <h3><i class="fas fa-gamepad"></i> 游戏</h3>
+        <p>最喜欢的游戏是 <strong>Minecraft</strong>，也是一个B站小 up，主要更新 Minecraft 视频，不过已经很久没更新了 😅</p>
+        <p style="margin-top:0.5rem;">PC 上最近在玩<strong>天国拯救2</strong>。近几年觉得好玩的：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井</p>
+        <p style="margin-top:0.5rem;color:var(--text-muted);font-size:0.88rem;">社交手游：王者荣耀欧洲第66上官婉儿 · 和平精英多赛季战神 · 金铲铲多赛季大师</p>
+      </div>
+
+      <!-- 猫猫 -->
+      <div class="about-card">
+        <h3><i class="fas fa-cat"></i> 猫猫</h3>
+        <p>养了两只流浪猫猫，叫<strong>转转</strong>和<strong>圈圈</strong>。不过小狸花圈圈老在我床上尿尿，所以只能送回流浪基地了 😿</p>
+      </div>
+
+      <!-- 旅行 -->
+      <div class="about-card">
+        <h3><i class="fas fa-plane"></i> 旅行 · 8个国家 18个城市</h3>
+        <p>感谢父母给的机会，让我在学生时期有机会走过这些地方：</p>
+        <div class="travel-tags">
+          <span class="travel-tag">🇬🇧 利兹</span>
+          <span class="travel-tag">🇬🇧 曼彻斯特</span>
+          <span class="travel-tag">🇬🇧 伦敦</span>
+          <span class="travel-tag">🇬🇧 爱丁堡</span>
+          <span class="travel-tag">🇬🇧 赫尔河畔金斯顿</span>
+          <span class="travel-tag">🇫🇷 巴黎</span>
+          <span class="travel-tag">🇬🇷 雅典</span>
+          <span class="travel-tag">🇬🇷 圣托里尼岛</span>
+          <span class="travel-tag">🇮🇹 罗马</span>
+          <span class="travel-tag">🇻🇦 梵蒂冈</span>
+          <span class="travel-tag">🇪🇸 巴塞罗那</span>
+          <span class="travel-tag">🇪🇸 马德里</span>
+          <span class="travel-tag">🇵🇹 里斯本</span>
+          <span class="travel-tag">🇪🇬 开罗</span>
+          <span class="travel-tag">🇪🇬 卢克索</span>
+          <span class="travel-tag">🇪🇬 阿斯旺</span>
+          <span class="travel-tag">🇪🇬 吉萨</span>
+          <span class="travel-tag">🇪🇬 赫尔格达</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resume -->
+    <div style="text-align:center;margin-top:0.5rem;">
+      <a class="resume-btn" href="https://cdn.mickeymiao.cn/assets/resume/WangSimiao_09.pdf" target="_blank" rel="noopener">
+        <i class="fas fa-file-pdf"></i> 下载我的简历
+      </a>
     </div>
   </div>
 </BaseLayout>
 
 <style>
   .about-page {
-    max-width: 42rem;
+    max-width: 48rem;
     margin: 0 auto;
     padding: 2rem 1rem;
   }
 
-  .about-header {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-
-  .about-avatar {
-    width: 7rem;
-    height: 7rem;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 1rem;
-    box-shadow: var(--card-shadow);
-  }
-
-  .about-name {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0 0 0.375rem;
-  }
-
-  .about-tagline {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin: 0;
-    font-style: italic;
-  }
-
-  .about-content {
-    line-height: 1.75;
-  }
-
-  .about-section {
+  .about-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
     margin-bottom: 2rem;
   }
 
-  .about-section h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0 0 0.75rem;
-    padding-bottom: 0.375rem;
-    border-bottom: 1px solid var(--border-color, #e5e5e5);
+  .hero-text h2 { margin: 0 0 0.4rem; font-size: 1.6rem; }
+  .hero-text p { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+  .hero-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
   }
 
-  .about-section p {
-    color: var(--text-secondary);
-    margin: 0;
+  .about-grid {
+    columns: 2;
+    column-gap: 1.2rem;
+    margin-bottom: 1.5rem;
   }
 
-  .contact-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  .about-card {
+    break-inside: avoid;
+    margin-bottom: 1.2rem;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
-  .contact-list li {
-    padding: 0.375rem 0;
-    color: var(--text-secondary);
+  .about-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--card-shadow-hover);
   }
 
-  .contact-list a {
+  .about-card h3 {
+    margin: 0 0 0.7rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .about-card h3 i { font-size: 1rem; color: var(--link-color); }
+  .about-card p { margin: 0; font-size: 0.95rem; line-height: 1.6; }
+
+  .photo-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .photo-circle {
+    width: 100%;
+    max-width: 220px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgb(120 110 100 / 12%);
+  }
+
+  .photo-circle img { width: 100%; height: 100%; object-fit: cover; }
+
+  .exp-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    font-size: 0.95rem;
+  }
+
+  .exp-flag { flex-shrink: 0; }
+  .exp-org { font-weight: 600; }
+  .exp-role { color: var(--text-muted); font-size: 0.88rem; }
+
+  .travel-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+
+  .travel-tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    transition: transform 0.25s ease;
+  }
+
+  .travel-tag:hover { transform: translateY(-2px); }
+
+  .resume-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    background: var(--card-bg);
     color: var(--link-color);
+    border: 1px solid var(--border-color);
+    font-size: 0.95rem;
     text-decoration: none;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
   }
 
-  .contact-list a:hover {
-    text-decoration: underline;
+  .resume-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+    background: var(--link-color);
+    color: #fff;
+    border-color: var(--link-color);
   }
 
   @media (max-width: 768px) {
-    .about-page {
-      padding: 1rem 0.75rem;
-    }
-
-    .about-avatar {
-      width: 5rem;
-      height: 5rem;
-    }
+    .about-grid { columns: 1; }
+    .about-hero { flex-direction: column; text-align: center; }
+    .hero-badges { justify-content: center; }
+    .about-page { padding: 1rem 0.75rem; }
   }
 </style>
