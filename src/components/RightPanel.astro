@@ -58,10 +58,10 @@ const trendingTags = [...tagMap.entries()]
   .right-panel {
     width: 240px;
     flex-shrink: 0;
-    position: fixed;
-    right: 1.5rem;
-    top: 5rem;
-    max-height: calc(100vh - 6rem);
+    position: sticky;
+    top: 4rem;
+    align-self: flex-start;
+    max-height: calc(100vh - 5rem);
     overflow-y: auto;
     scrollbar-width: none;
     padding: 0;
