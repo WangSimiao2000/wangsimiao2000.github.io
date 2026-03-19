@@ -9,6 +9,14 @@ export default defineConfig({
   site: 'https://blog.mickeymiao.cn',
   output: 'static',
 
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ['/pagefind/pagefind.js'],
+      },
+    },
+  },
+
   markdown: {
     shikiConfig: {
       themes: {
