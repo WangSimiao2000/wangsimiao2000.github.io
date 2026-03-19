@@ -50,14 +50,24 @@ const trendingTags = [...tagMap.entries()]
       </div>
     </section>
   )}
+
+  <slot />
 </aside>
 
 <style>
   .right-panel {
     width: 240px;
     flex-shrink: 0;
+    position: sticky;
+    top: 3rem;
+    align-self: start;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    scrollbar-width: none;
     padding: 1rem 0;
   }
+
+  .right-panel::-webkit-scrollbar { display: none; }
 
   .panel-section {
     margin-bottom: 1.5rem;

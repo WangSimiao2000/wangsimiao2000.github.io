@@ -194,6 +194,22 @@ export function generateSlug(filename: string): string {
 }
 
 /**
+ * 从 markdown body 提取纯文本摘要
+ */
+export function getExcerpt(body: string | undefined, maxLen = 150): string {
+  if (!body) return '';
+  const text = body
+    .replace(/^---[\s\S]*?---/, '')       // frontmatter
+    .replace(/^#{1,6}\s+.*/gm, '')        // headings
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // links/images
+    .replace(/[`*_~>|#\-]/g, '')          // markdown syntax
+    .replace(/\{[^}]*\}/g, '')            // kramdown attrs
+    .replace(/\n+/g, ' ')
+    .trim();
+  return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
+}
+
+/**
  * 生成文章的永久链接 URL
  * 格式: /posts/{slug}/
  */

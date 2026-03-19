@@ -3,44 +3,10 @@
  * Topbar - 顶部导航栏组件
  *
  * 包含搜索触发按钮和面包屑导航
- *
- * Requirements: 4.2
+ * 面包屑通过 JS 动态更新（因为 transition:persist 不会重新渲染）
  */
 import { siteConfig } from '../config';
 import { t } from '../utils/i18n';
-
-interface Props {
-  /** 面包屑路径，如 [{ label: '首页', href: '/' }, { label: '文章' }] */
-  breadcrumbs?: Array<{ label: string; href?: string }>;
-}
-
-const { breadcrumbs } = Astro.props;
-
-const currentPath = Astro.url.pathname;
-
-// Auto-generate breadcrumbs from URL if not provided
-function generateBreadcrumbs(): Array<{ label: string; href?: string }> {
-  if (breadcrumbs && breadcrumbs.length > 0) return breadcrumbs;
-
-  const segments = currentPath.split('/').filter(Boolean);
-  if (segments.length === 0) return [];
-
-  const crumbs: Array<{ label: string; href?: string }> = [];
-  let path = '';
-
-  for (let i = 0; i < segments.length; i++) {
-    path += `/${segments[i]}`;
-    const isLast = i === segments.length - 1;
-    crumbs.push({
-      label: decodeURIComponent(segments[i]),
-      href: isLast ? undefined : `${path}/`,
-    });
-  }
-
-  return crumbs;
-}
-
-const crumbs = generateBreadcrumbs();
 ---
 
 <header id="topbar" class="topbar" transition:persist>
@@ -60,18 +26,7 @@ const crumbs = generateBreadcrumbs();
     </button>
 
     <!-- Breadcrumb navigation -->
-    <nav class="breadcrumb" aria-label="面包屑导航">
-      <a href="/" class="breadcrumb-home">{siteConfig.title}</a>
-      {crumbs.map((crumb) => (
-        <>
-          <span class="breadcrumb-sep" aria-hidden="true">/</span>
-          {crumb.href ? (
-            <a href={crumb.href} class="breadcrumb-link">{crumb.label}</a>
-          ) : (
-            <span class="breadcrumb-current" aria-current="page">{crumb.label}</span>
-          )}
-        </>
-      ))}
+    <nav id="breadcrumb" class="breadcrumb" aria-label="面包屑导航">
     </nav>
 
     <!-- Search trigger -->
@@ -89,6 +44,28 @@ const crumbs = generateBreadcrumbs();
     </button>
   </div>
 </header>
+
+<script define:vars={{ siteTitle: siteConfig.title }}>
+  function updateBreadcrumb() {
+    const nav = document.getElementById('breadcrumb');
+    if (!nav) return;
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    let html = `<a href="/" class="breadcrumb-home">${siteTitle}</a>`;
+    let path = '';
+    segments.forEach((seg, i) => {
+      path += '/' + seg;
+      const label = decodeURIComponent(seg);
+      const isLast = i === segments.length - 1;
+      html += '<span class="breadcrumb-sep" aria-hidden="true">/</span>';
+      html += isLast
+        ? `<span class="breadcrumb-current" aria-current="page">${label}</span>`
+        : `<a href="${path}/" class="breadcrumb-link">${label}</a>`;
+    });
+    nav.innerHTML = html;
+  }
+  updateBreadcrumb();
+  document.addEventListener('astro:page-load', updateBreadcrumb);
+</script>
 
 <style>
   .topbar {

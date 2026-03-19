@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Comment from '../../components/Comment.astro';
 import { siteConfig } from '../../config';
 import { loadFriends, loadFriendsChecked } from '../../utils/data';
 import { t } from '../../utils/i18n';
@@ -58,6 +59,7 @@ const deadList = checked?.dead ?? [];
       </>
     )}
   </div>
+  <Comment />
 </BaseLayout>
 
 <style>

@@ -32,7 +32,6 @@ interface Props {
   description?: string;
   ogImage?: string;
   noindex?: boolean;
-  hidePanel?: boolean;
 }
 
 const {
@@ -40,7 +39,6 @@ const {
   description = siteConfig.description,
   ogImage,
   noindex = false,
-  hidePanel = false,
 } = Astro.props;
 
 const canonicalUrl = new URL(Astro.url.pathname, siteConfig.url).href;
@@ -132,7 +130,9 @@ const ogImageUrl = ogImage
             <div class="content-main">
               <slot />
             </div>
-            {!hidePanel && <RightPanel />}
+            <RightPanel>
+              <slot name="panel-extra" />
+            </RightPanel>
           </div>
         </main>
 

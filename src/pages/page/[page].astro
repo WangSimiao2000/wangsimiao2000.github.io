@@ -3,7 +3,7 @@ import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Pagination from '../../components/Pagination.astro';
 import { siteConfig } from '../../config';
-import { getAllPosts, sortPosts, paginatePosts, getPostUrl } from '../../utils/posts';
+import { getAllPosts, sortPosts, paginatePosts, getPostUrl, getExcerpt } from '../../utils/posts';
 import { formatDate } from '../../utils/date';
 import type { Locale } from '../../types';
 
@@ -32,9 +32,7 @@ const pagination = paginatePosts(sortedPosts, pageNum);
               <div class="card-body d-flex flex-column">
                 {post.data.pin && <span class="pin-badge"><i class="fas fa-thumbtack"></i></span>}
                 <h1 class="card-title">{post.data.title}</h1>
-                {post.data.description && (
-                  <div class="card-text"><p>{post.data.description}</p></div>
-                )}
+                <div class="card-text"><p>{post.data.description || getExcerpt(post.body)}</p></div>
                 <div class="post-meta">
                   <span>
                     <i class="far fa-calendar fa-fw"></i>
