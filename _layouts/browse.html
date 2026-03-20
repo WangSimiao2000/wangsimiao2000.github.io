@@ -8,7 +8,7 @@ layout: page
 {% assign HEAD_PREFIX = 'h_' %}
 {% assign LIST_PREFIX = 'l_' %}
 
-<div class="browse-tabs mb-4">
+<div class="browse-tabs mt-3 mb-4">
   <button class="browse-tab active" data-target="browse-categories" aria-pressed="true">
     <i class="fas fa-stream me-1"></i>
     {{ site.data.locales[lang].layout.category | default: "分类" }}
@@ -181,9 +181,8 @@ layout: page
   function moveIndicator(tab) {
     var indicator = document.querySelector('.browse-indicator');
     if (!indicator || !tab) return;
-    var tabs = tab.parentElement;
     indicator.style.width = tab.offsetWidth + 'px';
-    indicator.style.transform = 'translateX(' + (tab.offsetLeft - tabs.offsetLeft) + 'px)';
+    indicator.style.transform = 'translateX(' + tab.offsetLeft + 'px)';
   }
 
   /* Position indicator (no transition on init) */
