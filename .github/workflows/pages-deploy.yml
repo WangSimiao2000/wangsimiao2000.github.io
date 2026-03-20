@@ -152,7 +152,7 @@ jobs:
           fi
 
           # Browse tab JS
-          if grep -q "_browseTabsInit" _site/browse/index.html 2>/dev/null; then
+          if grep -q "_browseTabsBound" _site/browse/index.html 2>/dev/null; then
             echo "  ✓ browse tab JS"
           else
             echo "  ✗ browse tab JS missing"

@@ -223,7 +223,7 @@ check_assets() {
   fi
 
   # Browse tab JS is present
-  if grep -rq "_browseTabsInit" "$base/browse/index.html" 2>/dev/null; then
+  if grep -rq "_browseTabsBound" "$base/browse/index.html" 2>/dev/null; then
     echo "  ✓ Browse tab JS (inline)"
   else
     echo "  ✗ Browse tab JS missing from browse page"
