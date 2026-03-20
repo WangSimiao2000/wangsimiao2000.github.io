@@ -21,6 +21,7 @@ layout: page
     <i class="fas fa-archive me-1"></i>
     {{ site.data.locales[lang].layout.archives | default: "归档" }}
   </button>
+  <span class="browse-indicator"></span>
 </div>
 
 <!-- Categories View -->
@@ -178,6 +179,27 @@ layout: page
 <script>
 if (!window._browseTabsInit) {
   window._browseTabsInit = true;
+
+  function moveIndicator(tab) {
+    var indicator = document.querySelector('.browse-indicator');
+    if (!indicator || !tab) return;
+    var tabs = tab.parentElement;
+    indicator.style.width = tab.offsetWidth + 'px';
+    indicator.style.transform = 'translateX(' + (tab.offsetLeft - tabs.offsetLeft) + 'px)';
+  }
+
+  // initial position (no transition)
+  requestAnimationFrame(function() {
+    var active = document.querySelector('.browse-tab.active');
+    var indicator = document.querySelector('.browse-indicator');
+    if (indicator) indicator.style.transition = 'none';
+    moveIndicator(active);
+    // enable transition after paint
+    requestAnimationFrame(function() {
+      if (indicator) indicator.style.transition = '';
+    });
+  });
+
   document.addEventListener('click', function(e) {
     var tab = e.target.closest('.browse-tab');
     if (!tab) return;
@@ -190,6 +212,7 @@ if (!window._browseTabsInit) {
     });
     tab.classList.add('active');
     tab.setAttribute('aria-pressed', 'true');
+    moveIndicator(tab);
     var target = document.getElementById(tab.dataset.target);
     if (target) target.style.display = 'block';
   });
