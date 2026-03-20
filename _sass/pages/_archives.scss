@@ -1,140 +1,99 @@
 @use '../abstracts/breakpoints' as bp;
-@use '../abstracts/placeholders';
+
+$tl-offset: 1.75rem;
+$tl-line-w: 2px;
+$tl-year-dot: 10px;
+$tl-post-dot: 6px;
 
 #archives {
-  letter-spacing: 0.03rem;
+  --tl-line: var(--timeline-color);
+  --tl-node: var(--timeline-node-bg);
+  --tl-dot: var(--timeline-year-dot-color, var(--main-bg));
 
-  @include bp.lt(bp.get(sm)) {
-    margin-top: -1rem;
-
-    ul {
-      letter-spacing: 0;
-    }
-  }
-
-  $timeline-width: 4px;
-
-  %timeline {
-    content: '';
-    width: $timeline-width;
-    position: relative;
-    float: left;
-    background-color: var(--timeline-color);
-  }
+  border-left: $tl-line-w solid var(--tl-line);
+  margin-left: calc(#{$tl-year-dot} / 2);
+  padding-left: $tl-offset;
 
   .year {
-    height: 3.5rem;
-    font-size: 1.5rem;
     position: relative;
-    left: 2px;
-    margin-left: -$timeline-width;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--heading-color);
+    margin: 1.5rem 0 0.5rem;
+    display: block;
+
+    &:first-child {
+      margin-top: 0;
+    }
 
     &::before {
-      @extend %timeline;
-
-      height: 72px;
-      left: 79px;
-      bottom: 16px;
-    }
-
-    &:first-child::before {
-      @extend %timeline;
-
-      height: 32px;
-      top: 24px;
-    }
-
-    /* Year dot */
-    &::after {
       content: '';
-      display: inline-block;
-      position: relative;
+      position: absolute;
+      left: calc(-#{$tl-offset} - #{$tl-line-w} / 2);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: $tl-year-dot;
+      height: $tl-year-dot;
       border-radius: 50%;
-      width: 12px;
-      height: 12px;
-      left: 21.5px;
-      border: 3px solid;
-      background-color: var(--timeline-year-dot-color);
-      border-color: var(--timeline-node-bg);
-      box-shadow: 0 0 2px 0 #c2c6cc;
-      z-index: 1;
+      background: var(--tl-dot);
+      border: $tl-line-w solid var(--tl-node);
     }
   }
 
   ul {
-    li {
-      font-size: 1.1rem;
-      line-height: 3rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
 
-      @extend %text-ellipsis;
+  li {
+    position: relative;
+    padding: 0.4rem 0;
+    line-height: 1.6;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
 
-      &:nth-child(odd) {
-        background-color: var(--main-bg, #ffffff);
-        background-image: linear-gradient(
-          to left,
-          #ffffff,
-          #fbfbfb,
-          #fbfbfb,
-          #fbfbfb,
-          #ffffff
-        );
-      }
-
-      &::before {
-        @extend %timeline;
-
-        top: 0;
-        left: 77px;
-        height: 3.1rem;
-      }
+    &::before {
+      content: '';
+      position: absolute;
+      left: calc(-#{$tl-offset} - #{$tl-line-w} / 2);
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: $tl-post-dot;
+      height: $tl-post-dot;
+      border-radius: 50%;
+      background: var(--tl-node);
     }
-
-    &:last-child li:last-child::before {
-      height: 1.5rem;
-    }
-  } /* #archives ul */
+  }
 
   .date {
     white-space: nowrap;
-    display: inline-block;
-    position: relative;
-    right: 0.5rem;
-
-    &.month {
-      width: 1.4rem;
-      text-align: center;
-    }
-
-    &.day {
-      font-size: 85%;
-      font-family: Lato, sans-serif;
-    }
+    color: var(--text-muted-color);
+    font-size: 0.8rem;
+    font-family: Lato, 'Microsoft Yahei', sans-serif;
+    flex-shrink: 0;
   }
 
   a {
-    /* post title in Archvies */
-    margin-left: 2.5rem;
-    position: relative;
-    top: 0.1rem;
+    color: var(--text-color);
+    transition: color 0.2s ease;
 
     &:hover {
-      border-bottom: none;
-    }
-
-    &::before {
-      /* the dot before post title */
-      content: '';
-      display: inline-block;
-      position: relative;
-      border-radius: 50%;
-      width: 8px;
-      height: 8px;
-      float: left;
-      top: 1.35rem;
-      left: 71px;
-      background-color: var(--timeline-node-bg);
-      box-shadow: 0 0 3px 0 #c2c6cc;
-      z-index: 1;
+      color: var(--link-color);
+      text-decoration: none;
     }
   }
-} /* #archives */
+
+  @include bp.lt(bp.get(sm)) {
+    padding-left: 1.25rem;
+
+    .year::before {
+      left: calc(-1.25rem - #{$tl-line-w} / 2);
+    }
+
+    li::before {
+      left: calc(-1.25rem - #{$tl-line-w} / 2);
+    }
+  }
+}

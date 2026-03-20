@@ -140,17 +140,6 @@
     }
   }
 
-  #archives li:nth-child(odd) {
-    background-image: linear-gradient(
-      to left,
-      rgb(30 29 27),
-      rgb(42 40 38),
-      rgb(42 40 38),
-      rgb(42 40 38),
-      rgb(30 29 27)
-    );
-  }
-
   /* stylelint-disable-next-line selector-id-pattern */
   #disqus_thread {
     color-scheme: none;
