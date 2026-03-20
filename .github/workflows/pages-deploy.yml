@@ -228,9 +228,9 @@ jobs:
             fi
           done
 
-          # PWA artifacts
+          # PWA artifacts (Jekyll permalink outputs to site root)
           for pf in sw.min.js app.min.js; do
-            if [ -f "_site/assets/js/dist/${pf}" ]; then
+            if [ -f "_site/${pf}" ]; then
               echo "  ✓ PWA: ${pf}"
             else
               echo "  ✗ PWA missing: ${pf}"

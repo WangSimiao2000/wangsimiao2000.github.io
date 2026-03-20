@@ -240,9 +240,9 @@ check_assets() {
     fi
   done
 
-  # PWA: service worker and app
+  # PWA: service worker and app (Jekyll permalink outputs to site root)
   for pwa_file in sw.min.js app.min.js; do
-    if [[ -f "$base/assets/js/dist/${pwa_file}" ]]; then
+    if [[ -f "$base/${pwa_file}" ]]; then
       echo "  ✓ PWA: ${pwa_file}"
     else
       echo "  ✗ PWA missing: ${pwa_file}"
