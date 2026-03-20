@@ -1,9 +1,30 @@
 /* ===== About Page Layout ===== */
+
+@use '../abstracts/variables' as v;
+
+@keyframes about-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+
+  70% {
+    transform: translateY(-0.2rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .about-hero {
   display: flex;
   align-items: center;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  opacity: 0;
+  animation: about-enter 0.6s v.$ease-spring-soft forwards;
 
   .hero-text h2 {
     margin: 0 0 0.4rem;
@@ -100,6 +121,14 @@
   > .about-card {
     break-inside: avoid;
     margin-bottom: 1.2rem;
+    opacity: 0;
+    animation: about-enter 0.6s v.$ease-spring-soft forwards;
+
+    @for $i from 1 through 8 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.08}s;
+      }
+    }
   }
 }
 
@@ -152,6 +181,8 @@
   text-decoration: none !important;
   border-bottom: 1px solid var(--btn-border-color) !important;
   box-shadow: var(--card-shadow);
+  opacity: 0;
+  animation: about-enter 0.6s v.$ease-spring-soft 0.7s forwards;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.3s ease, background 0.3s ease;
 
