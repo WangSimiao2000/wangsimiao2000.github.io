@@ -53,7 +53,6 @@ check_pages() {
   local pages=(
     "index.html"
     "browse/index.html"
-    "archives/index.html"
     "about/index.html"
     "gallery/index.html"
     "friends/index.html"
@@ -104,6 +103,87 @@ check_pages() {
     failed=1
   fi
 
+  # Verify browse page contains all three tab panels
+  local browse_file="$base/browse/index.html"
+  for panel_id in "browse-categories" "browse-tags" "browse-archives"; do
+    if grep -q "id=\"$panel_id\"" "$browse_file" 2>/dev/null; then
+      echo "  ✓ browse panel: $panel_id"
+    else
+      echo "  ✗ browse panel: $panel_id (MISSING in browse/index.html)"
+      failed=1
+    fi
+  done
+
+  # Verify archives panel has actual post content
+  if grep -q "id=\"archives\"" "$browse_file" 2>/dev/null; then
+    echo "  ✓ archives timeline present in browse page"
+  else
+    echo "  ✗ archives timeline missing from browse page"
+    failed=1
+  fi
+
+  # PJAX: #swup container must exist in key pages
+  for pg in "index.html" "browse/index.html" "about/index.html" "gallery/index.html" "friends/index.html"; do
+    if grep -q 'id="swup"' "$base/$pg" 2>/dev/null; then
+      echo "  ✓ #swup container: $pg"
+    else
+      echo "  ✗ #swup container missing: $pg"
+      failed=1
+    fi
+  done
+
+  # Giscus: post pages should contain giscus script
+  local sample_post
+  sample_post=$(find "$base/posts" -name "*.html" 2>/dev/null | head -1)
+  if [[ -n "$sample_post" ]]; then
+    if grep -q "giscus" "$sample_post" 2>/dev/null; then
+      echo "  ✓ Giscus comment script in posts"
+    else
+      echo "  ✗ Giscus comment script missing from posts"
+      failed=1
+    fi
+  fi
+
+  # Gallery: lightbox structure
+  if grep -q 'id="lb"' "$base/gallery/index.html" 2>/dev/null; then
+    echo "  ✓ Gallery lightbox structure"
+  else
+    echo "  ✗ Gallery lightbox structure missing"
+    failed=1
+  fi
+
+  # Friends: card grid
+  if grep -q 'card-grid' "$base/friends/index.html" 2>/dev/null; then
+    echo "  ✓ Friends card grid"
+  else
+    echo "  ✗ Friends card grid missing"
+    failed=1
+  fi
+
+  # Search index: search.json must exist and contain entries
+  local search_json="$base/assets/js/data/search.json"
+  if [[ -f "$search_json" ]]; then
+    local search_size
+    search_size=$(wc -c < "$search_json")
+    if [[ $search_size -gt 100 ]]; then
+      echo "  ✓ Search index ($search_size bytes)"
+    else
+      echo "  ✗ Search index too small ($search_size bytes)"
+      failed=1
+    fi
+  else
+    echo "  ✗ Search index missing (search.json)"
+    failed=1
+  fi
+
+  # dayjs loaded for browse page (archives date formatting)
+  if grep -q "dayjs" "$browse_file" 2>/dev/null; then
+    echo "  ✓ dayjs loaded for browse page"
+  else
+    echo "  ✗ dayjs not loaded for browse page (archives dates won't format)"
+    failed=1
+  fi
+
   echo ""
 
   if [[ $failed -eq 1 ]]; then
@@ -139,6 +219,42 @@ check_assets() {
     echo "  ✓ JS ($js_count files)"
   else
     echo "  ✗ JS (none found in assets/js)"
+    failed=1
+  fi
+
+  # Browse tab JS is present
+  if grep -rq "_browseTabsInit" "$base/browse/index.html" 2>/dev/null; then
+    echo "  ✓ Browse tab JS (inline)"
+  else
+    echo "  ✗ Browse tab JS missing from browse page"
+    failed=1
+  fi
+
+  # Rollup entry bundles must all exist
+  for entry in commons home categories page post misc theme; do
+    if [[ -f "$base/assets/js/dist/${entry}.min.js" ]]; then
+      echo "  ✓ JS bundle: ${entry}.min.js"
+    else
+      echo "  ✗ JS bundle missing: ${entry}.min.js"
+      failed=1
+    fi
+  done
+
+  # PWA: service worker and app
+  for pwa_file in sw.min.js app.min.js; do
+    if [[ -f "$base/assets/js/dist/${pwa_file}" ]]; then
+      echo "  ✓ PWA: ${pwa_file}"
+    else
+      echo "  ✗ PWA missing: ${pwa_file}"
+      failed=1
+    fi
+  done
+
+  # PWA: swconf.js
+  if [[ -f "$base/assets/js/data/swconf.js" ]]; then
+    echo "  ✓ PWA: swconf.js"
+  else
+    echo "  ✗ PWA missing: swconf.js"
     failed=1
   fi
 

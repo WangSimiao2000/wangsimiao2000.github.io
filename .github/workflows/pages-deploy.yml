@@ -99,7 +99,7 @@ jobs:
       - name: Verify pages
         run: |
           echo "Checking generated pages..."
-          pages=("index.html" "browse/index.html" "archives/index.html" "about/index.html" "gallery/index.html" "friends/index.html" "tools/index.html" "feed.xml" "sitemap.xml")
+          pages=("index.html" "browse/index.html" "about/index.html" "gallery/index.html" "friends/index.html" "tools/index.html" "feed.xml" "sitemap.xml")
           failed=0
           for p in "${pages[@]}"; do
             if [ -f "_site/$p" ]; then
@@ -109,13 +109,142 @@ jobs:
               failed=1
             fi
           done
+
+          # Posts
           post_count=$(find _site -path "*/posts/*" -name "*.html" | wc -l)
-          echo "  Posts: $post_count"
+          if [ "$post_count" -gt 0 ]; then
+            echo "  ✓ posts ($post_count found)"
+          else
+            echo "  ✗ posts (none found)"
+            failed=1
+          fi
+
+          # Category & tag pages (must be > 1)
           cat_count=$(find _site/browse/categories -name "index.html" 2>/dev/null | wc -l)
-          echo "  Category pages: $cat_count"
+          if [ "$cat_count" -gt 1 ]; then
+            echo "  ✓ category pages ($cat_count found)"
+          else
+            echo "  ✗ category pages (expected > 1, found $cat_count)"
+            failed=1
+          fi
           tag_count=$(find _site/browse/tags -name "index.html" 2>/dev/null | wc -l)
-          echo "  Tag pages: $tag_count"
-          if [ "$failed" -eq 1 ] || [ "$post_count" -eq 0 ]; then
+          if [ "$tag_count" -gt 1 ]; then
+            echo "  ✓ tag pages ($tag_count found)"
+          else
+            echo "  ✗ tag pages (expected > 1, found $tag_count)"
+            failed=1
+          fi
+
+          # Browse page: three tab panels + archives timeline
+          for panel in browse-categories browse-tags browse-archives; do
+            if grep -q "id=\"$panel\"" _site/browse/index.html 2>/dev/null; then
+              echo "  ✓ browse panel: $panel"
+            else
+              echo "  ✗ browse panel: $panel (MISSING)"
+              failed=1
+            fi
+          done
+          if grep -q 'id="archives"' _site/browse/index.html 2>/dev/null; then
+            echo "  ✓ archives timeline in browse page"
+          else
+            echo "  ✗ archives timeline missing from browse page"
+            failed=1
+          fi
+
+          # Browse tab JS
+          if grep -q "_browseTabsInit" _site/browse/index.html 2>/dev/null; then
+            echo "  ✓ browse tab JS"
+          else
+            echo "  ✗ browse tab JS missing"
+            failed=1
+          fi
+
+          # PJAX: #swup container in key pages
+          for pg in index.html browse/index.html about/index.html gallery/index.html friends/index.html; do
+            if grep -q 'id="swup"' "_site/$pg" 2>/dev/null; then
+              echo "  ✓ #swup container: $pg"
+            else
+              echo "  ✗ #swup container missing: $pg"
+              failed=1
+            fi
+          done
+
+          # Giscus in posts
+          sample_post=$(find _site/posts -name "*.html" 2>/dev/null | head -1)
+          if [ -n "$sample_post" ]; then
+            if grep -q "giscus" "$sample_post" 2>/dev/null; then
+              echo "  ✓ Giscus in posts"
+            else
+              echo "  ✗ Giscus missing from posts"
+              failed=1
+            fi
+          fi
+
+          # Gallery lightbox
+          if grep -q 'id="lb"' _site/gallery/index.html 2>/dev/null; then
+            echo "  ✓ Gallery lightbox"
+          else
+            echo "  ✗ Gallery lightbox missing"
+            failed=1
+          fi
+
+          # Friends card grid
+          if grep -q 'card-grid' _site/friends/index.html 2>/dev/null; then
+            echo "  ✓ Friends card grid"
+          else
+            echo "  ✗ Friends card grid missing"
+            failed=1
+          fi
+
+          # Search index
+          if [ -f "_site/assets/js/data/search.json" ]; then
+            sz=$(wc -c < _site/assets/js/data/search.json)
+            if [ "$sz" -gt 100 ]; then
+              echo "  ✓ Search index ($sz bytes)"
+            else
+              echo "  ✗ Search index too small ($sz bytes)"
+              failed=1
+            fi
+          else
+            echo "  ✗ Search index missing"
+            failed=1
+          fi
+
+          # dayjs loaded for browse page
+          if grep -q "dayjs" _site/browse/index.html 2>/dev/null; then
+            echo "  ✓ dayjs for browse page"
+          else
+            echo "  ✗ dayjs not loaded for browse page"
+            failed=1
+          fi
+
+          # Rollup bundles
+          for entry in commons home categories page post misc theme; do
+            if [ -f "_site/assets/js/dist/${entry}.min.js" ]; then
+              echo "  ✓ JS bundle: ${entry}.min.js"
+            else
+              echo "  ✗ JS bundle missing: ${entry}.min.js"
+              failed=1
+            fi
+          done
+
+          # PWA artifacts
+          for pf in sw.min.js app.min.js; do
+            if [ -f "_site/assets/js/dist/${pf}" ]; then
+              echo "  ✓ PWA: ${pf}"
+            else
+              echo "  ✗ PWA missing: ${pf}"
+              failed=1
+            fi
+          done
+          if [ -f "_site/assets/js/data/swconf.js" ]; then
+            echo "  ✓ PWA: swconf.js"
+          else
+            echo "  ✗ PWA missing: swconf.js"
+            failed=1
+          fi
+
+          if [ "$failed" -eq 1 ]; then
             echo "Page verification FAILED"
             exit 1
           fi
