@@ -186,7 +186,7 @@ layout: page
     indicator.style.transform = 'translateX(' + (tab.offsetLeft - tabs.offsetLeft) + 'px)';
   }
 
-  // Position indicator (no transition on init)
+  /* Position indicator (no transition on init) */
   var active = document.querySelector('.browse-tab.active');
   var indicator = document.querySelector('.browse-indicator');
   if (indicator) indicator.style.transition = 'none';
@@ -197,7 +197,7 @@ layout: page
     });
   });
 
-  // Only bind click listener once (persists across PJAX navigations)
+  /* Only bind click listener once (persists across PJAX navigations) */
   if (!window._browseTabsBound) {
     window._browseTabsBound = true;
     document.addEventListener('click', function(e) {
