@@ -130,6 +130,32 @@ async function navigate(url, pushState = true) {
       panel.innerHTML = newPanel.innerHTML;
     }
 
+    // Replace tail content (comments etc.) but preserve footer
+    const tail = container.querySelector('#tail-wrapper');
+    const newTail = newContainer.querySelector('#tail-wrapper');
+    if (tail && newTail) {
+      const footer = tail.querySelector('footer');
+      /* Remove everything except footer */
+      [...tail.childNodes]
+        .filter((n) => n.nodeName !== 'FOOTER')
+        .forEach((n) => n.remove());
+      /* Insert new content before footer */
+      [...newTail.childNodes]
+        .filter((n) => n.nodeName !== 'FOOTER')
+        .forEach((n) => {
+          const node = n.cloneNode(true);
+          tail.insertBefore(node, footer);
+        });
+      /* Re-execute scripts (needed for Giscus) */
+      tail.querySelectorAll('script').forEach((old) => {
+        const s = document.createElement('script');
+        if (old.src) s.src = old.src;
+        else s.textContent = old.textContent;
+        [...old.attributes].forEach((a) => s.setAttribute(a.name, a.value));
+        old.replaceWith(s);
+      });
+    }
+
     // Update title
     document.title = doc.title;
 
