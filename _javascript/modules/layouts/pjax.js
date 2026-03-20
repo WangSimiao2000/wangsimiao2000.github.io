@@ -130,13 +130,6 @@ async function navigate(url, pushState = true) {
       panel.innerHTML = newPanel.innerHTML;
     }
 
-    // Replace tail/footer
-    const tail = container.querySelector('#tail-wrapper');
-    const newTail = newContainer.querySelector('#tail-wrapper');
-    if (tail && newTail) {
-      tail.innerHTML = newTail.innerHTML;
-    }
-
     // Update title
     document.title = doc.title;
 
