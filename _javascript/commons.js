@@ -33,6 +33,14 @@ export function reinitPage() {
   loadMermaid();
   loadTooptip();
 
+  /* Re-trigger busuanzi after PJAX replaces footer DOM */
+  var oldBsz = document.getElementById('busuanzi_script');
+  if (oldBsz) oldBsz.remove();
+  var bsz = document.createElement('script');
+  bsz.id = 'busuanzi_script';
+  bsz.src = 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js?' + Date.now();
+  document.body.appendChild(bsz);
+
   console.log('[Blog] Page components reinitialized');
 }
 
