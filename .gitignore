@@ -16,6 +16,7 @@ node_modules
 
 # Build output
 assets/js/dist
+_data/friends_checked.yml
 
 # IDE configurations
 .idea
