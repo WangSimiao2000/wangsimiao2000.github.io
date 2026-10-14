@@ -1,6 +1,6 @@
 ---
 title: 从脚本到平台：用 mc-ops 统一管理我的 Minecraft 服务器
-date: 2026-10-14 12:00:00 +0800
+date: 2026-10-14 10:30:00 +0800
 categories: [游戏, Minecraft]
 tags: [Minecraft, Fabric, Python, FastAPI, React, systemd, 运维, 自动化]
 ---

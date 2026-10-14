@@ -1,6 +1,6 @@
 ---
 title: Minecraft 模组服运维踩坑记录：从 EasyAuth 拦包到 systemd 的 stdin
-date: 2026-10-14 12:10:00 +0800
+date: 2026-10-14 10:35:00 +0800
 categories: [游戏, Minecraft]
 tags: [Minecraft, Fabric, EasyAuth, Carpet, RCON, systemd, frp, 安全, 踩坑]
 ---
