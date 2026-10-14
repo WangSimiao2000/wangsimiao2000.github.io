@@ -1,6 +1,6 @@
 ---
 title: Minecraft 服务器的三层备份：冷备份、restic 增量快照与家用 NAS 异地副本
-date: 2026-10-14 12:20:00 +0800
+date: 2026-10-14 10:40:00 +0800
 categories: [游戏, Minecraft]
 tags: [Minecraft, 备份, restic, rclone, SMB, NAS, 运维]
 ---
