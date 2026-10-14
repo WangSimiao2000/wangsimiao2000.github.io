@@ -7,7 +7,7 @@ tags: [Minecraft, Fabric, Python, FastAPI, React, systemd, 运维, 自动化]
 
 半年前我写了 [Fabric Server Manager](/posts/Fabric-Server-Manager/)，用一套 Bash 脚本管理服务器的启停、备份和升级。后来又陆续加了 QQ 机器人、frp 内网穿透、crontab 定时任务、看门狗……每个组件单独看都能用，合在一起却越来越难维护。
 
-10 月初服务器出了一次安全事件，排查时我才发现：想回答"凌晨两点是谁、从哪个 IP、用什么客户端登录了这个账号"，要在四五个日志文件之间来回翻，而且有一半信息根本没有记录。于是我决定推倒重来，把所有东西收拢成一个平台：**mc-ops**。
+10 月初服务器出了一次[安全事件](/posts/MC-Server-Grief-Incident/)，排查时我才发现：想回答"凌晨两点是谁、从哪个 IP、用什么客户端登录了这个账号"，要在四五个日志文件之间来回翻，而且有一半信息根本没有记录。于是我决定推倒重来，把所有东西收拢成一个平台：**mc-ops**。
 
 这篇文章介绍 mc-ops 的整体设计。另外两篇分别记录了这一路的[踩坑经历](/posts/MC-Server-Pitfalls/)和[备份方案](/posts/MC-Server-Backup-Strategy/)。
 
