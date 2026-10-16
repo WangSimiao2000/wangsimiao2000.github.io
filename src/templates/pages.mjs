@@ -324,6 +324,17 @@ export function aboutPage(home) {
   return shell(home, { title: '关于', path: '/about/', reader: { section: 'about', body } });
 }
 
+/* ---------- 留言板（隐藏页里的） ---------- */
+
+export function guestbookPage(home) {
+  const body = html`
+    <article class="post">
+      ${pageHead('留言板', '藏在路牌背后的小地方。用 GitHub 账号登录就能留言，打个招呼、提个建议、随便聊聊都行。')}
+    </article>
+    ${comments()}`;
+  return shell(home, { title: '留言板', path: '/guestbook/', reader: { section: 'secret', body } });
+}
+
 /* ---------- 404 ---------- */
 
 export function notFoundPage(home) {

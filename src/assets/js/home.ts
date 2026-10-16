@@ -22,6 +22,7 @@ const world = startWorld({
   slots: [...document.querySelectorAll<HTMLElement>('.hb-slot')],
   secretPanel: document.querySelector<HTMLElement>('[data-secret-panel]'),
 });
+if (initial === 'secret') world.enterSecret();
 startRouter({ world, sections, reader });
 
 // MC 状态：由 mc-ops 每 10 分钟推到 mc-status 仓库的 Pages（同域）
@@ -32,7 +33,8 @@ if (box) {
     if (el) el.textContent = v;
   };
   const hours = (sec: number) => `${Math.floor(sec / 3600)} 小时 ${Math.floor((sec % 3600) / 60)} 分`;
-  fetch('/mc-status/status.json', { cache: 'no-store' })
+  const load = (attempt = 0): void => {
+  fetch(`/mc-status/status.json?t=${Date.now()}`, { cache: 'no-store' })
     .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
     .then((s) => {
       if (!s.updated_at) throw new Error('尚无数据'); // 仓库刚建好、mc-ops 还没推过
@@ -52,10 +54,19 @@ if (box) {
       set('updated', stale ? `数据已 ${min} 分钟未更新，小主机可能离线` : `${Math.max(0, min)} 分钟前更新 · 每 10 分钟一次`);
       drawSpark(box.querySelector<SVGSVGElement>('[data-spark]'), s.history ?? []);
     })
-    .catch(() => {
-      set('state', '数据接入中');
-      set('updated', '状态数据还没上线（mc-status）');
+    .catch((err) => {
+      // 偶发的网络错误：隔几秒重试两次；一直失败才显示原因
+      if (attempt < 2) {
+        setTimeout(() => load(attempt + 1), 3000 * (attempt + 1));
+        return;
+      }
+      set('state', '暂时读不到');
+      set('updated', `状态数据读取失败（${err instanceof Error ? err.message : `HTTP ${err}`}），稍后会自动重试`);
     });
+  };
+  load();
+  // 页面一直开着时，每 5 分钟刷新一次
+  setInterval(() => document.visibilityState === 'visible' && load(), 5 * 60e3);
 }
 
 // QQ 群号：点击复制

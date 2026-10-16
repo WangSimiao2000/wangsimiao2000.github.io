@@ -363,7 +363,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     };
     if (secretPanel) {
       place(secretPanel, -1);
-      secretPanel.toggleAttribute('inert', !secret);
+      secretPanel.toggleAttribute('inert', !secret || reading);
     }
     panels.forEach((panel, i) => {
       const d = i - pc;
@@ -1111,6 +1111,13 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     setReading(on: boolean) {
       reading = on;
       nextTurn = time + 4;
+    },
+    /** 留言板等隐藏页里的面板页：相机停在秋林 */
+    enterSecret() {
+      if (!secret) enterSecret();
+    },
+    get inSecret() {
+      return secret;
     },
   };
 }

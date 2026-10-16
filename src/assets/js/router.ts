@@ -40,6 +40,11 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
 
   /** 相机移到某个板块：页面滚动瞬间到位，世界里的小人自己跑过去 */
   function moveTo(id: string) {
+    if (id === 'secret') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      world.enterSecret();
+      return;
+    }
     const h = sections[0]?.offsetHeight || window.innerHeight;
     window.scrollTo({ top: sectionIndex(id) * h, behavior: 'instant' });
   }
