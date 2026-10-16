@@ -121,3 +121,34 @@ a { color: inherit; }
   .card { padding: 20px 18px 16px; border-radius: 18px; box-shadow: 8px 8px 20px var(--sh-dark), -8px -8px 18px var(--sh-light), inset 1px 1px 0 var(--edge); }
   .card-title { font-size: 18px; margin-bottom: 14px; }
 }
+
+/* ---- 打开面板的按钮：比普通按钮更显眼，带强调色和一个会前移的箭头 ---- */
+.btn-open {
+  display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--accent);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 10%, var(--surface-hi)), color-mix(in srgb, var(--accent) 4%, var(--surface-lo)));
+  box-shadow: 6px 6px 14px var(--sh-dark), -6px -6px 14px var(--sh-light), inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.btn-open:hover {
+  color: var(--accent);
+  box-shadow: 8px 8px 18px var(--sh-dark), -8px -8px 18px var(--sh-light), inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.btn-open:active { box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light), inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
+.open-icon {
+  width: 7px; height: 7px; flex: none; border-top: 2px solid currentColor; border-right: 2px solid currentColor;
+  transform: rotate(45deg); margin-right: 2px; transition: transform 0.2s;
+}
+.btn-open:hover .open-icon { transform: translateX(3px) rotate(45deg); }
+@media (prefers-reduced-motion: reduce) { .open-icon { transition: none; } }
+
+/* ---- 滚动条：页面本身不显示（首页靠快捷栏指示位置），卡片内是自绘的细圆条 ---- */
+html.js { scrollbar-width: none; }
+html.js::-webkit-scrollbar { display: none; }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent; border-radius: 8px; background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--muted) 65%, transparent); }
+::-webkit-scrollbar-corner { background: transparent; }

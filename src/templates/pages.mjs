@@ -107,7 +107,7 @@ export function archivesPage(home) {
       left: jumpSide('年份', years.map((y) => ({ id: `y${y}`, text: String(y) }))),
       right: statsSide(
         [['文章', `${posts.length} 篇`], ['分类', `${cats.size} 个`], ['标签', `${tags.size} 个`]],
-        html`<p class="side-links"><a class="btn" href="/browse/">分类与标签</a></p>`,
+        html`<p class="side-links"><a class="btn btn-open" href="/browse/">分类与标签<span class="open-icon" aria-hidden="true"></span></a></p>`,
       ),
       toc: true,
     },
@@ -151,7 +151,7 @@ export function browsePage(home) {
       body,
       right: statsSide(
         [['文章', `${home.posts.length} 篇`], ['分类', `${cats.size} 个`], ['标签', `${tags.size} 个`]],
-        html`<p class="side-links"><a class="btn" href="/archives/">按时间归档</a></p>`,
+        html`<p class="side-links"><a class="btn btn-open" href="/archives/">按时间归档<span class="open-icon" aria-hidden="true"></span></a></p>`,
       ),
     },
   });
@@ -178,7 +178,7 @@ export function categoryPage(home, cat, all) {
         [['文章', `${posts.length} 篇`], ['最近', formatDate(posts[0].date)]],
         html`
       ${related.length ? html`<p class="side-title">${parents.length ? '上级与下级' : '子分类'}</p><p class="tags side-tags">${related.map((r) => html`<a class="tag" href="${categoryUrl(r)}">${r}<span>${all.cats.get(slugify(r))?.posts.length}</span></a>`)}</p>` : ''}
-      <p class="side-links"><a class="btn" href="/browse/">全部分类</a></p>`,
+      <p class="side-links"><a class="btn btn-open" href="/browse/">全部分类<span class="open-icon" aria-hidden="true"></span></a></p>`,
       ),
     },
   });
@@ -205,7 +205,7 @@ export function tagPage(home, tag) {
         [['文章', `${posts.length} 篇`], ['最近', formatDate(posts[0].date)]],
         html`
       ${related.length ? html`<p class="side-title">相关标签</p><p class="tags side-tags">${related.map(([t]) => html`<a class="tag" href="${tagUrl(t)}">#${t}</a>`)}</p>` : ''}
-      <p class="side-links"><a class="btn" href="/browse/">全部标签</a></p>`,
+      <p class="side-links"><a class="btn btn-open" href="/browse/">全部标签<span class="open-icon" aria-hidden="true"></span></a></p>`,
       ),
     },
   });

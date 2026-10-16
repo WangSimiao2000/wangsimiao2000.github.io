@@ -43,7 +43,7 @@ const postList = ({ posts }) => html`
       </li>`,
     )}
   </ol>
-  <p class="more"><a class="btn" href="/archives/">全部文章</a><a class="btn" href="/browse/">分类与标签</a></p>`;
+  <p class="more"><a class="btn btn-open" href="/archives/">全部文章<span class="open-icon" aria-hidden="true"></span></a><a class="btn btn-open" href="/browse/">分类与标签<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 const toolGrid = ({ tools }) => html`
   <ul class="grid">
@@ -52,7 +52,7 @@ const toolGrid = ({ tools }) => html`
       <li><a class="slot-link" href="${t.url}"><span><span class="item-name">${t.name}</span><span class="item-desc">${t.description}</span></span></a></li>`,
     )}
   </ul>
-  <p class="more"><a class="btn" href="/tools/">全部工具</a></p>`;
+  <p class="more"><a class="btn btn-open" href="/tools/">全部工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 const server = () => html`
   <div class="server" data-mc-status>
@@ -80,14 +80,14 @@ const friendGrid = ({ friends }) => html`
       </li>`,
     )}
   </ul>
-  <p class="more"><a class="btn" href="/friends/">友链页面</a></p>`;
+  <p class="more"><a class="btn btn-open" href="/friends/">友链页面<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 const about = () => html`
   <div class="about">
     <p class="hero-name">嗨，我是${site.author}</p>
     <p>图形渲染开发工程师 @ 小米。喜欢图形学、游戏和折腾服务器。</p>
     <p class="more">
-      <a class="btn" href="/about/">完整介绍</a>
+      <a class="btn btn-open" href="/about/">完整介绍<span class="open-icon" aria-hidden="true"></span></a>
       <a class="btn" href="${site.links.github}" target="_blank" rel="noopener">GitHub</a>
       <a class="btn" href="${site.links.bilibili}" target="_blank" rel="noopener">Bilibili</a>
       <a class="btn" href="${site.links.steam}" target="_blank" rel="noopener">Steam</a>
