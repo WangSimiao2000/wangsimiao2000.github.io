@@ -66,6 +66,7 @@ const server = () => html`
       <div><dt>版本</dt><dd data-k="version">-</dd></div>
       <div><dt>已运行</dt><dd data-k="uptime">-</dd></div>
     </dl>
+    <figure class="spark-box" hidden><svg data-spark preserveAspectRatio="none" aria-hidden="true"></svg><figcaption>最近 24 小时在线人数</figcaption></figure>
     <p class="server-foot" data-k="updated">每 10 分钟更新一次</p>
   </div>`;
 
