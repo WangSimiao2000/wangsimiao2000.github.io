@@ -1,6 +1,6 @@
 /**
- * 弹弓：鼠标停在快捷栏的「起点」上（手机上长按），它上方会冒出一把弹弓，停留几秒。
- * 把石子往左下拉，松手后石子沿抛物线飞出去，落在哪个板块上就直接冲过去。
+ * 弹弓：鼠标停在快捷栏里「当前所在」的那一格上（手机上长按），它正上方会冒出一把弹弓，停留几秒。
+ * 把石子往反方向拉，松手后石子沿抛物线飞出去（左右都行），落在哪个板块上就直接冲过去。
  * 拉得越远飞得越远；拉的时候有一串虚线点预告落点，对应的板块会亮起来。
  */
 const GRAVITY = 1700; // px/s²
@@ -24,8 +24,9 @@ const SVG = `
 <span class="ss-ball" role="button" tabindex="-1" aria-label="弹弓石子：拖动后松手发射"></span>`;
 
 export function startSlingshot({ slots, goTo }: Options) {
-  const origin = slots[0];
-  if (!origin || !window.PointerEvent) return;
+  if (!slots.length || !window.PointerEvent) return;
+  let origin = slots[0]; // 弹弓立在哪一格：当前所在的板块
+  const current = () => slots.findIndex((s) => s.classList.contains('is-active'));
   const box = document.createElement('div');
   box.className = 'slingshot';
   box.hidden = true;
@@ -46,7 +47,8 @@ export function startSlingshot({ slots, goTo }: Options) {
   function place() {
     const r = origin.getBoundingClientRect();
     box.style.left = `${r.left + r.width / 2 - 24}px`;
-    box.style.top = `${r.top - 100}px`; // 留出往下拉的空间，石子不钻到快捷栏后面
+    const barTop = origin.closest('.hotbar')?.getBoundingClientRect().top ?? r.top;
+    box.style.top = `${barTop - 58}px`; // 叉子底端正好立在快捷栏的上沿
     const b = box.getBoundingClientRect();
     return { x: b.left + 24, y: b.top + 22 };
   }
@@ -127,7 +129,8 @@ export function startSlingshot({ slots, goTo }: Options) {
     const { vx, vy } = velocity();
     const land = landing({ x: sx, y: sy }, vx, vy);
     const i = slotAt(land.x);
-    slots.forEach((s, k) => s.classList.toggle('ss-target', k === i && k !== 0));
+    const from = slots.indexOf(origin);
+    slots.forEach((s, k) => s.classList.toggle('ss-target', k === i && k !== from));
     // 虚线点：相对弹弓盒子画
     const b = box.getBoundingClientRect();
     let dots = '';
@@ -147,6 +150,7 @@ export function startSlingshot({ slots, goTo }: Options) {
     const { vx, vy } = velocity();
     const land = landing({ x: sx, y: sy }, vx, vy);
     const target = slotAt(land.x);
+    const from = slots.indexOf(origin);
     aim.innerHTML = '';
     pull = { x: 0, y: 0 };
     drawBands(); // 皮筋弹回
@@ -168,7 +172,7 @@ export function startSlingshot({ slots, goTo }: Options) {
       // 落地
       flying = false;
       clearTargets();
-      if (target > 0) {
+      if (target >= 0 && target !== from) {
         slots[target].classList.add('ss-hit');
         ball.classList.add('ss-pop');
         window.setTimeout(() => {
@@ -185,40 +189,50 @@ export function startSlingshot({ slots, goTo }: Options) {
     requestAnimationFrame(step);
   }
 
-  // 桌面：悬停「起点」出现；手机：长按「起点」出现
-  origin.addEventListener('pointerenter', (e) => {
-    if (e.pointerType === 'mouse') show();
-  });
-  origin.addEventListener('pointerleave', (e) => {
-    if (e.pointerType === 'mouse') scheduleHide();
-  });
+  // 桌面：悬停当前那一格出现；手机：长按当前那一格出现。只对当前格生效
+  const isOrigin = (el: HTMLElement) => slots.indexOf(el) === current();
+  for (const slot of slots) {
+    slot.addEventListener('pointerenter', (e) => {
+      if (e.pointerType !== 'mouse' || !isOrigin(slot) || dragging || flying) return;
+      if (origin !== slot) box.hidden = true; // 换了一格：重新在这格上方弹出
+      origin = slot;
+      show();
+    });
+    slot.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'mouse' && slot === origin) scheduleHide();
+    });
+  }
   box.addEventListener('pointerenter', () => clearTimeout(hideTimer));
   box.addEventListener('pointerleave', () => !dragging && scheduleHide());
   let press = 0;
-  origin.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return;
-    press = window.setTimeout(() => {
-      suppressClick = true;
-      show();
-      scheduleHide(6000);
-    }, 450);
-  });
   const cancelPress = () => clearTimeout(press);
-  origin.addEventListener('pointerup', cancelPress);
-  origin.addEventListener('pointercancel', cancelPress);
-  origin.addEventListener('contextmenu', (e) => suppressClick && e.preventDefault());
-  // 长按出弹弓后，松手不要顺带触发「回到起点」
-  origin.addEventListener(
-    'click',
-    (e) => {
-      if (suppressClick) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        suppressClick = false;
-      }
-    },
-    true,
-  );
+  for (const slot of slots) {
+    slot.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || !isOrigin(slot)) return;
+      press = window.setTimeout(() => {
+        suppressClick = true;
+        if (origin !== slot) box.hidden = true;
+        origin = slot;
+        show();
+        scheduleHide(6000);
+      }, 450);
+    });
+    slot.addEventListener('pointerup', cancelPress);
+    slot.addEventListener('pointercancel', cancelPress);
+    slot.addEventListener('contextmenu', (e) => suppressClick && e.preventDefault());
+    // 长按出弹弓后，松手不要顺带触发这一格的跳转
+    slot.addEventListener(
+      'click',
+      (e) => {
+        if (suppressClick) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          suppressClick = false;
+        }
+      },
+      true,
+    );
+  }
 
   // 拖石子
   let grab = { x: 0, y: 0 };
@@ -253,8 +267,8 @@ export function startSlingshot({ slots, goTo }: Options) {
     if (!dragging) return;
     dragging = false;
     box.classList.remove('ss-drag');
-    // 拉得太短、或者往前推（弹不出去）：石子回位
-    if (Math.hypot(pull.x, pull.y) < 12 || pull.x > -4) {
+    // 拉得太短、或者几乎是竖直地拉（弹不出去）：石子回位
+    if (Math.hypot(pull.x, pull.y) < 12 || Math.abs(pull.x) < 4) {
       resetBall();
       clearTargets();
       scheduleHide();
