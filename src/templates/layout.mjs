@@ -47,7 +47,13 @@ export function layout(o) {
   <title>${fullTitle}</title>
   <meta name="description" content="${desc}">
   <link rel="canonical" href="${canonical}">
-  <link rel="icon" href="${site.avatar}">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/assets/img/favicons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/img/favicons/favicon-96x96.png" type="image/png" sizes="96x96">
+  <link rel="apple-touch-icon" href="/assets/img/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="/assets/img/favicons/site.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="${site.title}">
+  <meta property="og:image" content="${new URL(site.avatar, site.url).href}">
   <link rel="alternate" type="application/rss+xml" title="${site.title}" href="/feed.xml">
   <meta property="og:type" content="${o.type ?? 'website'}">
   <meta property="og:site_name" content="${site.title}">

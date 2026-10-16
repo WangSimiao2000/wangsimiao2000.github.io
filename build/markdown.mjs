@@ -183,6 +183,24 @@ export function renderMarkdown(src, { math = false } = {}) {
 }
 
 /** 纯文本摘要：去掉代码、公式、标记 */
+/** 纯文本：去掉代码块、公式、图片和 Markdown 标记（摘要和站内搜索索引共用） */
+export function plainText(src) {
+  return src
+    .replace(/\{%-?\s*(?:end)?raw\s*-?%\}/g, '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/\$\$[\s\S]*?\$\$/g, ' ')
+    .replace(/\$([^$\n]+)\$/g, '$1')
+    .replace(/!\[[^\]]*\]\([^)]*\)(\{[^}]*\})?/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\{:[^}]*\}/g, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[*_`>|~#]/g, '')
+    .replace(/^\s*-{3,}\s*$/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function excerpt(src, max = 120) {
   const text = src
     .replace(/```[\s\S]*?```/g, '')

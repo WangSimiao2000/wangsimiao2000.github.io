@@ -295,9 +295,18 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   new MutationObserver(readTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 
   /* 滚动进度 */
+  /**
+   * 按各板块的实际位置算进度，而不是 scrollY / 一屏高度：手机地址栏收起展开时 100dvh 会变，
+   * 用固定除数会让停稳的板块算成 2.03 之类，卡片就偏到一边。离整数很近时直接取整。
+   */
   function progress(): number {
-    const h = sections[0].offsetHeight || window.innerHeight;
-    return clamp(window.scrollY / h, 0, N - 1);
+    const y = window.scrollY;
+    let i = 0;
+    while (i < N - 1 && sections[i + 1].offsetTop <= y) i++;
+    const top = sections[i].offsetTop;
+    const next = i < N - 1 ? sections[i + 1].offsetTop : top + (sections[i].offsetHeight || window.innerHeight);
+    const v = clamp(i + (y - top) / Math.max(1, next - top), 0, N - 1);
+    return Math.abs(v - Math.round(v)) < 0.015 ? Math.round(v) : v;
   }
 
   let p = progress();
@@ -312,6 +321,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   let activeIdx = -1;
   let lastTint = '';
   let reading = root.classList.contains('reading');
+  let runningNow = false;
   let nextTurn = 6;
   let lastDraw = 0;
   const particles: Particle[] = [];
@@ -388,17 +398,60 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     swipeLock = now + 650; // 一次横扫只走一格，惯性滚动不会连跳
     goTo(Math.round(p) + dir);
   };
+  /*
+   * 手机上惯性滚动偶尔停在两屏之间（scroll-snap 没吸附到位），卡片就偏到一边、露不全。
+   * 滚动停下 160ms 后如果还不在整屏上，就自己吸到最近的一屏。
+   */
+  let settleTimer = 0;
+  window.addEventListener(
+    'scroll',
+    () => {
+      clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        if (reading) return;
+        const v = progress();
+        const k = Math.round(v);
+        if (v !== k) sections[k].scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth' });
+      }, 160);
+    },
+    { passive: true },
+  );
+
+  /*
+   * 滚轮 / 触控板：一次手势只翻一页。触控板松手后的惯性会持续发几十个递减的 wheel 事件，
+   * 所以「手势」以事件停顿 220ms 为界，停顿前只在开头翻一次；惯性还没完又用力扫了一下
+   * （力度明显回升）算新手势。竖向和横向都这样处理。
+   */
+  let gesture = false;
+  let lastMag = 0;
+  let stepAt = 0;
   window.addEventListener(
     'wheel',
     (e) => {
-      if (reading || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      if (reading || root.classList.contains('searching') || e.ctrlKey) return; // ctrl+滚轮是缩放
       const t = e.target as Element | null;
-      if (t?.closest('pre, .table-wrap, .math-block')) return; // 能横向滚动的内容优先
-      e.preventDefault(); // 也挡住浏览器的「横扫返回」
+      const horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+      if (horizontal && t?.closest('pre, .table-wrap, .math-block')) return; // 能横向滚动的内容优先
+      e.preventDefault(); // 页面自己不滚，也挡住浏览器的「横扫返回」
+      const delta = horizontal ? e.deltaX : e.deltaY;
+      const mag = Math.abs(delta) * (e.deltaMode === 1 ? 16 : 1);
       clearTimeout(swipeIdle);
-      swipeIdle = window.setTimeout(() => (swipeAcc = 0), 180);
-      swipeAcc += e.deltaX;
-      if (Math.abs(swipeAcc) > 40) {
+      swipeIdle = window.setTimeout(() => {
+        gesture = false;
+        swipeAcc = 0;
+      }, 220);
+      const now = performance.now();
+      if (gesture && now - stepAt > 450 && mag > 40 && mag > lastMag * 1.8) {
+        gesture = false; // 惯性中途又扫了一下
+        swipeAcc = 0;
+      }
+      lastMag = mag;
+      if (gesture) return;
+      swipeAcc += delta;
+      if (Math.abs(swipeAcc) > 30) {
+        gesture = true;
+        stepAt = now;
+        swipeLock = 0;
         step(swipeAcc > 0 ? 1 : -1);
         swipeAcc = 0;
       }
@@ -699,7 +752,10 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
         pt.vx *= 0.98;
         pt.vy *= 0.98;
       }
-      if (pt.kind === 'dust') pt.vy += 0.01 * k;
+      if (pt.kind === 'dust') {
+        pt.vy += 0.01 * k;
+        if (!runningNow) pt.life += k * 3; // 停下后脚边的灰很快散掉，不拖尾
+      }
       pt.x += pt.vx * k;
       pt.y += pt.vy * k;
       const sx = Math.round(pt.x - camLeft);
@@ -746,6 +802,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       stride += Math.min(Math.abs(v), 8);
     } else runTimer -= dt;
     const running = runTimer > 0 && !reduced.matches;
+    runningNow = running;
 
     const camLeft = Math.round(camX - W / 2);
     const groundY = H - Math.round(heightAt(camX));

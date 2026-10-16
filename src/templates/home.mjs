@@ -43,7 +43,7 @@ const postList = ({ posts }) => html`
       </li>`,
     )}
   </ol>
-  <p class="more"><a class="btn btn-open" href="/archives/">全部文章<span class="open-icon" aria-hidden="true"></span></a><a class="btn btn-open" href="/browse/">分类与标签<span class="open-icon" aria-hidden="true"></span></a></p>`;
+  <p class="more"><a class="btn btn-open" href="/archives/">查看全部 ${posts.length} 篇<span class="open-icon" aria-hidden="true"></span></a><a class="btn btn-open" href="/browse/">分类与标签<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 /** 工具卡片：web 工具是同域的独立页面（仓库自己的 Pages），整页打开；repo 链到 GitHub */
 export const toolLink = (t) =>
@@ -55,7 +55,7 @@ const toolGrid = ({ tools }) => html`
   <ul class="grid tools">
     ${tools.slice(0, 4).map((t) => html`<li>${toolLink(t)}</li>`)}
   </ul>
-  <p class="more"><a class="btn btn-open" href="/tools/">全部工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
+  <p class="more"><a class="btn btn-open" href="/tools/">查看全部 ${tools.length} 个工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 const server = () => html`
   <div class="server" data-mc-status>
@@ -70,7 +70,7 @@ const server = () => html`
     <p class="server-foot" data-k="updated">每 10 分钟更新一次</p>
   </div>`;
 
-const friendGrid = ({ friends }) => html`
+const friendGrid = ({ friends, graveyard }) => html`
   <ul class="grid friends">
     ${friends.slice(0, 6).map(
       (f) => html`
@@ -84,7 +84,7 @@ const friendGrid = ({ friends }) => html`
       </li>`,
     )}
   </ul>
-  <p class="more"><a class="btn btn-open" href="/friends/">友链页面<span class="open-icon" aria-hidden="true"></span></a></p>`;
+  <p class="more"><a class="btn btn-open" href="/friends/">查看全部友链（${friends.length + (graveyard?.length ?? 0)}）<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 const about = () => html`
   <div class="about">
