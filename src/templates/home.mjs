@@ -59,12 +59,13 @@ const toolGrid = ({ tools }) => html`
 
 const server = () => html`
   <div class="server" data-mc-status>
-    <p class="server-desc">我和朋友们的 Minecraft 生存服，白名单制，跑在家里的一台小主机上。</p>
+    <p class="server-desc">我和朋友们的 Minecraft 生存服，白名单制，跑在家里的一台小主机上。想一起玩就加 QQ 群
+      <button type="button" class="qq-chip" data-copy="${site.qqGroup}" title="点击复制群号">${site.qqGroup}<span class="qq-copied" aria-live="polite"></span></button></p>
     <dl class="stats">
       <div><dt>状态</dt><dd data-k="state">读取中…</dd></div>
       <div><dt>在线</dt><dd data-k="players">-</dd></div>
       <div><dt>版本</dt><dd data-k="version">-</dd></div>
-      <div><dt>已运行</dt><dd data-k="uptime">-</dd></div>
+      <div><dt>已开服</dt><dd data-k="uptime">-</dd></div>
     </dl>
     <figure class="spark-box" hidden><svg data-spark preserveAspectRatio="none" aria-hidden="true"></svg><figcaption>最近 24 小时在线人数</figcaption></figure>
     <p class="server-foot" data-k="updated">每 10 分钟更新一次</p>

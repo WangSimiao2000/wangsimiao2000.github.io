@@ -54,6 +54,17 @@ http
       req.on('close', () => clients.delete(res));
       return;
     }
+    // /mc-status/ 是另一个仓库的 Pages，本地没有：转发线上的公开数据，预览和线上一致
+    if (url.pathname.startsWith('/mc-status/')) {
+      try {
+        const r = await fetch(new URL(url.pathname, 'https://blog.mickeymiao.cn'));
+        res.writeHead(r.status, { 'content-type': r.headers.get('content-type') ?? 'application/json', 'cache-control': 'no-cache' });
+        res.end(Buffer.from(await r.arrayBuffer()));
+      } catch {
+        res.writeHead(502).end();
+      }
+      return;
+    }
     // 解码后再规范化，确保落在 dist/ 内（防目录穿越）
     let rel;
     try { rel = decodeURIComponent(url.pathname); } catch { res.writeHead(400).end(); return; }

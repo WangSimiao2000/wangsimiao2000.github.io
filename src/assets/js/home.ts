@@ -41,7 +41,13 @@ if (box) {
       box.dataset.online = !stale && s.online ? '1' : '0';
       set('players', s.online && !stale ? `${s.players_online ?? 0} / ${s.players_max ?? '?'}` : '-');
       set('version', s.version ?? '-');
-      set('uptime', s.online && !stale && s.uptime_s ? hours(Number(s.uptime_s)) : '-');
+      // 「已开服」从开服日期算起，重启不清零；本次连续运行时长放在悬停提示里
+      const uptimeEl = box.querySelector<HTMLElement>('[data-k="uptime"]');
+      if (s.since) {
+        const days = Math.floor((Date.now() - new Date(`${s.since}T00:00:00+08:00`).getTime()) / 86400e3) + 1;
+        set('uptime', `${days} 天`);
+        if (uptimeEl) uptimeEl.title = `${s.since} 开服${s.online && !stale && s.uptime_s ? `，本次已连续运行 ${hours(Number(s.uptime_s))}` : ''}`;
+      } else set('uptime', s.online && !stale && s.uptime_s ? hours(Number(s.uptime_s)) : '-');
       set('updated', stale ? `数据已 ${min} 分钟未更新，小主机可能离线` : `${Math.max(0, min)} 分钟前更新 · 每 10 分钟一次`);
       drawSpark(box.querySelector<SVGSVGElement>('[data-spark]'), s.history ?? []);
     })
@@ -50,6 +56,20 @@ if (box) {
       set('updated', '状态数据还没上线（mc-status）');
     });
 }
+
+// QQ 群号：点击复制
+document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) =>
+  b.addEventListener('click', async () => {
+    const tip = b.querySelector('.qq-copied');
+    try {
+      await navigator.clipboard.writeText(b.dataset.copy ?? '');
+      if (tip) tip.textContent = '已复制';
+    } catch {
+      if (tip) tip.textContent = '复制失败，请手动记下';
+    }
+    setTimeout(() => tip && (tip.textContent = ''), 1600);
+  }),
+);
 
 /** 最近 24 小时在线人数的小折线（数据来自 status.json 的 history） */
 function drawSpark(svg: SVGSVGElement | null, history: [string, number][]) {
