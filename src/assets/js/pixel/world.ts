@@ -376,6 +376,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   let lastTint = '';
   let reading = root.classList.contains('reading');
   let secret = false; // 正在隐藏页里
+  /**
+   * 进出隐藏页的过渡进度 0..1。别的板块之间是浏览器平滑滚动（约 0.55s 的缓入缓出）再叠一层相机跟随；
+   * 隐藏页不靠滚动，以前相机直接扑过去，所以显得快。这里按同样的时长和缓动走，速度就一致了
+   */
+  let secretMix = 0;
+  const SECRET_DUR = 0.55;
+  const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const camTarget = () => (p + (-1 - p) * easeInOut(secretMix)) * SECTION;
   let signFlip = 0; // 路牌翻转动画 0..1
   let signTarget = 0; // 1 = 已翻过来，可以往回走进隐藏页
   let runningNow = false;
@@ -1135,7 +1143,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   function frame(now: number) {
     // 阅读时世界只露出一条，降到约 20 帧省电；相机还在赶路时照常全速
-    if (reading && time - readStart > 1.5 && camX === (secret ? -1 : p) * SECTION && now - lastDraw < 50) {
+    if (reading && time - readStart > 1.5 && camX === camTarget() && now - lastDraw < 50) {
       requestAnimationFrame(frame);
       return;
     }
@@ -1145,7 +1153,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     time += dt;
 
     p = progress();
-    const target = (secret ? -1 : p) * SECTION;
+    secretMix = reduced.matches ? (secret ? 1 : 0) : clamp(secretMix + (secret ? dt : -dt) / SECRET_DUR);
+    const target = camTarget();
     if (reduced.matches) camX = target;
     else camX += (target - camX) * Math.min(1, dt * 10);
     if (Math.abs(target - camX) < 0.05) camX = target;
@@ -1191,7 +1200,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawGround(camLeft);
     a.clearRect(0, 0, W, H);
     drawActors(dt, camLeft);
-    drawCharacter(running, reading && !running && Math.abs((secret ? -1 : p) * SECTION - camX) < 1.5);
+    drawCharacter(running, reading && !running && Math.abs(camTarget() - camX) < 1.5);
     if (dark) {
       // 前景和角色用同一层夜色，主角不再比周围亮一截
       for (const ctx of [f, a, hc]) {
@@ -1225,6 +1234,11 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     /** 留言板等隐藏页里的面板页：相机停在秋林 */
     enterSecret() {
       if (!secret) enterSecret();
+      if (time < 0.2) {
+        // 直接打开留言板这类隐藏页里的页面：相机直接就位，不从起点走过去
+        secretMix = 1;
+        camX = lastCam = -SECTION;
+      }
     },
     get inSecret() {
       return secret;

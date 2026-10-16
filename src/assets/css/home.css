@@ -424,7 +424,7 @@ html.world-hover body { cursor: pointer; }
 .ss-ball.ss-reload { animation: ss-ball-reload 0.32s 0.12s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
 @keyframes ss-ball-reload { from { scale: 0.2; opacity: 0; } }
 @keyframes ss-ball-pop { 30% { scale: 1.8; opacity: 1; } 100% { scale: 0.2; opacity: 0; } }
-@keyframes ss-ball-miss { to { translate: 0 30px; opacity: 0; } }
+@keyframes ss-ball-miss { to { transform: translateY(30px); opacity: 0; } } /* 位置占用了 translate 属性，这里用 transform 往下掉 */
 .hb-slot.ss-target { color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent), 3px 3px 7px var(--sh-dark), -3px -3px 7px var(--sh-light); }
 .hb-slot.ss-hit { animation: ss-hit 0.3s ease-out; }
 @keyframes ss-hit { 40% { transform: translateY(3px) scale(0.94); } }
