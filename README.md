@@ -1,7 +1,6 @@
 # MickeyMiao's Blog
 
 [![Build and Deploy](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/pages-deploy.yml/badge.svg)](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/pages-deploy.yml)
-[![Daily R2 Gallery Sync](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/r2-gallery-sync.yml/badge.svg)](https://github.com/WangSimiao2000/wangsimiao2000.github.io/actions/workflows/r2-gallery-sync.yml)
 
 <a href="https://space.bilibili.com/36913332"><img src="https://img.shields.io/badge/Bilibili-鄙人米奇喵-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white" alt="Bilibili@鄙人米奇喵"></a>
 <a href="https://steamcommunity.com/id/MickeyMiao/"><img src="https://img.shields.io/badge/Steam-MickeyMiao-000000?style=for-the-badge&logo=steam&logoColor=white" alt="Steam: MickeyMiao"></a>
@@ -47,15 +46,12 @@
 │   ├── origin/          #   CDN 库地址配置
 │   ├── contact.yml      #   联系方式
 │   ├── friends.yml      #   友链列表
-│   ├── gallery.yml      #   相册数据 (R2 自动生成)
 │   ├── media.yml        #   媒体配置
 │   ├── share.yml        #   分享按钮配置
 │   └── tools.yml        #   工具页数据
 ├── _plugins/            # Jekyll 插件 (git lastmod hook)
 ├── _scripts/            # 开发/部署脚本
 │   ├── check-friends.sh       # 友链可达性检测
-│   ├── generate-gallery-r2.sh # 从 R2 生成相册数据
-│   ├── sync-assets-r2.sh      # 静态资源同步到 R2 CDN
 │   ├── run.sh                 # 本地开发服务器
 │   └── test.sh                # 构建 + HTML 校验
 ├── assets/              # 静态资源
@@ -129,22 +125,15 @@ pin: false         # 置顶
 
 1. 安装 Ruby 3.3 + Node.js 20 依赖
 2. `npm run build` 编译 JS
-3. `sync-assets-r2.sh` — 同步文章配图、头像等到 R2 CDN，变更文件自动清除 Cloudflare 缓存
-4. `generate-gallery-r2.sh` — 从 R2 bucket 生成相册数据
-5. `check-friends.sh` — 检测友链可达性
-6. `jekyll build` 构建站点
-7. `htmlproofer` 校验 HTML
-8. 部署到 GitHub Pages
-
-### 相册同步 (`r2-gallery-sync.yml`)
-
-每日北京时间 00:00 自动从 R2 拉取相册数据，有变更时自动提交到仓库。也支持手动触发。
+3. `check-friends.sh` — 检测友链可达性
+4. `jekyll build` 构建站点
+5. `htmlproofer` 校验 HTML
+6. 部署到 GitHub Pages
 
 ## 致谢
 
 - 主题: [Chirpy](https://github.com/cotes2020/jekyll-theme-chirpy) by Cotes Chung
 - 评论: [Giscus](https://giscus.app/)
-- CDN / 图床 / 相册: [Cloudflare R2](https://developers.cloudflare.com/r2/)
 
 ## License
 
