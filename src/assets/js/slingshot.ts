@@ -136,10 +136,15 @@ export function startSlingshot({ slots, goTo }: Options) {
     }, ms);
   }
 
+  /*
+   * 石子的位置用独立的 translate 属性，不用 transform：落地时的 ss-pop 动画改的是 scale，
+   * 而 CSS 里 scale 是叠在 transform 外面的，会把 transform 里的位移一起缩小——石子就会边缩边「飞回」皮兜。
+   * translate 在 scale 之前生效，缩放只发生在石子自己身上。
+   */
   /** reload：石子打出去就没了，皮兜里重新冒出一颗新的（淡入），而不是原来那颗瞬移回来 */
   function resetBall(reload = false) {
     pull = { x: 0, y: 0 };
-    ball.style.transform = 'translate(0px, 0px)';
+    ball.style.translate = '0px 0px';
     ball.classList.remove('ss-fly', 'ss-reload');
     if (reload) {
       void ball.offsetWidth;
@@ -250,7 +255,7 @@ export function startSlingshot({ slots, goTo }: Options) {
       const t = Math.min(dur, (now - t0) / 1000);
       const x = fx + vx * t;
       const y = fy + vy * t + (GRAVITY * t * t) / 2;
-      ball.style.transform = `translate(${snap(x)}px, ${snap(y)}px)`;
+      ball.style.translate = `${snap(x)}px ${snap(y)}px`;
       if (t < dur) {
         requestAnimationFrame(step);
         return;
@@ -341,7 +346,7 @@ export function startSlingshot({ slots, goTo }: Options) {
       y = (y / len) * MAX_PULL;
     }
     pull = { x, y };
-    ball.style.transform = `translate(${snap(x)}px, ${snap(y)}px)`;
+    ball.style.translate = `${snap(x)}px ${snap(y)}px`;
     drawBands();
     if (len > 10) preview();
     else aim.innerHTML = '';
