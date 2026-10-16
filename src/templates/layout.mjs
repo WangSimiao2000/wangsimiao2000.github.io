@@ -29,6 +29,7 @@ export const topbar = () => html`
  * @param {boolean} [o.math]     加载 KaTeX 样式
  * @param {'website' | 'article'} [o.type]
  * @param {unknown} o.body
+ * @param {boolean} [o.reading] 页面带正文：首帧就进入阅读状态，避免先闪一下首页卡片
  * @param {string} [o.extraHead] 开发模式注入等
  */
 export function layout(o) {
@@ -54,7 +55,7 @@ export function layout(o) {
   <meta name="msvalidate.01" content="${site.verify.bing}">
   <meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#15181d" media="(prefers-color-scheme: dark)">
-  <script>${raw(THEME_INIT)}</script>
+  <script>${raw(THEME_INIT)}${o.reading ? raw("document.documentElement.classList.add('reading');") : ''}</script>
   <link rel="stylesheet" href="${o.asset('css/base.css')}">
   ${(o.css ?? []).map((c) => html`<link rel="stylesheet" href="${o.asset(c)}">`)}
   ${o.math ? html`<link rel="stylesheet" href="${o.asset('katex/katex.min.css')}">` : ''}
@@ -62,7 +63,7 @@ export function layout(o) {
   ${(o.js ?? []).map((j) => html`<script type="module" src="${o.asset(j)}"></script>`)}
   ${raw(o.extraHead ?? '')}
 </head>
-<body>
+<body${o.reading ? raw(' class="has-reader"') : ''}>
 ${o.body}
 </body>
 </html>

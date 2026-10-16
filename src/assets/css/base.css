@@ -3,12 +3,14 @@
   --px: 4px;
   --stage: 200px;
   --ground: 128px;
+  --strip: 180px; /* 阅读时露出的世界高度，由 world.ts 按像素比例改写 */
+  --sink: 110px;
   --tint: #cdebff;
   --radius: 22px;
   --font: 'Inter', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
   --mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, monospace;
 }
-[data-theme='light'] {
+:root, [data-theme='light'] {
   color-scheme: light;
   --bg: #eef1f5;
   --surface: #f2f4f8;

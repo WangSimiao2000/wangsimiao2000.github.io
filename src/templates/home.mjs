@@ -95,12 +95,28 @@ const about = () => html`
 
 const CONTENT = { home: hero, posts: postList, tools: toolGrid, server, friends: friendGrid, about };
 
-/** @param {{ posts: any[], friends: any[], tools: any[], asset: (p: string) => string, extraHead?: string }} ctx */
-export function homePage(ctx) {
+/** 板块 id -> 序号与名称，路由和阅读面板用 */
+export const sectionOf = (id) => {
+  const i = SECTIONS.findIndex((s) => s.id === id);
+  return { index: Math.max(0, i), ...SECTIONS[Math.max(0, i)] };
+};
+
+/**
+ * 整站共用的世界外壳：像素世界 + 各板块卡片 + 快捷栏，外加一个阅读面板。
+ * 首页的阅读面板为空；文章等页面把正文放进阅读面板，打开时世界和小人仍在下方。
+ * 没有 JS 时，有正文的页面只显示正文（板块卡片隐藏），首页按普通页面纵向排列。
+ *
+ * @param {{ posts: any[], friends: any[], tools: any[], asset: (p: string) => string, extraHead?: string }} ctx
+ * @param {{ title?: string, description?: string, path?: string, type?: 'website' | 'article', math?: boolean,
+ *   reader?: { section: string, body: unknown } }} [page]
+ */
+export function shell(ctx, page = {}) {
+  const reader = page.reader;
+  const sec = reader ? sectionOf(reader.section) : null;
   const body = html`
   <canvas id="world" aria-hidden="true"></canvas>
   ${topbar()}
-  <main>
+  <main class="stages">
     ${SECTIONS.map(
       (s, i) => html`
     <section id="${s.id}" class="stage" aria-labelledby="${s.id}-title">
@@ -115,8 +131,37 @@ export function homePage(ctx) {
   </main>
   <nav class="hotbar" aria-label="板块">
     ${SECTIONS.map(
-      (s, i) => html`<a class="hb-slot" href="#${s.id}" title="${s.label}（${i + 1}）"><span class="hb-num" aria-hidden="true">${i + 1}</span><span class="hb-label">${s.label}</span></a>`,
+      (s, i) => html`<a class="hb-slot" href="/#${s.id}" title="${s.label}（${i + 1}）"><span class="hb-num" aria-hidden="true">${i + 1}</span><span class="hb-label">${s.label}</span></a>`,
     )}
-  </nav>`;
-  return layout({ title: site.title, path: '/', asset: ctx.asset, css: ['css/home.css'], js: ['js/home.js'], body, extraHead: ctx.extraHead });
+  </nav>
+  <div class="reader" data-reader ${reader ? '' : 'hidden'}>
+    ${reader
+      ? html`
+    <div class="reader-card card" data-section="${sec.id}">
+      <div class="reader-bar">
+        <a class="reader-back" href="/#${sec.id}" data-reader-close><span aria-hidden="true">←</span> 回到${sec.biome}</a>
+        <span class="reader-hint">Esc 关闭</span>
+      </div>
+      <div class="reader-scroll" data-reader-scroll tabindex="-1">
+        ${reader.body}
+      </div>
+    </div>`
+      : ''}
+  </div>`;
+  return layout({
+    title: page.title ?? site.title,
+    description: page.description,
+    path: page.path ?? '/',
+    type: page.type,
+    asset: ctx.asset,
+    css: ['css/home.css', 'css/post.css'],
+    js: ['js/home.js'],
+    math: page.math,
+    reading: !!reader,
+    body,
+    extraHead: ctx.extraHead,
+  });
 }
+
+/** @param {{ posts: any[], friends: any[], tools: any[], asset: (p: string) => string, extraHead?: string }} ctx */
+export const homePage = (ctx) => shell(ctx);

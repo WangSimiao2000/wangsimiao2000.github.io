@@ -1,13 +1,26 @@
-/** 首页入口：像素世界 + MC 状态 */
+/** 整站入口：像素世界 + 站内路由（阅读面板）+ MC 状态 */
 import { startWorld } from './pixel/world.js';
+import { startRouter } from './router.js';
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
-startWorld({
+const sections = [...document.querySelectorAll<HTMLElement>('.stage')];
+const reader = document.querySelector<HTMLElement>('[data-reader]')!;
+history.scrollRestoration = 'manual';
+
+// 直接打开文章等页面：世界一开始就停在对应板块，不从起点跑过去
+const initial = reader.querySelector<HTMLElement>('.reader-card')?.dataset.section;
+if (initial) {
+  const idx = Math.max(0, sections.findIndex((s) => s.id === initial));
+  window.scrollTo({ top: idx * (sections[0]?.offsetHeight || window.innerHeight), behavior: 'instant' });
+}
+
+const world = startWorld({
   canvas,
-  sections: [...document.querySelectorAll<HTMLElement>('.stage')],
+  sections,
   panels: [...document.querySelectorAll<HTMLElement>('.panel')],
   slots: [...document.querySelectorAll<HTMLElement>('.hb-slot')],
 });
+startRouter({ world, sections, reader });
 
 // MC 状态：由 mc-ops 每 10 分钟推到 mc-status 仓库的 Pages（同域）
 const box = document.querySelector<HTMLElement>('[data-mc-status]');

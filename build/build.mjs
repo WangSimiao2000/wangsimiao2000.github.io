@@ -38,7 +38,8 @@ export async function build() {
   ]);
   const extraHead = dev ? DEV_RELOAD : '';
 
-  await emit('/', homePage({ posts, friends, tools, asset, extraHead }));
+  const home = { posts, friends, tools, asset, extraHead };
+  await emit('/', homePage(home));
 
   // 上一篇 / 下一篇按发布时间，不受置顶影响
   const byDate = [...posts].sort((a, b) => b.date - a.date);
@@ -47,7 +48,7 @@ export async function build() {
       const content = renderMarkdown(post.body, { math: post.math });
       return emit(
         post.url,
-        postPage({ post, content, prev: byDate[i - 1], next: byDate[i + 1], excerpt: excerpt(post.body), asset, extraHead }),
+        postPage({ post, content, prev: byDate[i - 1], next: byDate[i + 1], excerpt: excerpt(post.body), home }),
       );
     }),
   );

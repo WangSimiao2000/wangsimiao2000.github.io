@@ -43,6 +43,7 @@ const SECTION = 320; // 相邻板块间的世界距离（逻辑像素）
 const GROUND = 32; // 板块中心处地面高度
 const CHAR_W = 14;
 const CHAR_H = 20;
+const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
 const NIGHT = 'rgba(14, 20, 38, 0.46)';
 
 /* ---------- 小工具 ---------- */
@@ -277,6 +278,8 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     // 面板底边留出：地面 + 小人 + 一点余量
     root.style.setProperty('--stage', `${(GROUND + CHAR_H + 14) * S}px`);
     root.style.setProperty('--ground', `${GROUND * S}px`);
+    root.style.setProperty('--strip', `${(STRIP_GROUND + CHAR_H + 8) * S}px`);
+    root.style.setProperty('--sink', `${(GROUND - STRIP_GROUND) * S}px`);
   }
   resize();
   window.addEventListener('resize', resize);
@@ -308,6 +311,9 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   let nextBlink = 2.5;
   let activeIdx = -1;
   let lastTint = '';
+  let reading = root.classList.contains('reading');
+  let nextTurn = 6;
+  let lastDraw = 0;
   const particles: Particle[] = [];
 
   function spawn(pt: Particle) {
@@ -355,7 +361,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   );
 
   window.addEventListener('keydown', (e) => {
-    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || reading) return;
     const t = e.target as HTMLElement;
     if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
     const n = Number(e.key);
@@ -573,11 +579,18 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     }
   }
 
-  function drawCharacter(running: boolean) {
+  function drawCharacter(running: boolean, sitting: boolean) {
     const frames = facing > 0 ? charR : charL;
     let sprite: Sprite;
     let bob = 0;
-    if (running) {
+    if (sitting) {
+      // 看书：偶尔眨眼，隔几秒翻一页
+      const blinking = time > nextBlink && time < nextBlink + 0.13;
+      if (time > nextBlink + 0.13) nextBlink = time + 2.5 + Math.random() * 3;
+      const turning = !reduced.matches && time > nextTurn && time < nextTurn + 0.35;
+      if (time > nextTurn + 0.35) nextTurn = time + 5 + Math.random() * 4;
+      sprite = frames.sit[turning ? 2 : blinking ? 1 : 0];
+    } else if (running) {
       const fr = Math.floor(stride / 5) % 4;
       sprite = frames.run[fr];
       bob = fr % 2 === 1 ? -1 : 0;
@@ -587,7 +600,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       sprite = frames.idle[blinking ? 1 : 0];
     }
     const x = Math.round(W / 2 - CHAR_W / 2);
-    const y = Math.round(charY - CHAR_H + bob);
+    const y = Math.round(charY - sprite.height + bob);
     g.globalAlpha = 0.22;
     g.fillStyle = '#000';
     g.fillRect(x + 2, Math.round(charY), CHAR_W - 4, 1);
@@ -649,6 +662,12 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
 
   let last = performance.now();
   function frame(now: number) {
+    // 阅读时世界只露出一条，降到约 20 帧省电；相机还在赶路时照常全速
+    if (reading && camX === p * SECTION && now - lastDraw < 50) {
+      requestAnimationFrame(frame);
+      return;
+    }
+    lastDraw = now;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     time += dt;
@@ -701,7 +720,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     g.drawImage(fgCanvas, 0, 0);
     drawGlows();
     weather(dt, camLeft);
-    drawCharacter(running);
+    drawCharacter(running, reading && !running && Math.abs(p * SECTION - camX) < 1.5);
     drawParticles(dt, camLeft);
 
     updatePanels();
@@ -709,4 +728,15 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   }
   requestAnimationFrame(frame);
   updatePanels();
+
+  return {
+    goTo,
+    /** 进入 / 离开阅读状态：小人到地方后坐下看书，世界降帧 */
+    setReading(on: boolean) {
+      reading = on;
+      nextTurn = time + 4;
+    },
+  };
 }
+
+export type World = ReturnType<typeof startWorld>;

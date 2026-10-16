@@ -26,6 +26,8 @@ const CHAR_PALETTE: Record<string, string> = {
   p: '#7a5038', // 裤子
   P: '#5a3a2b', // 裤子暗部
   o: '#3b3236', // 靴子
+  r: '#b5564a', // 书皮
+  q: '#f5efe0', // 书页
 };
 // 14x20，朝右的 Q 版大头。头 0-11 行，身体 12-15 行，腿 16-19 行
 const HEAD = [
@@ -48,6 +50,18 @@ const BODY = ['..kjjslllljk..', '.kjjjlsllljjk.', '.kcjjllblljck.', '.kfkJJJJJJs
 const LEGS_IDLE = ['...kppppPPk...', '...kppkkPPk...', '...kcckkcck...', '...kookkook...'];
 const LEGS_STRIDE = ['...kppppPPk...', '..kppk..kPPk..', '.kcck....kcck.', 'kook......kook'];
 const LEGS_PASS = ['...kppppPPk...', '....kppPPk....', '....kcckck....', '....kookok....'];
+
+// 坐下看书：低头（上眼睑压下来）、双手捧书、腿向前伸。比站姿矮 2 行
+const HEAD_DOWN = HEAD.map((r, i) =>
+  i === 7 ? '.khfkkfffkkffk' : i === 8 ? '.khfwwfffwwffk' : i === 9 ? '.khfeEfffeEffk' : r,
+);
+const HEAD_DOWN_BLINK = HEAD.map((r, i) =>
+  i === 7 || i === 9 ? '.khffffffffffk' : i === 8 ? '.khfkkfffkkffk' : r,
+);
+const BODY_SIT = ['..kjjslllljk..', '.kjjjlsllljjk.', '.kcrqqqrqqqrck', '.kfrrrrrrrrrfk'];
+const LEGS_SIT = ['..kpppPPPPPkoo', '..kkkkkkkkkkoo'];
+// 翻页：右半边书页抬起
+const BODY_SIT_TURN = ['..kjjslllljk..', '.kjjjlsllljqk.', '.kcrqqqrqqqqck', '.kfrrrrrrrrrfk'];
 
 function blink(rows: string[]): string[] {
   return rows.map((r, i) => {
@@ -120,6 +134,7 @@ function rowsToCanvas(rows: string[], palette: Record<string, string>, flip = fa
 export interface CharacterFrames {
   idle: [Sprite, Sprite]; // [睁眼, 眨眼]
   run: Sprite[]; // 4 帧
+  sit: [Sprite, Sprite, Sprite]; // [看书, 眨眼, 翻页]
 }
 
 export function buildCharacter(flip: boolean): CharacterFrames {
@@ -134,6 +149,11 @@ export function buildCharacter(flip: boolean): CharacterFrames {
   return {
     idle: [rowsToCanvas(idle, CHAR_PALETTE, flip), rowsToCanvas(blink(idle), CHAR_PALETTE, flip)],
     run: run.map((r) => rowsToCanvas(r, CHAR_PALETTE, flip)),
+    sit: [
+      rowsToCanvas(compose(HEAD_DOWN, BODY_SIT, LEGS_SIT), CHAR_PALETTE, flip),
+      rowsToCanvas(compose(HEAD_DOWN_BLINK, BODY_SIT, LEGS_SIT), CHAR_PALETTE, flip),
+      rowsToCanvas(compose(HEAD_DOWN, BODY_SIT_TURN, LEGS_SIT), CHAR_PALETTE, flip),
+    ],
   };
 }
 

@@ -1,17 +1,15 @@
 import { html, raw } from '../../build/html.mjs';
-import { layout, topbar } from './layout.mjs';
+import { shell } from './home.mjs';
 import { formatDate, readingMinutes } from './util.mjs';
 
 /**
  * @param {{ post: any, content: { html: string, toc: { level: number, id: string, text: string }[] },
- *   prev: any, next: any, excerpt: string, asset: (p: string) => string, extraHead?: string }} ctx
+ *   prev: any, next: any, excerpt: string, home: any }} ctx  home：首页数据（外壳里的板块卡片要用）
  */
-export function postPage({ post, content, prev, next, excerpt, asset, extraHead }) {
+export function postPage({ post, content, prev, next, excerpt, home }) {
   const toc = content.toc;
   const body = html`
-  ${topbar()}
-  <main class="page">
-    <article class="card post">
+    <article class="post">
       <header class="post-head">
         ${post.categories.length ? html`<p class="crumbs">${post.categories.map((c, i) => html`${i ? html`<span aria-hidden="true">/</span>` : ''}<a href="/browse/#${encodeURIComponent(c)}">${c}</a>`)}</p>` : ''}
         <h1>${post.title}</h1>
@@ -36,17 +34,13 @@ ${raw(content.html)}
     <nav class="post-nav" aria-label="上一篇与下一篇">
       ${prev ? html`<a class="nav-card" href="${prev.url}" rel="prev"><span>较新</span>${prev.title}</a>` : html`<span></span>`}
       ${next ? html`<a class="nav-card next" href="${next.url}" rel="next"><span>较早</span>${next.title}</a>` : html`<span></span>`}
-    </nav>
-  </main>`;
-  return layout({
+    </nav>`;
+  return shell(home, {
     title: post.title,
     description: post.description ?? excerpt,
     path: post.url,
     type: 'article',
-    asset,
-    css: ['css/post.css'],
     math: post.math,
-    body,
-    extraHead,
+    reader: { section: 'posts', body },
   });
 }

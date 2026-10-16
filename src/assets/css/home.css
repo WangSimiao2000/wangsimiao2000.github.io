@@ -139,3 +139,48 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
 @media (max-height: 760px) {
   .post-list li:nth-child(n + 5) { display: none; }
 }
+
+/* ---- 阅读面板：在世界上方展开，底部露出一条地面和坐着看书的小人 ---- */
+.reader[hidden] { display: none; }
+.reader { max-width: 860px; margin: 0 auto; padding: 80px 16px 48px; }
+.has-reader .stages { display: none; } /* 无 JS：有正文的页面只显示正文 */
+.js .has-reader .stages { display: block; }
+.js .reader {
+  position: fixed; z-index: 4; top: 70px; bottom: var(--strip); left: 50%;
+  width: min(860px, calc(100vw - 32px)); margin: 0; padding: 0; transform: translateX(-50%);
+}
+.reader-card { padding: 0; }
+.js .reader-card { height: 100%; max-height: none; display: flex; flex-direction: column; overflow: hidden; view-transition-name: reader; }
+.reader-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 4px; }
+.reader-back {
+  font-size: 13px; color: var(--muted); text-decoration: none; padding: 7px 13px; border-radius: 12px; background: var(--surface);
+  box-shadow: 4px 4px 10px var(--sh-dark), -4px -4px 10px var(--sh-light); transition: box-shadow 0.15s, color 0.15s;
+}
+.reader-back:hover { color: var(--accent); }
+.reader-back:active { box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+.reader-hint { font-size: 12px; color: var(--muted); opacity: 0.7; }
+.js .reader-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; outline: none; }
+.reader-scroll .prose h2, .reader-scroll .prose h3, .reader-scroll .prose h4 { scroll-margin-top: 16px; }
+
+/* 阅读时：页面不再滚动，板块卡片和快捷栏让位，世界下沉成一条 */
+html.js.reading { overflow: hidden; }
+.reading .stages { opacity: 0; pointer-events: none; }
+.reading .hotbar { opacity: 0; pointer-events: none; visibility: hidden; }
+.reading body::before { opacity: 0.5; }
+.js #world { transition: filter 0.3s, transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.reading #world { transform: translateY(var(--sink)); }
+.stages, .hotbar { transition: opacity 0.25s; }
+
+::view-transition-group(reader) { animation-duration: 0.38s; animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.25s; }
+@media (prefers-reduced-motion: reduce) {
+  .js #world, .stages, .hotbar { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .js .reader { top: 60px; width: calc(100vw - 16px); }
+  .reader-bar { padding: 10px 12px 2px; }
+  .reader-hint { display: none; }
+}
+/* 正文滚到面板上沿时淡出，不和返回按钮硬切 */
+.js .reader-scroll { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px); mask-image: linear-gradient(to bottom, transparent 0, #000 18px); }
