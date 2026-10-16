@@ -1,6 +1,7 @@
 /** 整站入口：像素世界 + 站内路由（阅读面板）+ MC 状态 */
 import { startWorld } from './pixel/world.js';
 import { startRouter } from './router.js';
+import { startSlingshot } from './slingshot.js';
 import './search.js';
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
@@ -24,6 +25,7 @@ const world = startWorld({
 });
 if (initial === 'secret') world.enterSecret();
 startRouter({ world, sections, reader });
+startSlingshot({ slots: [...document.querySelectorAll<HTMLElement>('.hb-slot')], goTo: world.goTo });
 
 // MC 状态：由 mc-ops 每 10 分钟推到 mc-status 仓库的 Pages（同域）
 const box = document.querySelector<HTMLElement>('[data-mc-status]');
