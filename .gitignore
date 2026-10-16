@@ -1,27 +1,11 @@
-# Bundler cache
-.bundle
-vendor
-Gemfile.lock
+# 依赖与构建产物
+node_modules/
+dist/
+.astro/
 
-# Jekyll cache
-.jekyll-cache
-.jekyll-metadata
-_site
-
-# RubyGems
-*.gem
-
-# NPM dependencies
-node_modules
-
-# Build output
-assets/js/dist
-_data/friends_checked.yml
-
-# IDE configurations
-.idea
-.kiro
-.vscode
-
-# Misc
+# 编辑器 / 本地配置
+.idea/
+.vscode/
+.kiro/
 *.code-workspace
+.DS_Store

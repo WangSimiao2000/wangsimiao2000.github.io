@@ -1,0 +1,22 @@
+{
+  "name": "mickeymiao-blog",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MickeyMiao 的个人博客",
+  "homepage": "https://blog.mickeymiao.cn",
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1",
+    "build": "astro build",
+    "preview": "astro preview --host 127.0.0.1",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "astro": "7.4.0",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "typescript": "6.0.3"
+  }
+}
