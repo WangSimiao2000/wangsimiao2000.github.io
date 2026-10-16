@@ -1,0 +1,23 @@
+/* Giscus 主题（暗）：在官方 dark 上换成博客的轻拟物配色 */
+@import url('https://giscus.app/themes/dark.css');
+main {
+  --color-canvas-default: #1a1e24;
+  --color-canvas-overlay: #1f242b;
+  --color-canvas-inset: #15181d;
+  --color-canvas-subtle: #171a1f;
+  --color-border-default: rgb(255 255 255 / 0.08);
+  --color-border-muted: rgb(255 255 255 / 0.05);
+  --color-fg-default: #e3e7ee;
+  --color-fg-muted: #8b93a3;
+  --color-accent-fg: #7ccf5c;
+  --color-accent-emphasis: #4f9c4a;
+  --color-btn-primary-bg: #4f9c4a;
+  --color-btn-primary-border: #3f8a3e;
+  --color-btn-primary-hover-bg: #5aab55;
+  --color-btn-primary-hover-border: #4f9c4a;
+  --color-btn-primary-selected-bg: #3f8a3e;
+  --color-btn-bg: #1f242b;
+  --color-btn-hover-bg: #262c34;
+  --color-btn-border: rgb(255 255 255 / 0.08);
+}
+main .gsc-loading-image { display: none; }

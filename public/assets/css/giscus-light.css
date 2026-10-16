@@ -1,0 +1,23 @@
+/* Giscus 主题（亮）：在官方 light 上换成博客的轻拟物配色 */
+@import url('https://giscus.app/themes/light.css');
+main {
+  --color-canvas-default: #f2f4f8;
+  --color-canvas-overlay: #f7f9fc;
+  --color-canvas-inset: #e9edf2;
+  --color-canvas-subtle: #eceff4;
+  --color-border-default: rgb(163 177 198 / 0.45);
+  --color-border-muted: rgb(163 177 198 / 0.3);
+  --color-fg-default: #2b313c;
+  --color-fg-muted: #7a8394;
+  --color-accent-fg: #3a9a30;
+  --color-accent-emphasis: #3a9a30;
+  --color-btn-primary-bg: #3a9a30;
+  --color-btn-primary-border: #2f8027;
+  --color-btn-primary-hover-bg: #2f8027;
+  --color-btn-primary-hover-border: #266b20;
+  --color-btn-primary-selected-bg: #266b20;
+  --color-btn-bg: #f2f4f8;
+  --color-btn-hover-bg: #e9edf2;
+  --color-btn-border: rgb(163 177 198 / 0.5);
+}
+main .gsc-loading-image { display: none; }

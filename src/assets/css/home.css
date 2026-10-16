@@ -123,7 +123,7 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
   .hero-tag { font-size: 12px; }
   .post-list a { flex-direction: column; gap: 3px; padding: 9px 10px; }
   .post-title { max-width: 100%; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 14px; }
-  .post-list li:nth-child(n + 5) { display: none; }
+  .panel .post-list li:nth-child(n + 5) { display: none; }
   .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .grid { grid-template-columns: 1fr; gap: 10px; }
   .grid.friends { grid-template-columns: 1fr 1fr; }
@@ -137,11 +137,11 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
   .hb-num, .hint-keys { display: none; }
 }
 @media (max-height: 760px) {
-  .post-list li:nth-child(n + 5) { display: none; }
+  .panel .post-list li:nth-child(n + 5) { display: none; }
 }
 
 /* ---- 阅读面板：在世界上方展开，底部露出一条地面和坐着看书的小人 ---- */
-.reader[hidden] { display: none; }
+.reader[hidden] { display: none !important; }
 .reader { max-width: 860px; margin: 0 auto; padding: 80px 16px 48px; }
 .has-reader .stages { display: none; } /* 无 JS：有正文的页面只显示正文 */
 .js .has-reader .stages { display: block; }
@@ -223,12 +223,12 @@ html.js.reading { overflow: hidden; }
 
 @media (min-width: 1000px) {
   .js .inline-meta { display: none; }
-  .js .reader { left: calc(50% - 120px); width: min(760px, calc(100vw - 340px)); }
+  .js .reader:has(.side-right) { left: calc(50% - 120px); width: min(760px, calc(100vw - 340px)); }
   .js .side-right { display: block; }
   .js .post-head { margin-bottom: 20px; }
 }
 @media (min-width: 1280px) {
-  .js .reader { left: 50%; width: min(800px, calc(100vw - 560px)); }
+  .js .reader:has(.side-right), .js .reader:has(.side-left) { left: 50%; width: min(800px, calc(100vw - 560px)); }
   .js .side-left { display: flex; flex-direction: column; }
   .js .side-left .toc-list { overflow: auto; min-height: 0; scrollbar-width: thin; }
 }
@@ -245,3 +245,61 @@ html.js.reading { overflow: hidden; }
 @media (max-width: 640px) {
   .js .side-left.is-open { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 65%; }
 }
+
+/* ---- 列表类页面：归档、分类、标签、工具、友链、关于 ---- */
+.page-sub { margin: 0; color: var(--muted); font-size: 14px; }
+.page-note { margin: 22px 0 0; color: var(--muted); font-size: 14px; }
+.post-list.rows { margin: 0 -14px 8px; }
+.year-block + .year-block { margin-top: 26px; }
+.year-title { display: flex; align-items: baseline; gap: 12px; margin: 0 0 8px; font-size: 22px; font-variant-numeric: tabular-nums; scroll-margin-top: 16px; }
+.year-title span { font-size: 13px; font-weight: 400; color: var(--muted); }
+.post h2#categories, .post h2#tags { font-size: 18px; margin: 8px 0 14px; color: var(--muted); }
+.post h2#tags { margin-top: 30px; }
+.cat-grid { list-style: none; margin: 0; padding: 0; display: grid; align-items: start; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.cat-card { padding: 14px 16px; border-radius: 16px; box-shadow: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light); }
+.cat-name { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; text-decoration: none; }
+.cat-name:hover { color: var(--accent); }
+.cat-name span, .tag span { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.cat-subs { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.cat-subs .tag { font-size: 12px; padding: 3px 10px; }
+.tag-cloud { margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.tag-cloud .tag { font-size: calc(12px + var(--w, 0.5) * 4px); }
+.side-links { margin: 16px 0 0; }
+.side-links .btn { margin: 0; font-size: 13px; padding: 7px 13px; }
+.grid.big { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; margin: 0; }
+.friends-full .slot-link img, .friends-full .noicon { width: 48px; height: 48px; border-radius: 14px; }
+
+.about-hero { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; margin-bottom: 28px; }
+.about-hero h1 { margin: 0 0 8px; font-size: 28px; }
+.about-hero .more { margin-top: 14px; }
+.about-photo { width: 132px; height: 132px; object-fit: cover; border-radius: 50%; padding: 6px; background: var(--surface); box-shadow: 8px 8px 18px var(--sh-dark), -8px -8px 18px var(--sh-light); }
+.about-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.about-card { padding: 18px 20px; border-radius: 18px; box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light); font-size: 15px; line-height: 1.75; }
+.about-card.wide { grid-column: 1 / -1; }
+.about-card h2 { margin: 0 0 10px; font-size: 16px; }
+.about-card p { margin: 0 0 10px; }
+.about-card p:last-child { margin-bottom: 0; }
+.about-card .tags { margin: 0; gap: 8px; }
+.about-card .tag { font-size: 13px; }
+.flag { margin-right: 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+/* ---- 评论 ---- */
+.comments { margin: 0 48px 40px; padding-top: 8px; }
+.comments-off { color: var(--muted); font-size: 14px; }
+.giscus, .giscus-frame { width: 100%; }
+.giscus:empty::before { content: '评论加载中…'; display: block; color: var(--muted); font-size: 14px; padding: 12px 0; }
+
+@media (max-width: 640px) {
+  .comments { margin: 0 20px 28px; }
+  .post-list.rows { margin: 0 -10px 8px; }
+  .about-hero { grid-template-columns: 1fr; justify-items: start; gap: 16px; }
+  .about-photo { width: 96px; height: 96px; }
+  .about-grid { grid-template-columns: 1fr; }
+}
+/* 内容短的页面（工具、分类）面板按内容收高，不撑满 */
+.js .reader-card { height: auto; max-height: 100%; }
+.js .reader-scroll { flex: 0 1 auto; }
+/* 没有侧栏的短页面贴近地面，和首页卡片的位置一致 */
+.js .reader:not(:has(.reader-side)) { display: flex; flex-direction: column; justify-content: flex-end; }

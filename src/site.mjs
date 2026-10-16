@@ -11,6 +11,13 @@ export const site = {
     bilibili: 'https://space.bilibili.com/36913332',
     steam: 'https://steamcommunity.com/id/MickeyMiao/',
   },
+  // 评论：GitHub Discussions，按 pathname 映射，沿用旧站配置，历史评论都在
+  giscus: {
+    repo: 'WangSimiao2000/wangsimiao2000.github.io',
+    repoId: 'R_kgDONW4tGQ',
+    category: 'General',
+    categoryId: 'DIC_kwDONW4tGc4ClVF_',
+  },
   verify: {
     google: 'jDx4WsLTQPjOKEDz18-BywqYTrR3Kd2anexSUvXsB5A',
     bing: 'AED17E5D4F90FD73F2F67459465E4A3C',

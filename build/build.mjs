@@ -11,6 +11,16 @@ import { loadData, loadPosts } from './content.mjs';
 import { excerpt, renderMarkdown } from './markdown.mjs';
 import { homePage } from '../src/templates/home.mjs';
 import { postPage } from '../src/templates/post.mjs';
+import {
+  aboutPage,
+  archivesPage,
+  browsePage,
+  categoryPage,
+  friendsPage,
+  tagPage,
+  taxonomy,
+  toolsPage,
+} from '../src/templates/pages.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
@@ -53,7 +63,20 @@ export async function build() {
     }),
   );
 
-  console.log(`built ${posts.length + 1} pages in ${Math.round(performance.now() - t0)} ms`);
+  // 各板块完整页 + 分类 / 标签页（地址沿用旧站）
+  const tax = taxonomy(posts);
+  const pages = [
+    ['/archives/', archivesPage(home)],
+    ['/browse/', browsePage(home)],
+    ['/tools/', toolsPage(home)],
+    ['/friends/', friendsPage(home)],
+    ['/about/', aboutPage(home)],
+    ...[...tax.cats.values()].map((c) => [`/browse/categories/${c.slug}/`, categoryPage(home, c, tax)]),
+    ...[...tax.tags.values()].map((t) => [`/browse/tags/${t.slug}/`, tagPage(home, t)]),
+  ];
+  await Promise.all(pages.map(([url, page]) => emit(url, page)));
+
+  console.log(`built ${posts.length + 1 + pages.length} pages in ${Math.round(performance.now() - t0)} ms`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

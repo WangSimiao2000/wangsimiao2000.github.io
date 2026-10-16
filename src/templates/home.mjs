@@ -51,7 +51,8 @@ const toolGrid = ({ tools }) => html`
       (t) => html`
       <li><a class="slot-link" href="${t.url}"><span><span class="item-name">${t.name}</span><span class="item-desc">${t.description}</span></span></a></li>`,
     )}
-  </ul>`;
+  </ul>
+  <p class="more"><a class="btn" href="/tools/">全部工具</a></p>`;
 
 const server = () => html`
   <div class="server" data-mc-status>
@@ -92,6 +93,16 @@ const about = () => html`
       <a class="btn" href="${site.links.steam}" target="_blank" rel="noopener">Steam</a>
     </p>
   </div>`;
+
+/** 评论区占位：阅读面板打开后由 comments.ts 按当前地址加载 Giscus */
+export const comments = () => html`
+    <section class="comments" aria-label="评论">
+      <p class="side-title">评论</p>
+      <div class="giscus" data-giscus
+        data-repo="${site.giscus.repo}" data-repo-id="${site.giscus.repoId}"
+        data-category="${site.giscus.category}" data-category-id="${site.giscus.categoryId}"></div>
+      <noscript><p class="comments-off">评论需要启用 JavaScript。</p></noscript>
+    </section>`;
 
 const CONTENT = { home: hero, posts: postList, tools: toolGrid, server, friends: friendGrid, about };
 

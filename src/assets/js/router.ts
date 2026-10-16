@@ -9,6 +9,7 @@
  */
 import type { World } from './pixel/world.js';
 import { bindToc } from './toc.js';
+import { mountComments } from './comments.js';
 
 interface RouterOptions {
   world: World;
@@ -112,6 +113,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     if (stages) stages.inert = on;
     world.setReading(on);
     unbindToc = on ? bindToc(reader) : () => {};
+    if (on) mountComments(reader);
   }
 
   async function open(href: string, push: boolean, from?: HTMLElement) {
@@ -196,6 +198,9 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     }
   });
 
+  /** /tools/ 下的具体工具是独立应用（自带脚本），整页打开；/tools/ 列表本身走面板 */
+  const isApp = (p: string) => /^\/tools\/.+/.test(p);
+
   /** 只接管站内的「页面」链接：/xxx/ 形式；/feed.xml、PDF、独立工具页照常跳转 */
   function routable(a: HTMLAnchorElement): URL | null {
     if (a.target || a.hasAttribute('download') || a.dataset.noRouter !== undefined) return null;
@@ -228,7 +233,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
       }
       return;
     }
-    if (!url.pathname.endsWith('/') || url.pathname.startsWith('/tools/')) return;
+    if (!url.pathname.endsWith('/') || isApp(url.pathname)) return;
     e.preventDefault();
     if (url.pathname === location.pathname && isOpen()) return;
     void open(url.href, true, a);
@@ -238,7 +243,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   const prefetch = (e: Event) => {
     const a = (e.target as Element | null)?.closest?.<HTMLAnchorElement>('a[href]');
     const url = a && routable(a);
-    if (url && url.pathname !== '/' && url.pathname.endsWith('/') && !url.pathname.startsWith('/tools/')) {
+    if (url && url.pathname !== '/' && url.pathname.endsWith('/') && !isApp(url.pathname)) {
       load(url.href).catch(() => {});
     }
   };

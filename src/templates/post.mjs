@@ -1,6 +1,6 @@
 import { html, raw } from '../../build/html.mjs';
-import { shell } from './home.mjs';
-import { formatDate, readingMinutes } from './util.mjs';
+import { comments, shell } from './home.mjs';
+import { categoryUrl, formatDate, readingMinutes, tagUrl } from './util.mjs';
 
 /**
  * @param {{ post: any, content: { html: string, toc: { level: number, id: string, text: string }[] },
@@ -10,9 +10,9 @@ export function postPage({ post, content, prev, next, excerpt, home }) {
   const toc = content.toc.length >= 3 ? content.toc : [];
   const minutes = readingMinutes(post.body);
   const catLinks = post.categories.map(
-    (c, i) => html`${i ? html`<span aria-hidden="true">/</span>` : ''}<a href="/browse/#${encodeURIComponent(c)}">${c}</a>`,
+    (c, i) => html`${i ? html`<span aria-hidden="true">/</span>` : ''}<a href="${categoryUrl(c)}">${c}</a>`,
   );
-  const tagLinks = post.tags.map((t) => html`<a class="tag" href="/browse/#${encodeURIComponent(t)}">#${t}</a>`);
+  const tagLinks = post.tags.map((t) => html`<a class="tag" href="${tagUrl(t)}">#${t}</a>`);
   const dates = html`<time datetime="${post.date.toISOString()}">${formatDate(post.date)}</time>`;
   const updated = post.updated ? html`<time datetime="${post.updated.toISOString()}">${formatDate(post.updated)}</time>` : null;
 
@@ -36,7 +36,8 @@ ${raw(content.html)}
     <nav class="post-nav" aria-label="上一篇与下一篇">
       ${prev ? html`<a class="nav-card" href="${prev.url}" rel="prev"><span>较新</span>${prev.title}</a>` : html`<span></span>`}
       ${next ? html`<a class="nav-card next" href="${next.url}" rel="next"><span>较早</span>${next.title}</a>` : html`<span></span>`}
-    </nav>`;
+    </nav>
+    ${comments()}`;
 
   const left = toc.length
     ? html`
