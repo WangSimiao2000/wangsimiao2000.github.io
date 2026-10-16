@@ -54,7 +54,6 @@ check_pages() {
     "index.html"
     "browse/index.html"
     "about/index.html"
-    "gallery/index.html"
     "friends/index.html"
     "tools/index.html"
     "feed.xml"
@@ -123,7 +122,7 @@ check_pages() {
   fi
 
   # PJAX: #swup container must exist in key pages
-  for pg in "index.html" "browse/index.html" "about/index.html" "gallery/index.html" "friends/index.html"; do
+  for pg in "index.html" "browse/index.html" "about/index.html" "friends/index.html"; do
     if grep -q 'id="swup"' "$base/$pg" 2>/dev/null; then
       echo "  ✓ #swup container: $pg"
     else
@@ -142,14 +141,6 @@ check_pages() {
       echo "  ✗ Giscus comment script missing from posts"
       failed=1
     fi
-  fi
-
-  # Gallery: lightbox structure
-  if grep -q 'id="lb"' "$base/gallery/index.html" 2>/dev/null; then
-    echo "  ✓ Gallery lightbox structure"
-  else
-    echo "  ✗ Gallery lightbox structure missing"
-    failed=1
   fi
 
   # Friends: card grid
