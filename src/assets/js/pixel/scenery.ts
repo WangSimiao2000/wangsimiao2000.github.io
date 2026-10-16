@@ -461,6 +461,27 @@ function campfire(): Sprite {
   });
 }
 
+/** 草堆：金黄的圆顶，表面是一缕缕稻草（彩蛋：点几下会钻出一只三花猫） */
+function haystack(): Sprite {
+  const w = 22;
+  const h = 14;
+  const ramp: Ramp = ['#f7dc8a', '#e6bf5c', '#c99a3e', '#9a7230'];
+  return make(w, h, (put) => {
+    blob(put, [{ x: 11, y: 15, r: 13 }, { x: 5, y: 13, r: 6 }, { x: 17, y: 13, r: 6 }], ramp, 777, w, h, 0.3);
+    // 稻草纹：短斜线
+    for (let i = 0; i < 26; i++) {
+      const x = 2 + Math.floor(hash(i * 3.7) * 18);
+      const y = 2 + Math.floor(hash(i * 5.3) * 10);
+      put(x, y, i % 3 ? ramp[2] : ramp[0]);
+      put(x + (i % 2 ? 1 : -1), y + 1, i % 3 ? ramp[3] : ramp[1]);
+    }
+    // 顶上翘起的几根
+    put(10, 1, ramp[1]);
+    put(11, 0, ramp[0]);
+    put(14, 1, ramp[1]);
+  });
+}
+
 /* ---------------- 汇总 ---------------- */
 
 export interface Scenery {
@@ -482,6 +503,9 @@ export interface Scenery {
   lamp: Sprite;
   sign: Sprite;
   campfire: Sprite;
+  hay: Sprite;
+  autumn: Sprite[];
+  autumnBush: Sprite[];
 }
 
 export function buildScenery(): Scenery {
@@ -491,6 +515,11 @@ export function buildScenery(): Scenery {
     leaves: ['#ffe1ec', '#f7b9d1', '#e48fb3', '#b86a91'],
     trunk: ['#8a5f58', '#644240', '#45302f'],
     dots: ['#ffffff', '#ffd0e2'],
+  };
+  const autumnStyle: TreeStyle = {
+    leaves: ['#ffd27a', '#f29a4a', '#d0603a', '#93402f'],
+    trunk: ['#8a6448', '#624632', '#432f25'],
+    dots: ['#ffe9a8', '#e8743c'],
   };
   const pineLeaves: Ramp = ['#6f9e86', '#4b7c6b', '#335d55', '#223f40'];
   const greens: Ramp = ['#b2da7e', '#7cbb5a', '#55954a', '#3a713f'];
@@ -519,5 +548,8 @@ export function buildScenery(): Scenery {
     lamp: lamp(),
     sign: signpost(),
     campfire: campfire(),
+    hay: haystack(),
+    autumn: [0, 1, 2, 3].map((i) => broadleaf(711 + i * 7, 9 + (i % 3) * 3, autumnStyle)),
+    autumnBush: [0, 1].map((i) => bush(751 + i, 4 + i, ['#ffd27a', '#f0a04b', '#c86b34', '#8e4a2c'])),
   };
 }

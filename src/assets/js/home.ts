@@ -18,8 +18,9 @@ if (initial) {
 const world = startWorld({
   canvas,
   sections,
-  panels: [...document.querySelectorAll<HTMLElement>('.panel')],
+  panels: [...document.querySelectorAll<HTMLElement>('.stages .panel')],
   slots: [...document.querySelectorAll<HTMLElement>('.hb-slot')],
+  secretPanel: document.querySelector<HTMLElement>('[data-secret-panel]'),
 });
 startRouter({ world, sections, reader });
 

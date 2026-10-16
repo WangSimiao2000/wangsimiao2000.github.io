@@ -162,3 +162,6 @@ export function hash(n: number): number {
   const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
   return s - Math.floor(s);
 }
+
+/** 给彩蛋角色复用同一套渲染（选择性描边 + 左上光源） */
+export const renderRows = rowsToCanvas;
