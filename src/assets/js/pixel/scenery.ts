@@ -243,66 +243,150 @@ function flower(petal: string, petalDark: string, stem = '#4f8f3c'): Sprite {
 
 /* ---------------- 人造物 ---------------- */
 
+/** 小屋上会发光 / 冒烟的位置（相对精灵左上角），world.ts 用来画光晕和炊烟 */
+export const COTTAGE = { window: [14, 28], lantern: [36, 29], chimney: [29, 1] } as const;
+
+/**
+ * 童话风小屋：四坡屋顶（左坡受光、正面、右坡背光三档）、错缝瓦片、砖砌烟囱，
+ * 灰泥墙配木框，带百叶窗和花箱的暖光窗、拱顶木门、门边小灯、石砌地基和台阶。
+ */
 function cottage(): Sprite {
-  const w = 40;
-  const h = 34;
-  const roof: Ramp = ['#e38b6a', '#c96a4f', '#a5513f', '#7e3d33'];
+  const w = 48;
+  const h = 42;
+  const tile: Ramp = ['#ee9d7c', '#d27459', '#b05a45', '#874337'];
   return make(w, h, (put) => {
-    const wallTop = 15;
-    // 烟囱
-    for (let y = 2; y < 12; y++) for (let x = 28; x < 32; x++) put(x, y, x === 28 ? '#a08a7e' : x === 31 ? '#5e5048' : '#7d6a60');
-    for (let x = 27; x < 33; x++) put(x, 2, '#5e5048');
-    // 墙：灰泥 + 木框
-    for (let y = wallTop; y < h; y++) {
-      for (let x = 4; x < 36; x++) {
-        const shade = x > 31 ? '#d9c7a6' : y > h - 3 ? '#dccbad' : '#f1e5cb';
-        put(x, y, shade);
+    const R = (x0: number, y0: number, x1: number, y1: number, c: string) => {
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) put(x, y, c);
+    };
+    const n = (x: number, y: number) => hash(x * 12.9 + y * 78.2 + 3);
+
+    // ---- 墙：灰泥 + 斑驳 + 底部受潮发暗，右侧背光 ----
+    for (let y = 20; y <= 37; y++) {
+      for (let x = 6; x <= 41; x++) {
+        let c = x >= 37 ? '#e2d1ae' : '#f3e7cd';
+        if (y >= 35) c = x >= 37 ? '#d5c19c' : '#e6d6b6';
+        if (n(x, y) < 0.08) c = x >= 37 ? '#d8c6a2' : '#e9dabd';
+        put(x, y, c);
       }
     }
-    const beam = '#7a5236';
-    const beamD = '#5a3b27';
-    for (let y = wallTop; y < h; y++) {
-      put(4, y, beam);
-      put(19, y, beam);
-      put(35, y, beamD);
-    }
-    for (let x = 4; x < 36; x++) {
-      put(x, wallTop, beamD);
-      put(x, h - 1, beamD);
-    }
-    // 窗（暖光）
-    for (let y = 20; y < 27; y++) {
-      for (let x = 8; x < 15; x++) {
-        const frame = y === 20 || y === 26 || x === 8 || x === 14 || x === 11 || y === 23;
-        put(x, y, frame ? beam : y < 23 && x < 11 ? '#fff1bf' : '#ffd27a');
+    // 屋檐在墙上投下的阴影
+    R(6, 20, 41, 20, '#d8c6a3');
+    R(6, 21, 41, 21, '#e7d7b8');
+    // 木框：两侧和中间立柱、底梁
+    const post = (x: number) => {
+      for (let y = 20; y <= 37; y++) {
+        put(x, y, '#9a6a47');
+        put(x + 1, y, '#6e4a31');
+      }
+    };
+    post(6);
+    post(22);
+    post(40);
+    R(6, 37, 41, 37, '#6e4a31');
+    // 左墙板上的斜撑
+    for (let i = 0; i < 6; i++) put(8 + i, 36 - i, '#86593b');
+
+    // ---- 窗：暖光四格 + 绿色百叶 + 花箱 ----
+    R(11, 24, 18, 31, '#6e4a31');
+    for (let y = 25; y <= 30; y++) {
+      for (let x = 12; x <= 17; x++) {
+        const bar = x === 14 || x === 15 || y === 27 || y === 28;
+        put(x, y, bar ? '#7a5236' : y < 27 && x < 14 ? '#fff4c8' : '#ffd77e');
       }
     }
-    for (let x = 7; x < 16; x++) put(x, 27, '#8f6544');
-    // 门
-    for (let y = 21; y < h - 1; y++) {
-      for (let x = 24; x < 31; x++) {
-        const top = y === 21 && (x === 24 || x === 30);
-        if (top) continue;
-        put(x, y, x === 24 ? '#8c5f3e' : x === 30 ? '#4d3322' : '#6e4a31');
+    R(14, 25, 15, 30, '#7a5236');
+    R(12, 27, 17, 28, '#7a5236');
+    put(12, 25, '#fffbe6');
+    for (const sx of [9, 19]) {
+      for (let y = 24; y <= 31; y++) {
+        put(sx, y, sx === 9 ? '#7fae78' : '#5e8c5a');
+        put(sx + 1, y, sx === 9 ? '#6a9a64' : '#4e774b');
+        if ((y - 24) % 2 === 1) put(sx + (sx === 9 ? 1 : 0), y, '#4a7046');
       }
     }
-    put(29, 27, '#e6c06a');
-    // 屋顶：两坡，左坡受光，瓦片错缝
-    const peak = 20;
-    for (let y = 3; y < wallTop + 2; y++) {
-      const half = Math.round(((y - 3) / (wallTop - 1)) * 20) + 1;
-      for (let x = peak - half; x <= peak + half; x++) {
-        if (x < 0 || x >= w) continue;
-        const left = x < peak;
-        const row = Math.floor((y - 3) / 3);
-        const seam = (y - 3) % 3 === 2 || (x + row * 2) % 5 === 0;
-        let col = left ? roof[1] : roof[2];
-        if (seam) col = left ? roof[2] : roof[3];
-        if (Math.abs(x - (peak - half)) < 1 || Math.abs(x - (peak + half)) < 1) col = roof[3];
-        if (left && !seam && hash(x * 3.1 + y * 7.9) < 0.18) col = roof[0];
-        put(x, y, col);
+    R(9, 32, 20, 33, '#8a5f40');
+    R(9, 33, 20, 33, '#6e4a31');
+    const blooms = ['#ff8fab', '#ffd166', '#ffffff', '#ff8fab', '#b9a7ff', '#ffd166'];
+    for (let i = 0; i < 6; i++) {
+      put(10 + i * 2, 31, '#5f9f4b');
+      put(10 + i * 2, 30, blooms[i]);
+      put(11 + i * 2, 31, '#4c8a3c');
+    }
+
+    // ---- 门：拱顶木门 + 铁合页 + 门把手 ----
+    for (let y = 26; y <= 37; y++) {
+      const inset = y === 26 ? 2 : y === 27 ? 1 : 0;
+      for (let x = 26 + inset; x <= 33 - inset; x++) {
+        let c = (x - 26) % 3 === 2 ? '#5e3d28' : '#7a5034';
+        if (x === 26 + inset) c = '#94653f';
+        if (x === 33 - inset) c = '#4f3322';
+        put(x, y, c);
       }
     }
+    for (const hy of [29, 34]) R(27, hy, 29, hy, '#3d3a3c');
+    put(32, 32, '#e8c46c');
+    put(32, 33, '#b8913e');
+    // 门边小灯
+    put(36, 26, '#3d3a3c');
+    R(35, 27, 37, 27, '#3d3a3c');
+    R(35, 28, 37, 30, '#ffd36a');
+    put(35, 28, '#fff3c4');
+    R(35, 31, 37, 31, '#3d3a3c');
+
+    // ---- 石砌地基与台阶 ----
+    for (let y = 38; y <= 41; y++) {
+      const row = y >> 1;
+      for (let x = 4; x <= 43; x++) {
+        const seam = (x + row * 3) % 5 === 0 || y === 39 || y === 41;
+        const v = n(Math.floor((x + row * 3) / 5), row);
+        const c = seam ? '#6f7381' : v < 0.33 ? '#b9bcc5' : v < 0.66 ? '#a3a7b2' : '#8f94a0';
+        put(x, y, x >= 39 && !seam ? '#8a8e9a' : c);
+      }
+    }
+    R(24, 38, 35, 38, '#c9ccd3');
+    R(24, 39, 35, 39, '#9fa3ae');
+
+    // ---- 四坡屋顶：外轮廓 (16,6)-(1,19) / (32,6)-(46,19)，两条斜脊 (16,6)-(8,19) / (32,6)-(39,19) ----
+    for (let y = 6; y <= 19; y++) {
+      const t = (y - 6) / 13;
+      const outL = Math.round(16 - 15 * t);
+      const outR = Math.round(32 + 14 * t);
+      const hipL = Math.round(16 - 8 * t);
+      const hipR = Math.round(32 + 7 * t);
+      const row = Math.floor((y - 6) / 3);
+      const seamRow = (y - 6) % 3 === 2;
+      for (let x = outL; x <= outR; x++) {
+        let face: number; // 0 左坡（受光） 1 正面 2 右坡（背光）
+        if (x < hipL) face = 0;
+        else if (x > hipR) face = 2;
+        else face = 1;
+        // 每个坡面两档：上半亮、靠近屋檐暗一档；瓦缝再暗一档
+        const lower = t > 0.65 ? 1 : 0;
+        const base = face + lower;
+        const seamCol = face === 1 && (x + row * 2) % 4 === 0;
+        let c = tile[Math.min(3, base + (seamRow || seamCol ? 1 : 0))];
+        if (face === 1 && !seamRow && !seamCol && n(x, y) < 0.1) c = tile[0];
+        if (x === hipL && face !== 0) c = tile[0]; // 左斜脊受光
+        if (x === hipR) c = tile[3]; // 右斜脊背光
+        put(x, y, c);
+      }
+    }
+    // 屋脊压条、屋檐封檐板
+    R(16, 5, 32, 5, '#874337');
+    R(17, 4, 31, 4, '#a5513f');
+    R(0, 20, 47, 20, '#5e3d28');
+    R(1, 19, 46, 19, '#874337');
+
+    // ---- 砖砌烟囱（压在屋顶上） ----
+    for (let y = 0; y <= 10; y++) {
+      for (let x = 26; x <= 31; x++) {
+        let c = x === 26 ? '#c47a5c' : x === 31 ? '#7e4636' : '#a35d46';
+        if (y % 3 === 2 || (x + (Math.floor(y / 3) % 2) * 2) % 4 === 0) c = '#6e3c30';
+        if (y === 0) c = '#5a4a46';
+        put(x, y, c);
+      }
+    }
+    R(25, 1, 32, 1, '#6b5a55');
   });
 }
 

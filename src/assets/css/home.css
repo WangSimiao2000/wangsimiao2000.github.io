@@ -22,7 +22,7 @@
   transition: filter 0.3s;
 }
 .js #world { display: block; }
-html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-behavior-x: none; }
 @media (prefers-reduced-motion: reduce) { html.js { scroll-behavior: auto; } body, #world { transition: none; } }
 
 /* ---- 每屏 ---- */

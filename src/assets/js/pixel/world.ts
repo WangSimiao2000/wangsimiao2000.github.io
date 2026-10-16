@@ -10,7 +10,7 @@
  * - 内容面板固定在上方，随世界同速横移并淡入淡出；非当前面板设为 inert。
  */
 import { buildCharacter, hash, type CharacterFrames, type Sprite } from './sprites.js';
-import { buildScenery, type Scenery } from './scenery.js';
+import { buildScenery, COTTAGE, type Scenery } from './scenery.js';
 
 type RGB = [number, number, number];
 
@@ -377,6 +377,58 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     }
   });
 
+  /* ---------- 左右滑动：触控板横扫、触屏左右划，都切到上一个 / 下一个板块 ---------- */
+
+  let swipeAcc = 0;
+  let swipeIdle = 0;
+  let swipeLock = 0;
+  const step = (dir: number) => {
+    const now = performance.now();
+    if (now < swipeLock) return;
+    swipeLock = now + 650; // 一次横扫只走一格，惯性滚动不会连跳
+    goTo(Math.round(p) + dir);
+  };
+  window.addEventListener(
+    'wheel',
+    (e) => {
+      if (reading || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      const t = e.target as Element | null;
+      if (t?.closest('pre, .table-wrap, .math-block')) return; // 能横向滚动的内容优先
+      e.preventDefault(); // 也挡住浏览器的「横扫返回」
+      clearTimeout(swipeIdle);
+      swipeIdle = window.setTimeout(() => (swipeAcc = 0), 180);
+      swipeAcc += e.deltaX;
+      if (Math.abs(swipeAcc) > 40) {
+        step(swipeAcc > 0 ? 1 : -1);
+        swipeAcc = 0;
+      }
+    },
+    { passive: false },
+  );
+  let touch: { x: number; y: number; t: number } | null = null;
+  window.addEventListener(
+    'touchstart',
+    (e) => {
+      const t0 = e.touches[0];
+      touch = !reading && e.touches.length === 1 ? { x: t0.clientX, y: t0.clientY, t: performance.now() } : null;
+    },
+    { passive: true },
+  );
+  window.addEventListener(
+    'touchend',
+    (e) => {
+      if (!touch || reading) return;
+      const t1 = e.changedTouches[0];
+      const dx = t1.clientX - touch.x;
+      const dy = t1.clientY - touch.y;
+      const fast = performance.now() - touch.t < 700;
+      touch = null;
+      // 明显的横向划动：手指往左划 = 往前走
+      if (fast && Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+    },
+    { passive: true },
+  );
+
   /* ---------- 远景三层 ---------- */
 
   const layerColorCache = new Map<string, [string, string]>();
@@ -534,7 +586,15 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       const y = base - sp.height;
       f.drawImage(sp, x, y);
       if (it.glow === 'lamp') glows.push({ x: x + 3, y: y + 4, kind: 'lamp', wx: it.wx });
-      if (it.glow === 'window') glows.push({ x: x + 11, y: y + 23, kind: 'window', wx: it.wx });
+      if (it.glow === 'window') {
+        glows.push({ x: x + COTTAGE.window[0], y: y + COTTAGE.window[1], kind: 'window', wx: it.wx });
+        glows.push({ x: x + COTTAGE.lantern[0], y: y + COTTAGE.lantern[1], kind: 'lamp', wx: it.wx + 7 });
+        // 炊烟
+        if (!reduced.matches && Math.random() < 0.06) {
+          const cx = it.wx - sp.width / 2 + COTTAGE.chimney[0];
+          spawn({ x: cx + (Math.random() - 0.5) * 2, y: y + COTTAGE.chimney[1], vx: 0.05 + Math.random() * 0.06, vy: -0.12 - Math.random() * 0.08, life: 0, max: 140 + Math.random() * 60, color: dark ? '#7d8494' : '#c9ced8', size: Math.random() < 0.4 ? 2 : 1, kind: 'smoke' });
+        }
+      }
       if (it.glow === 'fire') glows.push({ x: x + 7, y: y + 2, kind: 'fire', wx: it.wx });
     }
   }
