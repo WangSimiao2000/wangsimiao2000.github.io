@@ -295,6 +295,9 @@ html.js.reading { overflow: hidden; }
 .comments { margin: 0 48px 40px; padding-top: 8px; }
 .comments-off { color: var(--muted); font-size: 14px; }
 .giscus, .giscus-frame { width: 100%; }
+.giscus-frame { opacity: 0; transition: opacity 0.3s ease; }
+.giscus-frame.is-ready { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .giscus-frame { transition: none; } }
 .giscus:empty::before { content: '评论加载中…'; display: block; color: var(--muted); font-size: 14px; padding: 12px 0; }
 
 @media (max-width: 640px) {
