@@ -336,3 +336,12 @@ html.js.reading { overflow: hidden; }
   .panel .post-list li:nth-child(n + 3) { display: none; }
 }
 .grid.big + .group-title { margin-top: 30px; }
+.spark-box { margin: 0 0 12px; padding: 8px 12px 6px; border-radius: 14px; color: var(--accent); box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light); }
+.spark-box svg { display: block; width: 100%; height: 36px; }
+.spark-box figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
+@media (max-height: 760px) { .spark-box { display: none; } }
+.spark-box { margin: 0 0 12px; padding: 8px 12px 6px; border-radius: 14px; color: var(--accent); box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light); }
+.spark-box[hidden] { display: none; }
+.spark-box svg { display: block; width: 100%; height: 36px; }
+.spark-box figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
+@media (max-height: 760px) { .spark-box { display: none; } }
