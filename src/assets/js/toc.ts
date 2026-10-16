@@ -46,20 +46,29 @@ export function bindToc(reader: HTMLElement): () => void {
     if (!raf) raf = requestAnimationFrame(update);
   };
 
+  let closeTimer = 0;
   function setOpen(on: boolean) {
-    side!.classList.toggle('is-open', on);
+    clearTimeout(closeTimer);
     btn?.setAttribute('aria-expanded', String(on));
+    if (on) {
+      side!.classList.add('is-open');
+      void side!.offsetWidth;
+      side!.classList.add('is-shown');
+    } else {
+      side!.classList.remove('is-shown');
+      closeTimer = window.setTimeout(() => side!.classList.remove('is-open'), 180);
+    }
   }
-  const onBtn = () => setOpen(!side.classList.contains('is-open'));
+  const onBtn = () => setOpen(!side.classList.contains('is-shown'));
   const onPick = (e: Event) => {
     if ((e.target as Element).closest('a')) setOpen(false);
   };
   const onOutside = (e: Event) => {
     const t = e.target as Element;
-    if (side.classList.contains('is-open') && !side.contains(t) && !btn?.contains(t)) setOpen(false);
+    if (side.classList.contains('is-shown') && !side.contains(t) && !btn?.contains(t)) setOpen(false);
   };
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && side.classList.contains('is-open')) {
+    if (e.key === 'Escape' && side.classList.contains('is-shown')) {
       // 先收起目录，这一下 Esc 不关闭面板
       e.stopImmediatePropagation();
       setOpen(false);

@@ -78,10 +78,12 @@ document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((b) =>
     try {
       await navigator.clipboard.writeText(b.dataset.copy ?? '');
       if (tip) tip.textContent = '已复制';
+      tip?.classList.add('on');
     } catch {
       if (tip) tip.textContent = '复制失败，请手动记下';
+      tip?.classList.add('on');
     }
-    setTimeout(() => tip && (tip.textContent = ''), 1600);
+    setTimeout(() => tip?.classList.remove('on'), 1600);
   }),
 );
 

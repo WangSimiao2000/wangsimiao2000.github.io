@@ -163,6 +163,7 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 html.js.reading { overflow: hidden; }
 .reading .stages { opacity: 0; pointer-events: none; }
 .reading .hotbar { opacity: 0; pointer-events: none; visibility: hidden; }
+.hotbar { transition: opacity 0.25s, visibility 0.25s; }
 .reading body::before { opacity: 0.5; }
 .js #world { transition: filter 0.3s, transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
 .reading #world { transform: translateY(var(--sink)); }
@@ -400,14 +401,14 @@ html.world-hover body { cursor: pointer; }
 .slingshot.ss-out { animation: ss-pop-out 0.2s ease-in both; transform-origin: 50% 100%; }
 @keyframes ss-pop-in { from { transform: scale(0.2) translateY(20px); opacity: 0; } }
 @keyframes ss-pop-out { to { transform: scale(0.4) translateY(16px); opacity: 0; } }
-.ss-fork { position: absolute; inset: 0; width: 48px; height: 60px; filter: drop-shadow(2px 3px 2px rgb(0 0 0 / 0.18)); }
-.ss-bands, .ss-aim { position: absolute; left: 0; top: 0; width: 48px; height: 60px; overflow: visible; }
-.ss-band { stroke: #6b3b2a; stroke-width: 2.5; stroke-linecap: round; fill: none; }
-.ss-aim circle { fill: var(--accent); opacity: 0.8; }
+.slingshot canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+.ss-fork { position: absolute; inset: 0; width: 48px; height: 60px; filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.15)); }
+.ss-bands { position: absolute; left: -90px; top: -90px; width: 228px; height: 240px; }
+.ss-aim { position: absolute; left: 0; top: 0; width: 48px; height: 60px; overflow: visible; }
+.ss-aim rect { fill: var(--accent); opacity: 0.85; }
 .ss-ball {
   position: absolute; left: 18px; top: 16px; width: 12px; height: 12px; pointer-events: auto; cursor: grab; touch-action: none;
-  border-radius: 3px; background: radial-gradient(circle at 35% 30%, #c9ccd3 0 25%, #8d929e 26% 60%, #5e6372 61%);
-  box-shadow: 1px 2px 3px rgb(0 0 0 / 0.3);
+  filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.18));
 }
 .ss-drag .ss-ball { cursor: grabbing; }
 .ss-ball.ss-pop { animation: ss-ball-pop 0.5s ease-out forwards; }
@@ -418,3 +419,41 @@ html.world-hover body { cursor: pointer; }
 .hb-slot.ss-hit { animation: ss-hit 0.3s ease-out; }
 @keyframes ss-hit { 40% { transform: translateY(3px) scale(0.94); } }
 @media (prefers-reduced-motion: reduce) { .slingshot.ss-in, .slingshot.ss-out, .ss-ball.ss-pop, .ss-ball.ss-miss, .hb-slot.ss-hit { animation: none; } }
+
+/* ---- 过渡：所有出现 / 消失都有动画，不突变（减少动态效果时全部关闭） ---- */
+.search { opacity: 0; transition: opacity 0.2s ease; }
+.search.is-open { opacity: 1; }
+.search-card { transform: translateY(-10px) scale(0.98); transition: transform 0.24s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.search.is-open .search-card { transform: none; }
+.search-results li { animation: fade-up 0.2s ease both; }
+.search-results li:nth-child(2) { animation-delay: 0.02s; }
+.search-results li:nth-child(3) { animation-delay: 0.04s; }
+.search-results li:nth-child(n + 4) { animation-delay: 0.06s; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } }
+
+@media (max-width: 1279.98px) {
+  .js .side-left.is-open { opacity: 0; transform: translateY(-8px); transition: opacity 0.18s ease, transform 0.18s ease; }
+  .js .side-left.is-open.is-shown { opacity: 1; transform: none; }
+}
+@media (max-width: 640px) {
+  .js .side-left.is-open { transform: translateY(16px); }
+}
+
+/* 不支持 View Transitions 时阅读面板的开合 */
+.reader-card.reader-in { animation: reader-in 0.3s cubic-bezier(0.3, 0.7, 0.2, 1) both; }
+.reader-card.reader-out { animation: reader-out 0.18s ease-in both; }
+@keyframes reader-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } }
+@keyframes reader-out { to { opacity: 0; transform: translateY(12px) scale(0.98); } }
+
+.qq-copied { opacity: 0; transition: opacity 0.2s; }
+.qq-copied.on { opacity: 1; }
+.spark-box:not([hidden]) { animation: fade-up 0.3s ease both; }
+[data-mc-status] dd { transition: color 0.3s; }
+
+/* 深浅色切换的整页交叉淡化稍慢一点 */
+.theme-switching::view-transition-old(root), .theme-switching::view-transition-new(root) { animation-duration: 0.35s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .search, .search-card, .js .side-left.is-open, .hotbar, .qq-copied { transition: none; }
+  .search-results li, .reader-card.reader-in, .reader-card.reader-out, .spark-box:not([hidden]) { animation: none; }
+}

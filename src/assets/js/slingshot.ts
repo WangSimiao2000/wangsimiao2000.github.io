@@ -13,15 +13,59 @@ interface Options {
   goTo: (i: number) => void;
 }
 
-const SVG = `
-<svg class="ss-fork" viewBox="0 0 48 60" aria-hidden="true" shape-rendering="crispEdges">
-  <path d="M22 58h4V34h-4z" fill="#7a5034"/><path d="M25 58h1V34h-1z" fill="#5e3d28"/>
-  <path d="M22 36 8 14l3-2 13 21z" fill="#8a5f40"/><path d="M26 36 40 14l-3-2-13 21z" fill="#6e4a31"/>
-  <path d="M6 10h7v6H6zM35 10h7v6h-7z" fill="#9a6a47"/><path d="M6 10h7v2H6zM35 10h7v2h-7z" fill="#b98a62"/>
-</svg>
-<svg class="ss-bands" aria-hidden="true"><path class="ss-band" /><path class="ss-band" /></svg>
-<svg class="ss-aim" aria-hidden="true"></svg>
-<span class="ss-ball" role="button" tabindex="-1" aria-label="弹弓石子：拖动后松手发射"></span>`;
+const PX = 3; // 像素风：1 个逻辑像素 = 3 个 CSS 像素，和世界一样粗的像素颗粒
+// 弹弓盒子 48x60（16x20 个逻辑像素）。皮筋层向四周多留 90px，拉远了也画得下
+const BAND_PAD = 90;
+const snap = (v: number) => Math.round(v / PX) * PX; // 石子按像素格移动
+
+const MARKUP = `
+<canvas class="ss-fork" width="16" height="20" aria-hidden="true"></canvas>
+<canvas class="ss-bands" aria-hidden="true"></canvas>
+<svg class="ss-aim" aria-hidden="true" shape-rendering="crispEdges"></svg>
+<canvas class="ss-ball" width="4" height="4" role="button" tabindex="-1" aria-label="弹弓石子：拖动后松手发射"></canvas>`;
+
+/** 木叉：两条斜臂汇到中间，再一根立柱；左侧受光、右侧背光，顶端缠着皮绳 */
+function drawFork(c: HTMLCanvasElement) {
+  const g = c.getContext('2d')!;
+  const put = (x: number, y: number, col: string) => {
+    g.fillStyle = col;
+    g.fillRect(x, y, 1, 1);
+  };
+  const light = '#b98a62';
+  const mid = '#8a5f40';
+  const dark = '#5e3d28';
+  for (let y = 1; y <= 10; y++) {
+    const off = Math.round((y - 1) * 0.6);
+    put(1 + off, y, light);
+    put(2 + off, y, mid);
+    put(13 - off, y, mid);
+    put(14 - off, y, dark);
+  }
+  for (let y = 10; y < 20; y++) {
+    put(7, y, light);
+    put(8, y, mid);
+    put(9, y, dark);
+  }
+  // 皮绳缠绕的顶端
+  for (const x of [1, 2, 13, 14]) {
+    put(x, 0, '#6b3b2a');
+    put(x, 2, '#6b3b2a');
+  }
+}
+
+/** 石子：4x4 像素的小灰石，左上高光 */
+function drawStone(c: HTMLCanvasElement) {
+  const g = c.getContext('2d')!;
+  const rows = ['.ab.', 'abbc', 'bbcc', '.cc.'];
+  const pal: Record<string, string> = { a: '#d6d9df', b: '#9aa0ab', c: '#656b78' };
+  rows.forEach((r, y) => [...r].forEach((ch, x) => {
+    if (pal[ch]) {
+      g.fillStyle = pal[ch];
+      g.fillRect(x, y, 1, 1);
+    }
+  }));
+}
+
 
 export function startSlingshot({ slots, goTo }: Options) {
   if (!slots.length || !window.PointerEvent) return;
@@ -30,10 +74,15 @@ export function startSlingshot({ slots, goTo }: Options) {
   const box = document.createElement('div');
   box.className = 'slingshot';
   box.hidden = true;
-  box.innerHTML = SVG;
+  box.innerHTML = MARKUP;
+  drawFork(box.querySelector<HTMLCanvasElement>('.ss-fork')!);
+  drawStone(box.querySelector<HTMLCanvasElement>('.ss-ball')!);
+  const bandCanvas = box.querySelector<HTMLCanvasElement>('.ss-bands')!;
+  bandCanvas.width = Math.round((48 + BAND_PAD * 2) / PX);
+  bandCanvas.height = Math.round((60 + BAND_PAD * 2) / PX);
+  const bg = bandCanvas.getContext('2d')!;
   document.body.append(box);
   const ball = box.querySelector<HTMLElement>('.ss-ball')!;
-  const bands = [...box.querySelectorAll<SVGPathElement>('.ss-band')];
   const aim = box.querySelector<SVGSVGElement>('.ss-aim')!;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -88,10 +137,34 @@ export function startSlingshot({ slots, goTo }: Options) {
 
   /** 两根皮筋：从叉子顶端连到石子 */
   function drawBands() {
-    const bx = 24 + pull.x;
-    const by = 22 + pull.y;
-    bands[0].setAttribute('d', `M9 13 L${bx} ${by}`);
-    bands[1].setAttribute('d', `M39 13 L${bx} ${by}`);
+    // 像素皮筋：在逻辑像素格上画 Bresenham 直线
+    bg.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
+    const o = BAND_PAD / PX;
+    const bx = Math.round(o + (24 + pull.x) / PX);
+    const by = Math.round(o + (22 + pull.y) / PX);
+    bg.fillStyle = '#6b3b2a';
+    for (const [x0, y0] of [[o + 2, o + 1], [o + 13, o + 1]]) {
+      let x = Math.round(x0);
+      let y = Math.round(y0);
+      const dx = Math.abs(bx - x);
+      const dy = -Math.abs(by - y);
+      const sx = x < bx ? 1 : -1;
+      const sy = y < by ? 1 : -1;
+      let err = dx + dy;
+      for (;;) {
+        bg.fillRect(x, y, 1, 1);
+        if (x === bx && y === by) break;
+        const e2 = 2 * err;
+        if (e2 >= dy) {
+          err += dy;
+          x += sx;
+        }
+        if (e2 <= dx) {
+          err += dx;
+          y += sy;
+        }
+      }
+    }
   }
 
   function clearTargets() {
@@ -138,7 +211,10 @@ export function startSlingshot({ slots, goTo }: Options) {
       const t = (land.t * k) / 14;
       const x = sx + vx * t - b.left;
       const y = sy + vy * t + (GRAVITY * t * t) / 2 - b.top;
-      dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${k === 14 ? 3.5 : 2.2}" />`;
+      const size = k === 14 ? PX * 2 : PX;
+      const qx = Math.round(x / PX) * PX - size / 2;
+      const qy = Math.round(y / PX) * PX - size / 2;
+      dots += `<rect x="${qx}" y="${qy}" width="${size}" height="${size}" />`;
     }
     aim.innerHTML = dots;
   }
@@ -164,7 +240,7 @@ export function startSlingshot({ slots, goTo }: Options) {
       const t = Math.min(dur, (now - t0) / 1000);
       const x = fx + vx * t;
       const y = fy + vy * t + (GRAVITY * t * t) / 2;
-      ball.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+      ball.style.transform = `translate(${snap(x)}px, ${snap(y)}px)`;
       if (t < dur) {
         requestAnimationFrame(step);
         return;
@@ -255,7 +331,7 @@ export function startSlingshot({ slots, goTo }: Options) {
       y = (y / len) * MAX_PULL;
     }
     pull = { x, y };
-    ball.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    ball.style.transform = `translate(${snap(x)}px, ${snap(y)}px)`;
     drawBands();
     if (len > 10) preview();
     else {
