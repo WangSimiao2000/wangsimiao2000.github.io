@@ -67,7 +67,9 @@ http
       }
       await stat(file);
     } catch {
-      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('404');
+      // 和 GitHub Pages 一样返回站点的 404.html
+      res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' });
+      createReadStream(path.join(DIST, '404.html')).on('error', () => res.end('404')).pipe(res);
       return;
     }
     res.writeHead(200, { 'content-type': TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream', 'cache-control': 'no-cache' });

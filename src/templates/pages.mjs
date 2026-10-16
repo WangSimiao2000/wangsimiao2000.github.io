@@ -253,6 +253,17 @@ export function friendsPage(home) {
         </li>`,
         )}
       </ul>
+      ${home.graveyard?.length
+        ? html`
+      <h2 class="group-title">数字墓园 <span class="muted small">那些沉睡的站点</span></h2>
+      <ul class="grid big graveyard">
+        ${home.graveyard.map(
+          (f) => html`
+        <li><a class="slot-link" href="${f.url}" target="_blank" rel="noopener nofollow"><span class="noicon" aria-hidden="true">✝</span><span><span class="item-name">${f.name}</span>${f.description ? html`<span class="item-desc">${f.description}</span>` : ''}</span></a></li>`,
+        )}
+      </ul>`
+        : ''}
+      ${home.friendsCheckedAt ? html`<p class="page-note small">可访问性检测于 ${formatDate(new Date(home.friendsCheckedAt))}，连续访问失败的站点会移到「数字墓园」。</p>` : ''}
       <p class="page-note">想交换友链的话，在下面留言就好：站名、地址、头像、一句话介绍。</p>
     </article>
     ${comments()}`;
@@ -311,4 +322,19 @@ export function aboutPage(home) {
       </div>
     </article>`;
   return shell(home, { title: '关于', path: '/about/', reader: { section: 'about', body } });
+}
+
+/* ---------- 404 ---------- */
+
+export function notFoundPage(home) {
+  const body = html`
+    <article class="post not-found">
+      ${pageHead('迷路了', '这里什么也没有。可能是地址打错了，也可能页面已经搬走。')}
+      <p class="more">
+        <a class="btn btn-open" href="/archives/">看看全部文章<span class="open-icon" aria-hidden="true"></span></a>
+        <a class="btn btn-open" href="/browse/">按分类找找<span class="open-icon" aria-hidden="true"></span></a>
+        <a class="btn" href="/">回到起点</a>
+      </p>
+    </article>`;
+  return shell(home, { title: '页面不存在', path: '/404.html', reader: { section: 'home', body } });
 }

@@ -10,7 +10,9 @@
   },
   "scripts": {
     "dev": "node --disable-warning=ExperimentalWarning build/dev.mjs",
-    "build": "node --disable-warning=ExperimentalWarning build/build.mjs"
+    "build": "node --disable-warning=ExperimentalWarning build/build.mjs",
+    "check-friends": "node build/check-friends.mjs",
+    "verify": "node build/verify.mjs"
   },
   "dependencies": {
     "highlight.js": "11.12.0",

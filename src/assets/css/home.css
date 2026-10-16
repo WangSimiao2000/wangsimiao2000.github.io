@@ -111,7 +111,6 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
   text-decoration: none; color: var(--muted); font-size: 13px; border-radius: 13px;
   transition: box-shadow 0.15s, color 0.15s;
 }
-.hb-num { position: absolute; top: 3px; left: 7px; font-size: 9px; font-family: var(--mono); opacity: 0.6; }
 .hb-slot:hover { color: var(--text); }
 .hb-slot.is-active { color: var(--accent); font-weight: 600; box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
 
@@ -134,11 +133,9 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
   .friends .slot-link > span:last-child { min-width: 0; }
   .hotbar { gap: 2px !important; padding: 4px !important; }
   .hb-slot { min-width: 0; padding: 0 8px; height: 36px; font-size: 12px; white-space: nowrap; }
-  .hb-num, .hint-keys { display: none; }
+  .hint-keys { display: none; }
 }
-@media (max-height: 760px) {
-  .panel .post-list li:nth-child(n + 5) { display: none; }
-}
+
 
 /* ---- 阅读面板：在世界上方展开，底部露出一条地面和坐着看书的小人 ---- */
 .reader[hidden] { display: none !important; }
@@ -312,3 +309,30 @@ html.js.reading { overflow: hidden; }
 .group-title ~ .group-title { margin-top: 26px; }
 .grid.tools { grid-template-columns: repeat(2, 1fr); }
 @media (max-width: 640px) { .grid.tools { grid-template-columns: 1fr; } .grid.tools li:nth-child(n + 3) { display: none; } }
+
+/* ---- 首页卡片不滚动：内容按屏幕高度裁成能放下的条数，完整内容在面板页里 ---- */
+.js .panel .card { overflow: hidden; }
+.panel .grid.friends li:nth-child(n + 7) { display: none; }
+@media (max-height: 820px) {
+  .panel .post-list li:nth-child(n + 5) { display: none; }
+  .panel .grid.friends li:nth-child(n + 4) { display: none; }
+}
+@media (max-height: 700px) {
+  .panel .post-list li:nth-child(n + 4) { display: none; }
+  .panel .grid.tools li:nth-child(n + 3) { display: none; }
+  .panel .hero .hint { display: none; }
+}
+@media (max-width: 640px) {
+  .panel .grid.friends li:nth-child(n + 5) { display: none; }
+}
+@media (max-width: 640px) and (max-height: 760px) {
+  .panel .post-list li:nth-child(n + 4) { display: none; }
+  .panel .grid.friends li:nth-child(n + 3) { display: none; }
+}
+.graveyard .slot-link { opacity: 0.6; filter: grayscale(1); }
+.graveyard .slot-link:hover { opacity: 0.85; }
+.graveyard .noicon { color: var(--muted); font-weight: 400; }
+@media (max-width: 640px) and (max-height: 700px) {
+  .panel .post-list li:nth-child(n + 3) { display: none; }
+}
+.grid.big + .group-title { margin-top: 30px; }

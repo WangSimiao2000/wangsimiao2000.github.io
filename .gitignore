@@ -11,3 +11,6 @@ dist.old-*/
 .kiro/
 *.code-workspace
 .DS_Store
+
+# 友链检测结果（CI 构建前生成）
+src/data/friends-checked.json

@@ -71,7 +71,7 @@ const server = () => html`
 
 const friendGrid = ({ friends }) => html`
   <ul class="grid friends">
-    ${friends.map(
+    ${friends.slice(0, 6).map(
       (f) => html`
       <li>
         <a class="slot-link" href="${f.url}" target="_blank" rel="noopener">
@@ -146,7 +146,7 @@ export function shell(ctx, page = {}) {
   </main>
   <nav class="hotbar" aria-label="板块">
     ${SECTIONS.map(
-      (s, i) => html`<a class="hb-slot" href="/#${s.id}" title="${s.label}（${i + 1}）"><span class="hb-num" aria-hidden="true">${i + 1}</span><span class="hb-label">${s.label}</span></a>`,
+      (s, i) => html`<a class="hb-slot" href="/#${s.id}" title="${s.label}（${i + 1}）"><span class="hb-label">${s.label}</span></a>`,
     )}
   </nav>
   <div class="reader" data-reader ${reader ? '' : 'hidden'}>
