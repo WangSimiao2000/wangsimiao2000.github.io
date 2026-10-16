@@ -268,6 +268,12 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   const actorCanvas = document.createElement('canvas');
   const a = actorCanvas.getContext('2d')!;
   const f = fgCanvas.getContext('2d')!;
+  // 天空单独一张画布，不吃世界的自下而上渐隐：白天一轮淡淡的太阳，夜里月亮和星星
+  const skyCanvas = document.createElement('canvas');
+  skyCanvas.id = 'sky';
+  skyCanvas.setAttribute('aria-hidden', 'true');
+  canvas.before(skyCanvas);
+  const sk = skyCanvas.getContext('2d')!;
   const sc = buildScenery();
   const charR: CharacterFrames = buildCharacter(false);
   const charL: CharacterFrames = buildCharacter(true);
@@ -279,6 +285,21 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   let W = 0;
   let H = 0;
   let heights = new Float32Array(0);
+  interface Star { x: number; y: number; big: boolean; warm: boolean; phase: number; speed: number }
+  let stars: Star[] = [];
+  /** 星星位置用固定种子生成：每次打开都是同一片星空 */
+  function makeStars(): Star[] {
+    const out: Star[] = [];
+    const n = Math.round((W * H) / 420);
+    for (let i = 0; i < n; i++) {
+      const r = (k2: number) => {
+        const v = Math.sin(i * 127.1 + k2 * 311.7) * 43758.5453;
+        return v - Math.floor(v);
+      };
+      out.push({ x: r(1) * W, y: 2 + Math.pow(r(2), 1.4) * H * 0.5, big: r(3) < 0.05, warm: r(4) < 0.2, phase: r(5) * 6.28, speed: 0.6 + r(6) * 1.6 });
+    }
+    return out;
+  }
 
   function resize() {
     const vw = root.clientWidth;
@@ -287,13 +308,16 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     if (vw / S < 96) S = Math.max(2, Math.floor(vw / 96));
     W = Math.ceil(vw / S);
     H = Math.ceil(vh / S);
-    canvas.width = fgCanvas.width = actorCanvas.width = W;
-    canvas.height = fgCanvas.height = actorCanvas.height = H;
-    canvas.style.width = `${W * S}px`;
-    canvas.style.height = `${H * S}px`;
+    canvas.width = fgCanvas.width = actorCanvas.width = skyCanvas.width = W;
+    canvas.height = fgCanvas.height = actorCanvas.height = skyCanvas.height = H;
+    canvas.style.width = skyCanvas.style.width = `${W * S}px`;
+    canvas.style.height = skyCanvas.style.height = `${H * S}px`;
+    stars = makeStars();
     g.imageSmoothingEnabled = false;
     heights = new Float32Array(W + 2);
     root.style.setProperty('--px', `${S}px`);
+    // 大屏上世界的像素按屏高放大，卡片也跟着放大（以 1440x900 为基准），比例才协调
+    root.style.setProperty('--ui', clamp(Math.min(vw / 1440, vh / 900), 1, 2).toFixed(3));
     // 面板底边留出：地面 + 小人 + 一点余量
     root.style.setProperty('--stage', `${(GROUND + CHAR_H + 14) * S}px`);
     root.style.setProperty('--ground', `${GROUND * S}px`);
@@ -665,7 +689,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   const glows: { x: number; y: number; kind: 'lamp' | 'window' | 'fire'; wx: number }[] = [];
 
-  /* ---------- 彩蛋：路牌、小屋里的女孩、草堆里的三花猫 ---------- */
+  /* ---------- 彩蛋：路牌、小屋里的女孩、草堆里的彩狸猫 ---------- */
 
   interface Spot {
     kind: 'sign' | 'hay' | 'door' | 'cat';
@@ -809,7 +833,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
         a.globalAlpha = 1;
       }
     }
-    // 三花猫：从草堆里跳出来落在旁边，坐着甩尾巴、眨眼
+    // 彩狸猫：从草堆里跳出来落在旁边，坐着甩尾巴、眨眼
     if (cat.state !== 'hidden') {
       cat.t += dt;
       const fr = catL;
@@ -1036,6 +1060,66 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   /* ---------- 主循环 ---------- */
 
   let last = performance.now();
+  /* ---------- 天空：不抢内容，只是淡淡的一层 ---------- */
+
+  function disc(cx: number, cy: number, r: number, col: string) {
+    sk.fillStyle = col;
+    for (let y = -r; y <= r; y++) {
+      const w = Math.round(Math.sqrt(r * r - y * y));
+      sk.fillRect(cx - w, cy + y, w * 2 + 1, 1);
+    }
+  }
+  /** 光晕：几圈逐级变淡的像素圆，台阶状的边缘和世界的像素颗粒一致 */
+  function skyHalo(cx: number, cy: number, r: number, col: string, base: number) {
+    for (let i = 3; i >= 1; i--) {
+      sk.globalAlpha = base * (0.1 + (3 - i) * 0.07);
+      disc(cx, cy, r + i * 2, col);
+    }
+  }
+  function drawSky() {
+    sk.clearRect(0, 0, W, H);
+    const drift = camX * 0.012; // 极慢的视差：天上的东西几乎不动
+    const cx = Math.round(W * 0.87 - drift);
+    const cy = Math.round(Math.max(12, H * 0.15));
+    if (!dark) {
+      skyHalo(cx, cy, 7, '#ffd58a', 0.6);
+      sk.globalAlpha = 0.5;
+      disc(cx, cy, 7, '#ffd27e');
+      disc(cx - 1, cy - 1, 5, '#ffe2a2');
+      disc(cx - 2, cy - 2, 2, '#fff0c8');
+      sk.globalAlpha = 1;
+      return;
+    }
+    const still = reduced.matches;
+    for (const st of stars) {
+      let x = (st.x - drift * 0.6) % W;
+      if (x < 0) x += W;
+      const tw = still ? 0.7 : 0.5 + 0.5 * Math.sin(time * st.speed + st.phase);
+      sk.globalAlpha = (st.big ? 0.3 : 0.12) + tw * (st.big ? 0.3 : 0.22);
+      sk.fillStyle = st.warm ? '#ffeccc' : '#dce4ff';
+      const px = Math.floor(x);
+      const py = Math.floor(st.y);
+      sk.fillRect(px, py, 1, 1);
+      if (st.big && tw > 0.7) {
+        sk.globalAlpha *= 0.4;
+        sk.fillRect(px - 1, py, 1, 1);
+        sk.fillRect(px + 1, py, 1, 1);
+        sk.fillRect(px, py - 1, 1, 1);
+        sk.fillRect(px, py + 1, 1, 1);
+      }
+    }
+    // 弯月：亮盘减去偏右上的一块
+    skyHalo(cx, cy, 6, '#c9d3ee', 0.35);
+    sk.globalAlpha = 0.55;
+    disc(cx, cy, 6, '#eef1f8');
+    disc(cx - 1, cy - 1, 3, '#ffffff');
+    sk.globalCompositeOperation = 'destination-out';
+    sk.globalAlpha = 1;
+    disc(cx + 3, cy - 2, 5, '#000');
+    sk.globalCompositeOperation = 'source-over';
+    sk.globalAlpha = 1;
+  }
+
   function frame(now: number) {
     // 阅读时世界只露出一条，降到约 20 帧省电；相机还在赶路时照常全速
     if (reading && camX === (secret ? -1 : p) * SECTION && now - lastDraw < 50) {
@@ -1079,6 +1163,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       root.style.setProperty('--tint', tint);
     }
 
+    drawSky();
     g.clearRect(0, 0, W, H);
     drawLayer('far', 0.18, dark ? 0.55 : 0.62, camLeft);
     drawLayer('mid', 0.42, dark ? 0.32 : 0.36, camLeft);

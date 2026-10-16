@@ -461,7 +461,7 @@ function campfire(): Sprite {
   });
 }
 
-/** 草堆：金黄的圆顶，表面是一缕缕稻草（彩蛋：点几下会钻出一只三花猫） */
+/** 草堆：金黄的圆顶，表面是一缕缕稻草（彩蛋：点几下会钻出一只彩狸猫） */
 function haystack(): Sprite {
   const w = 22;
   const h = 14;
