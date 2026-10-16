@@ -794,17 +794,17 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       const walking = (girl.state === 'out' && girl.t > 0.35) || (girl.state === 'in' && girl.off < 0);
       const sp = girl.state === 'wave' ? fr.wave[Math.floor(girl.t / 0.25) % 2] : walking ? fr.walk[Math.floor(girl.t * 6) % 2] : fr.idle;
       const gy = H - Math.round(heightAt(wx));
-      // 还在门里时只露出门框内的部分
-      const inDoor = girl.off > -6;
       const x = Math.round(wx - 7 - camLeft);
-      if (inDoor) {
-        f.save();
-        f.beginPath();
-        f.rect(cottageX + 27 - (girl.off < -1 ? 6 : 0), cottageY + 26, 40, 13);
-        f.clip();
+      // 人比门框高，不能「从门里探出来」（会被门框截掉半个头）：门先打开，人在门口
+      // 淡入后走出来；回去时走到门口淡出，门再关上
+      let alpha = 1;
+      if (girl.state === 'out') alpha = clamp((girl.t - 0.3) / 0.3);
+      if (girl.state === 'in' && girl.off > -4) alpha = clamp(-girl.off / 4);
+      if (alpha > 0) {
+        f.globalAlpha = alpha;
+        f.drawImage(sp, x, gy - sp.height);
+        f.globalAlpha = 1;
       }
-      if (girl.state !== 'in' || girl.off < 0 || girl.t < 1.0) f.drawImage(sp, x, gy - sp.height + (inDoor ? -1 : 0));
-      if (inDoor) f.restore();
     }
     // 三花猫：从草堆里跳出来落在旁边，坐着甩尾巴、眨眼
     if (cat.state !== 'hidden') {

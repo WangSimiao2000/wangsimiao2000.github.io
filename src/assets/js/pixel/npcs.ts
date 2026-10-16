@@ -60,38 +60,38 @@ export function buildGirl(flip: boolean): GirlFrames {
   };
 }
 
-/** 三花猫：白底，橘色和黑色花斑 */
+/** 三花猫：白、黑、橘三色大致各占三分之一，黄褐色眼睛 */
 const CAT_PALETTE: Record<string, string> = {
   k: '#2a1f22',
   w: '#fbf8f2',
   o: '#e39a4a', // 橘斑
   n: '#3a3236', // 黑斑
   p: '#f2a7b5', // 粉鼻子 / 耳内
-  g: '#7cc46a', // 绿眼睛
+  g: '#c99a3a', // 黄褐色眼睛
 };
 
-// 12x9，朝右坐着；尾巴在左边翘起
+// 12x9，朝右坐着；尾巴在左边翘起。头顶一半黑一半橘，背上黑斑，腿和胸口是白的
 const CAT_SIT = [
   '........k..k',
-  '.......kpkkp',
-  'kk.....knwwo',
-  'kok...kwgwgw',
+  '.......knkko',
+  'kk.....knnoo',
+  'knk...kwgwgw',
   '.kok..kwwpwk',
-  '..kokknnwwk.',
-  '...kwwwooowk',
-  '...kwoowwwwk',
+  '..knkknnwwk.',
+  '...knnnoowwk',
+  '...kooownwwk',
   '...kkwkkkwkk',
 ];
-const CAT_SIT_TAIL = CAT_SIT.map((r, i) => (i === 2 ? '.......knwwo' : i === 3 ? 'kk....kwgwgw' : i === 4 ? 'kokk..kwwpwk' : r));
+const CAT_SIT_TAIL = CAT_SIT.map((r, i) => (i === 2 ? '.......knnoo' : i === 3 ? 'kk....kwgwgw' : i === 4 ? 'knkk..kwwpwk' : r));
 const CAT_BLINK = CAT_SIT.map((r, i) => (i === 3 ? r.replace(/g/g, 'k') : r));
 // 跳起：身体拉长
 const CAT_JUMP = [
   '..........kk',
-  '.........kpk',
-  'kk......knwo',
-  'kokkkkkkwgwg',
-  '.knnwwooowwk',
-  '..kwwwwwwwk.',
+  '.........kno',
+  'kk......knoo',
+  'knkkkkkkwgwg',
+  '.knnnwooowwk',
+  '..kwwnnwwwk.',
   '.kwk.....kwk',
   'kk.........k',
   '............',
