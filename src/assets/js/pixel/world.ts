@@ -16,7 +16,7 @@ import {
   type CharacterFrames,
   type Decorations,
   type Sprite,
-} from './sprites';
+} from './sprites.js';
 
 interface Biome {
   name: string;

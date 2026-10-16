@@ -11,4 +11,8 @@ export const site = {
     bilibili: 'https://space.bilibili.com/36913332',
     steam: 'https://steamcommunity.com/id/MickeyMiao/',
   },
-} as const;
+  verify: {
+    google: 'jDx4WsLTQPjOKEDz18-BywqYTrR3Kd2anexSUvXsB5A',
+    bing: 'AED17E5D4F90FD73F2F67459465E4A3C',
+  },
+};
