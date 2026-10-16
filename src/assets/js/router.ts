@@ -80,44 +80,71 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     await Promise.all(waits);
   }
 
-  /** 视图过渡：from 是过渡前要「变成」面板的元素，to 是过渡后接住面板的元素 */
+  const EASE = 'cubic-bezier(0.3, 0.7, 0.2, 1)';
+  const card = () => reader.querySelector<HTMLElement>('.reader-card');
+  const play = (el: Element, frames: Keyframe[], opt: KeyframeAnimationOptions) =>
+    el.animate(frames, { fill: 'both', ...opt }).finished.catch(() => {});
+  const contentFade = (c: HTMLElement, show: boolean, opt: KeyframeAnimationOptions) =>
+    Promise.all([...c.children].map((ch) => play(ch, show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], opt)));
+  /** FLIP 的起点：把面板卡片变换成 r 所在的位置和大小 */
+  const flipFrom = (c: HTMLElement, r: DOMRect) => {
+    const t = c.getBoundingClientRect();
+    return `translate(${r.left - t.left}px, ${r.top - t.top}px) scale(${r.width / t.width}, ${r.height / t.height})`;
+  };
+
+  /**
+   * 面板开合动画：自己做 FLIP，只动 transform / opacity（合成器线程上跑），
+   * 不用 View Transitions —— 它在过渡期间把整页冻成截图，像素世界会停住，结束时再跳一下。
+   * from：打开时从这张首页卡片放大出来；to：关闭时缩回这张卡片
+   */
   async function transition(update: () => void, from?: HTMLElement | null, to?: HTMLElement | null) {
     if (reduced.matches) {
       update();
       return;
     }
-    if (!('startViewTransition' in document)) {
-      const card = () => reader.querySelector<HTMLElement>('.reader-card');
-      if (to !== undefined && !reader.hidden) {
-        // 关闭：先播完收起动画再隐藏
-        card()?.classList.add('reader-out');
-        await new Promise((r) => setTimeout(r, 180));
-        update();
-        return;
-      }
+    const closing = to !== undefined;
+    if (!closing) {
+      const wasOpen = isOpen();
+      const r0 = from?.getBoundingClientRect();
       update();
       const c = card();
-      if (c) {
-        c.classList.remove('reader-in');
-        void c.offsetWidth;
-        c.classList.add('reader-in');
+      if (!c) return;
+      c.getAnimations().forEach((an) => an.cancel());
+      if (wasOpen) {
+        // 面板里换页：卡片不动，只换内容
+        await contentFade(c, true, { duration: 200, easing: 'ease-out' });
+      } else if (r0 && r0.width) {
+        c.style.transformOrigin = '0 0';
+        await Promise.all([
+          play(c, [{ transform: flipFrom(c, r0) }, { transform: 'none' }], { duration: 380, easing: EASE }),
+          contentFade(c, true, { duration: 220, delay: 120, easing: 'ease-out' }),
+        ]);
+      } else {
+        await play(c, [{ opacity: 0, transform: 'translateY(16px) scale(0.98)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE });
       }
+      c.getAnimations({ subtree: true }).forEach((an) => an.cancel());
       return;
     }
-    if (from) from.style.viewTransitionName = 'reader';
-    const vt = document.startViewTransition(() => {
-      if (from) from.style.viewTransitionName = '';
+    const c = card();
+    if (!c || reader.hidden) {
       update();
-      if (to) to.style.viewTransitionName = 'reader';
-    });
-    try {
-      await vt.finished;
-    } catch {
-      /* 过渡被打断不影响结果 */
-    } finally {
-      if (from) from.style.viewTransitionName = '';
-      if (to) to.style.viewTransitionName = '';
+      return;
     }
+    // 关闭：世界、首页卡片和快捷栏立刻开始回来，面板同时缩回原卡片的位置，最后一小段淡掉
+    root.classList.remove('reading');
+    const r1 = to?.getBoundingClientRect();
+    if (r1 && r1.width) {
+      c.style.transformOrigin = '0 0';
+      const target = flipFrom(c, r1);
+      await Promise.all([
+        contentFade(c, false, { duration: 140, easing: 'ease-in' }),
+        play(c, [{ transform: 'none', opacity: 1 }, { transform: target, opacity: 1, offset: 0.75 }, { transform: target, opacity: 0 }], { duration: 380, easing: EASE }),
+      ]);
+    } else {
+      await play(c, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(12px) scale(0.98)' }], { duration: 200, easing: 'ease-in' });
+    }
+    update();
+    c.getAnimations({ subtree: true }).forEach((an) => an.cancel());
   }
 
   function scrollToAnchor(hash: string, smooth = true) {
@@ -136,7 +163,11 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     if (stages) stages.inert = on;
     world.setReading(on);
     unbindToc = on ? bindToc(reader) : () => {};
-    if (on) mountComments(reader);
+    // 评论（Giscus iframe）很重：等开合动画播完、浏览器空闲时再加载，不抢动画的帧
+    if (on) {
+      const my = token;
+      setTimeout(() => (window.requestIdleCallback ?? setTimeout)(() => my === token && isOpen() && mountComments(reader)), 450);
+    }
   }
 
   async function open(href: string, push: boolean, from?: HTMLElement) {
@@ -272,6 +303,45 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   };
   document.addEventListener('pointerover', prefetch, { passive: true });
   document.addEventListener('touchstart', prefetch, { passive: true });
+
+  /**
+   * 首次进站也要瞬开：页面加载完、浏览器空闲时，把首页卡片能直接打开的面板页
+   * （「查看全部」这些按钮和最新博文）先取回来，连同它们要的样式、面板页里的图片一起备好。
+   * 一次只取一个、都放在空闲时间里，不和首屏抢带宽；省流量模式下不做。
+   */
+  function warmUp() {
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return;
+    const idle = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 200));
+    const urls = [...new Set(
+      [...document.querySelectorAll<HTMLAnchorElement>('.stages a.btn-open[href], .stages .post-list a[href]')]
+        .map((a) => routable(a))
+        .filter((u): u is URL => !!u && u.pathname.endsWith('/') && u.pathname !== '/' && !isApp(u.pathname))
+        .map((u) => u.origin + u.pathname),
+    )];
+    const next = () => {
+      const u = urls.shift();
+      if (!u) return;
+      load(u)
+        .then(async (text) => {
+          const doc = new DOMParser().parseFromString(text, 'text/html');
+          await adoptStyles(doc);
+          if (!new URL(u).pathname.startsWith('/posts/')) {
+            // 面板页的图片（头像、照片）先解码好；文章配图可能很大，不预取
+            for (const img of doc.querySelectorAll<HTMLImageElement>('[data-reader] img[src]')) {
+              const im = new Image();
+              im.src = new URL(img.getAttribute('src')!, u).href;
+              im.decode().catch(() => {});
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => idle(next));
+    };
+    idle(next);
+  }
+  if (document.readyState === 'complete') setTimeout(warmUp, 800);
+  else window.addEventListener('load', () => setTimeout(warmUp, 800), { once: true });
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) {
