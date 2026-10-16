@@ -273,6 +273,13 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   skyCanvas.id = 'sky';
   skyCanvas.setAttribute('aria-hidden', 'true');
   canvas.before(skyCanvas);
+  // 主角单独一张 DOM 画布：世界画布做亚像素平移（镜头停下的最后几帧不再一格一格地跳），
+  // 主角始终在屏幕正中，不能跟着平移，所以分开
+  const heroCanvas = document.createElement('canvas');
+  heroCanvas.id = 'hero';
+  heroCanvas.setAttribute('aria-hidden', 'true');
+  canvas.after(heroCanvas);
+  const hc = heroCanvas.getContext('2d')!;
   const sk = skyCanvas.getContext('2d')!;
   const sc = buildScenery();
   const charR: CharacterFrames = buildCharacter(false);
@@ -282,7 +289,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   const root = document.documentElement;
 
   let S = 4; // 每个逻辑像素对应的 CSS 像素
-  let W = 0;
+  let W = 0; // 画布宽度，比视口多 1 列，亚像素平移时右边缘不露底
+  let HALF = 0; // 视口中心（逻辑像素）
+  let frac = 0; // 镜头的亚像素部分 0..1
   let H = 0;
   let heights = new Float32Array(0);
   interface Star { x: number; y: number; big: boolean; warm: boolean; phase: number; speed: number }
@@ -306,12 +315,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     const vh = window.innerHeight;
     S = Math.max(2, Math.round(vh / 190));
     if (vw / S < 96) S = Math.max(2, Math.floor(vw / 96));
-    W = Math.ceil(vw / S);
+    HALF = Math.ceil(vw / S) / 2;
+    W = Math.ceil(vw / S) + 1;
     H = Math.ceil(vh / S);
-    canvas.width = fgCanvas.width = actorCanvas.width = skyCanvas.width = W;
-    canvas.height = fgCanvas.height = actorCanvas.height = skyCanvas.height = H;
-    canvas.style.width = skyCanvas.style.width = `${W * S}px`;
-    canvas.style.height = skyCanvas.style.height = `${H * S}px`;
+    canvas.width = fgCanvas.width = actorCanvas.width = skyCanvas.width = heroCanvas.width = W;
+    canvas.height = fgCanvas.height = actorCanvas.height = skyCanvas.height = heroCanvas.height = H;
+    canvas.style.width = skyCanvas.style.width = heroCanvas.style.width = `${W * S}px`;
+    canvas.style.height = skyCanvas.style.height = heroCanvas.style.height = `${H * S}px`;
+    hc.imageSmoothingEnabled = false;
     stars = makeStars();
     g.imageSmoothingEnabled = false;
     heights = new Float32Array(W + 2);
@@ -370,6 +381,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   let runningNow = false;
   let nextTurn = 6;
   let lastDraw = 0;
+  let readStart = 0; // 进入阅读后先全速跑一会（小人坐下、世界下沉），再降帧
   const particles: Particle[] = [];
 
   function spawn(pt: Particle) {
@@ -594,7 +606,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   function drawLayer(which: 'far' | 'mid' | 'near', factor: number, haze: number, camLeft: number) {
     const base = H - GROUND;
-    const off = Math.round(camX * factor) - Math.floor(W / 2);
+    const off = Math.round(camX * factor - frac) - Math.floor(HALF);
     for (let x = 0; x < W; x++) {
       const lx = off + x;
       const wx = camLeft + x;
@@ -754,14 +766,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     if (moved > 10) return;
     const double = now - lastTap.t < 380 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 28;
     lastTap = double ? { x: -99, y: -99, t: 0 } : { x: e.clientX, y: e.clientY, t: now };
-    if (onTap(e.clientX / S, e.clientY / S, double)) e.preventDefault();
+    if (onTap(e.clientX / S + frac, e.clientY / S, double)) e.preventDefault();
   });
   window.addEventListener('dblclick', (e) => {
-    if (!blocked(e.target) && spots.some((sp) => e.clientX / S >= sp.x0 && e.clientX / S <= sp.x1)) e.preventDefault(); // 别选中文字
+    if (!blocked(e.target) && spots.some((sp) => e.clientX / S + frac >= sp.x0 && e.clientX / S + frac <= sp.x1)) e.preventDefault(); // 别选中文字
   });
   window.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
-    const lx = e.clientX / S;
+    const lx = e.clientX / S + frac;
     const ly = e.clientY / S;
     const over = !blocked(e.target) && spots.some((sp) => lx >= sp.x0 && lx <= sp.x1 && ly >= sp.y0 && ly <= sp.y1);
     root.classList.toggle('world-hover', over);
@@ -995,13 +1007,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       if (time > nextBlink + 0.13) nextBlink = time + 2.5 + Math.random() * 3;
       sprite = frames.idle[blinking ? 1 : 0];
     }
-    const x = Math.round(W / 2 - CHAR_W / 2);
+    const x = Math.round(HALF - CHAR_W / 2);
     const y = Math.round(charY - sprite.height + bob);
-    a.globalAlpha = 0.22;
-    a.fillStyle = '#000';
-    a.fillRect(x + 2, Math.round(charY), CHAR_W - 4, 1);
-    a.globalAlpha = 1;
-    a.drawImage(sprite, x, y);
+    hc.clearRect(0, 0, W, H);
+    hc.globalAlpha = 0.22;
+    hc.fillStyle = '#000';
+    hc.fillRect(x + 2, Math.round(charY), CHAR_W - 4, 1);
+    hc.globalAlpha = 1;
+    hc.drawImage(sprite, x, y);
   }
 
   function weather(dt: number, camLeft: number) {
@@ -1122,7 +1135,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   function frame(now: number) {
     // 阅读时世界只露出一条，降到约 20 帧省电；相机还在赶路时照常全速
-    if (reading && camX === (secret ? -1 : p) * SECTION && now - lastDraw < 50) {
+    if (reading && time - readStart > 1.5 && camX === (secret ? -1 : p) * SECTION && now - lastDraw < 50) {
       requestAnimationFrame(frame);
       return;
     }
@@ -1147,7 +1160,10 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     const running = runTimer > 0 && !reduced.matches;
     runningNow = running;
 
-    const camLeft = Math.round(camX - W / 2);
+    const left = camX - HALF;
+    const camLeft = Math.floor(left);
+    frac = reduced.matches ? 0 : left - camLeft;
+    canvas.style.translate = `${(-frac * S).toFixed(2)}px 0`;
     const groundY = H - Math.round(heightAt(camX));
     if (reduced.matches) charY = groundY;
     else charY += (groundY - charY) * Math.min(1, dt * 18);
@@ -1178,7 +1194,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawCharacter(running, reading && !running && Math.abs((secret ? -1 : p) * SECTION - camX) < 1.5);
     if (dark) {
       // 前景和角色用同一层夜色，主角不再比周围亮一截
-      for (const ctx of [f, a]) {
+      for (const ctx of [f, a, hc]) {
         ctx.globalCompositeOperation = 'source-atop';
         ctx.fillStyle = NIGHT;
         ctx.fillRect(0, 0, W, H);
@@ -1203,6 +1219,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     /** 进入 / 离开阅读状态：小人到地方后坐下看书，世界降帧 */
     setReading(on: boolean) {
       reading = on;
+      readStart = time;
       nextTurn = time + 4;
     },
     /** 留言板等隐藏页里的面板页：相机停在秋林 */

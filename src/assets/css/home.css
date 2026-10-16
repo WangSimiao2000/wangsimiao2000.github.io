@@ -16,7 +16,7 @@
   image-rendering: pixelated; image-rendering: crisp-edges;
 }
 .js #sky { display: block; }
-#world {
+#world, #hero {
   position: fixed;
   inset: 0;
   image-rendering: pixelated;
@@ -28,9 +28,11 @@
   filter: var(--world-filter);
   transition: filter 0.3s;
 }
-.js #world { display: block; }
+.js #world, .js #hero { display: block; }
+#hero { pointer-events: none; }
+.js #world, .js #hero { will-change: transform, translate; }
 html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-behavior-x: none; }
-@media (prefers-reduced-motion: reduce) { html.js { scroll-behavior: auto; } body, #world { transition: none; } }
+@media (prefers-reduced-motion: reduce) { html.js { scroll-behavior: auto; } body, #world, #hero { transition: none; } }
 
 /* ---- 每屏 ---- */
 .stage { min-height: 100vh; min-height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always; padding: 72px 16px 24px; }
@@ -155,7 +157,7 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
   width: min(860px, calc(100vw - 32px)); margin: 0; padding: 0; transform: translateX(-50%);
 }
 .reader-card { padding: 0; }
-.js .reader-card { height: 100%; max-height: none; display: flex; flex-direction: column; overflow: hidden; view-transition-name: reader; }
+.js .reader-card { height: 100%; max-height: none; display: flex; flex-direction: column; overflow: hidden; }
 .reader-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 4px; }
 .reader-back {
   font-size: 13px; color: var(--muted); text-decoration: none; padding: 7px 13px; border-radius: 12px; background: var(--surface);
@@ -173,14 +175,12 @@ html.js.reading { overflow: hidden; }
 .reading .hotbar { opacity: 0; pointer-events: none; visibility: hidden; }
 .hotbar { transition: opacity 0.25s, visibility 0.25s; }
 .reading body::before { opacity: 0.5; }
-.js #world { transition: filter 0.3s, transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
-.reading #world { transform: translateY(var(--sink)); }
+.js #world, .js #hero { transition: filter 0.3s, transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.reading #world, .reading #hero { transform: translateY(var(--sink)); }
 .stages, .hotbar { transition: opacity 0.25s; }
 
-::view-transition-group(reader) { animation-duration: 0.38s; animation-timing-function: cubic-bezier(0.3, 0.7, 0.2, 1); }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.25s; }
 @media (prefers-reduced-motion: reduce) {
-  .js #world, .stages, .hotbar { transition: none; }
+  .js #world, .js #hero, .stages, .hotbar { transition: none; }
 }
 
 @media (max-width: 640px) {

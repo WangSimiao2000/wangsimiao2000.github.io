@@ -1,11 +1,11 @@
 /**
  * 弹弓：鼠标停在快捷栏里「当前所在」的那一格上（手机上长按），它正上方会冒出一把弹弓，停留几秒。
  * 把石子往反方向拉，松手后石子沿抛物线飞出去（左右都行），落在哪个板块上就直接冲过去。
- * 拉得越远飞得越远；拉的时候有一串虚线点预告落点，对应的板块会亮起来。
+ * 拉得越远飞得越远，拉满能从第一格打到最后一格；拉的时候只用一串方块标出发射方向，落在哪要自己掂量。
  */
 const GRAVITY = 1700; // px/s²
-const POWER = 9.5; // 每拉 1px 给的初速度（px/s）
 const MAX_PULL = 78;
+let POWER = 9.5; // 每拉 1px 给的初速度（px/s）；按快捷栏宽度算，见 place()
 const SHOW_MS = 3500; // 鼠标离开后弹弓还留多久
 
 interface Options {
@@ -97,7 +97,10 @@ export function startSlingshot({ slots, goTo }: Options) {
   function place() {
     const r = origin.getBoundingClientRect();
     box.style.left = `${r.left + r.width / 2 - 24}px`;
-    const barTop = origin.closest('.hotbar')?.getBoundingClientRect().top ?? r.top;
+    const bar = origin.closest('.hotbar')?.getBoundingClientRect();
+    const barTop = bar?.top ?? r.top;
+    // 射程：45° 拉满时水平射程 ≈ v²/g，取快捷栏宽的 1.05 倍，从最左一格拉满打得到最右一格（反过来也一样）
+    if (bar) POWER = Math.sqrt(GRAVITY * bar.width * 1.05) / MAX_PULL;
     box.style.top = `${barTop - 58}px`; // 叉子底端正好立在快捷栏的上沿
     const b = box.getBoundingClientRect();
     return { x: b.left + 24, y: b.top + 22 };
@@ -196,9 +199,12 @@ export function startSlingshot({ slots, goTo }: Options) {
   }
 
   function slotAt(x: number) {
-    return slots.findIndex((s) => {
+    const last = slots.length - 1;
+    return slots.findIndex((s, i) => {
       const r = s.getBoundingClientRect();
-      return x >= r.left - 4 && x <= r.right + 4;
+      // 两端的格子往外多算半格：拉满稍微飞过头也算打中最边上那一格
+      const pad = r.width * 0.6;
+      return x >= r.left - (i === 0 ? pad : 4) && x <= r.right + (i === last ? pad : 4);
     });
   }
 
@@ -206,26 +212,18 @@ export function startSlingshot({ slots, goTo }: Options) {
     return { vx: -pull.x * POWER, vy: -pull.y * POWER };
   }
 
+  /** 只标方向：沿发射方向画几颗方块，越拉越长，但不画抛物线、不提示落点 */
   function preview() {
-    const start = place();
-    const sx = start.x + pull.x;
-    const sy = start.y + pull.y;
     const { vx, vy } = velocity();
-    const land = landing({ x: sx, y: sy }, vx, vy);
-    const i = slotAt(land.x);
-    const from = slots.indexOf(origin);
-    slots.forEach((s, k) => s.classList.toggle('ss-target', k === i && k !== from));
-    // 虚线点：相对弹弓盒子画
-    const b = box.getBoundingClientRect();
+    const v = Math.hypot(vx, vy) || 1;
+    const n = 3 + Math.round((Math.hypot(pull.x, pull.y) / MAX_PULL) * 4);
     let dots = '';
-    for (let k = 1; k <= 14; k++) {
-      const t = (land.t * k) / 14;
-      const x = sx + vx * t - b.left;
-      const y = sy + vy * t + (GRAVITY * t * t) / 2 - b.top;
-      const size = k === 14 ? PX * 2 : PX;
-      const qx = Math.round(x / PX) * PX - size / 2;
-      const qy = Math.round(y / PX) * PX - size / 2;
-      dots += `<rect x="${qx}" y="${qy}" width="${size}" height="${size}" />`;
+    for (let k = 1; k <= n; k++) {
+      const d = 14 + k * 9;
+      const x = 24 + (vx / v) * d; // 从叉口往外排，不从石子起
+      const y = 22 + (vy / v) * d;
+      const size = k === n ? PX * 2 : PX;
+      dots += `<rect x="${Math.round(x / PX) * PX - size / 2}" y="${Math.round(y / PX) * PX - size / 2}" width="${size}" height="${size}" style="opacity:${(0.85 * (1 - (k - 1) / (n + 1))).toFixed(2)}" />`;
     }
     aim.innerHTML = dots;
   }
@@ -346,10 +344,7 @@ export function startSlingshot({ slots, goTo }: Options) {
     ball.style.transform = `translate(${snap(x)}px, ${snap(y)}px)`;
     drawBands();
     if (len > 10) preview();
-    else {
-      aim.innerHTML = '';
-      clearTargets();
-    }
+    else aim.innerHTML = '';
   });
   const release = () => {
     if (!dragging) return;
