@@ -149,6 +149,17 @@ export function shell(ctx, page = {}) {
       (s, i) => html`<a class="hb-slot" href="/#${s.id}" title="${s.label}（${i + 1}）"><span class="hb-label">${s.label}</span></a>`,
     )}
   </nav>
+  <div class="search" data-search hidden role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-card card">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+        <input type="search" data-search-input placeholder="搜索文章标题和正文" aria-label="搜索关键词" autocomplete="off" spellcheck="false">
+        <kbd>Esc</kbd>
+      </div>
+      <p class="search-hint" data-search-hint aria-live="polite">输入关键词开始搜索</p>
+      <ol class="search-results" data-search-results></ol>
+    </div>
+  </div>
   <div class="reader" data-reader ${reader ? '' : 'hidden'}>
     ${reader
       ? html`

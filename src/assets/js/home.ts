@@ -1,6 +1,7 @@
 /** 整站入口：像素世界 + 站内路由（阅读面板）+ MC 状态 */
 import { startWorld } from './pixel/world.js';
 import { startRouter } from './router.js';
+import './search.js';
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const sections = [...document.querySelectorAll<HTMLElement>('.stage')];

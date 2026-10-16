@@ -18,10 +18,10 @@ export function postPage({ post, content, prev, next, excerpt, home }) {
 
   // 正文卡片只留标题和正文；日期、分类、标签在宽屏放右侧卡片，窄屏才回到正文里（inline-meta）
   const body = html`
-    <article class="post">
+    <article class="post" data-pagefind-body data-pagefind-meta="date:${formatDate(post.date)}, category:${post.categories.join(' / ')}">
       <header class="post-head">
         ${post.categories.length ? html`<p class="crumbs inline-meta">${catLinks}</p>` : ''}
-        <h1>${post.title}</h1>
+        <h1 data-pagefind-meta="title">${post.title}</h1>
         <p class="post-info inline-meta">
           ${dates}
           ${updated ? html`<span>更新于 ${updated}</span>` : ''}

@@ -110,13 +110,22 @@ export async function build() {
   );
   await emit('/robots.txt', robots());
 
+  // 站内搜索索引（Pagefind）：只收文章正文（模板里标了 data-pagefind-body），按中文分词
+  const pagefind = await import('pagefind');
+  const { index, errors } = await pagefind.createIndex({ forceLanguage: 'zh-cn' });
+  if (!index) throw new Error(`Pagefind: ${errors.join('; ')}`);
+  const added = await index.addDirectory({ path: OUT });
+  if (added.errors.length) throw new Error(`Pagefind: ${added.errors.join('; ')}`);
+  await index.writeFiles({ outputPath: path.join(OUT, 'pagefind') });
+  await pagefind.close();
+
   // 换上新产物：旧目录先挪开再删，替换本身是两次 rename，几乎是瞬时的
   const old = `${DIST}.old-${process.pid}`;
   await rename(DIST, old).catch(() => {});
   await rename(OUT, DIST);
   await rm(old, { recursive: true, force: true });
 
-  console.log(`built ${posts.length + 2 + pages.length} pages in ${Math.round(performance.now() - t0)} ms`);
+  console.log(`built ${posts.length + 2 + pages.length} pages (${added.page_count} indexed) in ${Math.round(performance.now() - t0)} ms`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
