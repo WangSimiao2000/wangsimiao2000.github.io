@@ -264,6 +264,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   const g = canvas.getContext('2d')!;
   // 前景（地面、植被）先画到离屏画布，深色模式在它上面盖夜色，不影响远景
   const fgCanvas = document.createElement('canvas');
+  // 角色（主角、女孩、猫）单独一层：画在灯光之上（经过窗前会挡住窗光），夜色和前景一样整体压暗
+  const actorCanvas = document.createElement('canvas');
+  const a = actorCanvas.getContext('2d')!;
   const f = fgCanvas.getContext('2d')!;
   const sc = buildScenery();
   const charR: CharacterFrames = buildCharacter(false);
@@ -284,8 +287,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     if (vw / S < 96) S = Math.max(2, Math.floor(vw / 96));
     W = Math.ceil(vw / S);
     H = Math.ceil(vh / S);
-    canvas.width = fgCanvas.width = W;
-    canvas.height = fgCanvas.height = H;
+    canvas.width = fgCanvas.width = actorCanvas.width = W;
+    canvas.height = fgCanvas.height = actorCanvas.height = H;
     canvas.style.width = `${W * S}px`;
     canvas.style.height = `${H * S}px`;
     g.imageSmoothingEnabled = false;
@@ -801,9 +804,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       if (girl.state === 'out') alpha = clamp((girl.t - 0.3) / 0.3);
       if (girl.state === 'in' && girl.off > -4) alpha = clamp(-girl.off / 4);
       if (alpha > 0) {
-        f.globalAlpha = alpha;
-        f.drawImage(sp, x, gy - sp.height);
-        f.globalAlpha = 1;
+        a.globalAlpha = alpha;
+        a.drawImage(sp, x, gy - sp.height);
+        a.globalAlpha = 1;
       }
     }
     // 三花猫：从草堆里跳出来落在旁边，坐着甩尾巴、眨眼
@@ -825,7 +828,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       }
       cat.x = cx;
       const x = Math.round(cx - sp.width / 2 - camLeft);
-      f.drawImage(sp, x, cy - sp.height + 1);
+      a.drawImage(sp, x, cy - sp.height + 1);
       spots.push({ kind: 'cat', x0: x - 2, y0: cy - sp.height - 2, x1: x + sp.width + 2, y1: cy + 1 });
     }
   }
@@ -970,11 +973,11 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     }
     const x = Math.round(W / 2 - CHAR_W / 2);
     const y = Math.round(charY - sprite.height + bob);
-    g.globalAlpha = 0.22;
-    g.fillStyle = '#000';
-    g.fillRect(x + 2, Math.round(charY), CHAR_W - 4, 1);
-    g.globalAlpha = 1;
-    g.drawImage(sprite, x, y);
+    a.globalAlpha = 0.22;
+    a.fillStyle = '#000';
+    a.fillRect(x + 2, Math.round(charY), CHAR_W - 4, 1);
+    a.globalAlpha = 1;
+    a.drawImage(sprite, x, y);
   }
 
   function weather(dt: number, camLeft: number) {
@@ -1085,18 +1088,23 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     spots = [];
     drawItems(camLeft);
     drawGround(camLeft);
+    a.clearRect(0, 0, W, H);
     drawActors(dt, camLeft);
+    drawCharacter(running, reading && !running && Math.abs((secret ? -1 : p) * SECTION - camX) < 1.5);
     if (dark) {
-      f.globalCompositeOperation = 'source-atop';
-      f.fillStyle = NIGHT;
-      f.fillRect(0, 0, W, H);
-      f.globalCompositeOperation = 'source-over';
+      // 前景和角色用同一层夜色，主角不再比周围亮一截
+      for (const ctx of [f, a]) {
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = NIGHT;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalCompositeOperation = 'source-over';
+      }
     }
     g.drawImage(fgCanvas, 0, 0);
     drawGlows();
+    g.drawImage(actorCanvas, 0, 0);
     drawBubbles(dt, camLeft);
     weather(dt, camLeft);
-    drawCharacter(running, reading && !running && Math.abs(p * SECTION - camX) < 1.5);
     drawParticles(dt, camLeft);
 
     updatePanels();

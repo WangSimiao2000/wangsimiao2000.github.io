@@ -2,7 +2,14 @@
 document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
   const d = document.documentElement;
   const next = d.dataset.theme === 'dark' ? 'light' : 'dark';
-  d.dataset.theme = next;
+  const apply = () => {
+    d.dataset.theme = next;
+  };
+  // 颜色是一组 CSS 变量，渐变背景没法用 transition 过渡：交给 View Transitions 整页交叉淡化
+  if ('startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    d.classList.add('theme-switching');
+    document.startViewTransition(apply).finished.finally(() => d.classList.remove('theme-switching'));
+  } else apply();
   try {
     localStorage.setItem('theme', next);
   } catch {

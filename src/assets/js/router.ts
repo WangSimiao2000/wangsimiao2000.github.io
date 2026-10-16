@@ -82,8 +82,26 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
 
   /** 视图过渡：from 是过渡前要「变成」面板的元素，to 是过渡后接住面板的元素 */
   async function transition(update: () => void, from?: HTMLElement | null, to?: HTMLElement | null) {
-    if (!('startViewTransition' in document) || reduced.matches) {
+    if (reduced.matches) {
       update();
+      return;
+    }
+    if (!('startViewTransition' in document)) {
+      const card = () => reader.querySelector<HTMLElement>('.reader-card');
+      if (to !== undefined && !reader.hidden) {
+        // 关闭：先播完收起动画再隐藏
+        card()?.classList.add('reader-out');
+        await new Promise((r) => setTimeout(r, 180));
+        update();
+        return;
+      }
+      update();
+      const c = card();
+      if (c) {
+        c.classList.remove('reader-in');
+        void c.offsetWidth;
+        c.classList.add('reader-in');
+      }
       return;
     }
     if (from) from.style.viewTransitionName = 'reader';

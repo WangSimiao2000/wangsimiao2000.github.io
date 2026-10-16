@@ -29,6 +29,8 @@ let seq = 0;
 let timer = 0;
 let active = -1;
 let terms: string[] = [];
+let hideTimer = 0;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function load() {
   docs ??= fetch('/search.json')
@@ -129,7 +131,10 @@ function select(i: number) {
 function open() {
   if (!box || !input || !box.hidden) return;
   opener = document.activeElement as HTMLElement | null;
+  clearTimeout(hideTimer);
   box.hidden = false;
+  void box.offsetWidth; // 先让 hidden 生效再加类，过渡才会播放
+  box.classList.add('is-open');
   root.classList.add('searching');
   input.focus();
   input.select();
@@ -137,9 +142,10 @@ function open() {
 }
 
 function close() {
-  if (!box || box.hidden) return;
-  box.hidden = true;
+  if (!box || box.hidden || !box.classList.contains('is-open')) return;
+  box.classList.remove('is-open');
   root.classList.remove('searching');
+  hideTimer = window.setTimeout(() => (box.hidden = true), reducedMotion.matches ? 0 : 200);
   opener?.focus({ preventScroll: true });
 }
 
