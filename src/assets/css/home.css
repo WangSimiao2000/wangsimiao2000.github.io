@@ -380,3 +380,13 @@ html.searching { overflow: hidden; }
 }
 .qq-chip:active { box-shadow: inset 2px 2px 5px var(--sh-dark), inset -2px -2px 5px var(--sh-light); }
 .qq-copied { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+
+/* ---- 彩蛋 ---- */
+html.js { touch-action: manipulation; } /* 双击路牌 / 门时不触发浏览器的双击缩放 */
+html.secret-open { overflow: hidden; }
+html.world-hover body { cursor: pointer; }
+.secret-panel { display: none; }
+.js .secret-panel { display: flex; visibility: hidden; }
+.secret-text { margin: 0 0 8px; font-size: 15px; }
+.secret-text.muted { color: var(--muted); font-size: 14px; }
+.secret-open .hotbar { opacity: 0.4; }

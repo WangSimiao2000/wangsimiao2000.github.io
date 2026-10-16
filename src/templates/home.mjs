@@ -10,7 +10,7 @@ import { formatDate } from './util.mjs';
 
 const SECTIONS = [
   { id: 'home', label: '起点', biome: '草甸' },
-  { id: 'posts', label: '博文', biome: '森林' },
+  { id: 'posts', label: '博文', title: '最新博文', biome: '森林' },
   { id: 'tools', label: '工具', biome: '沙丘' },
   { id: 'server', label: '服务器', biome: '小镇' },
   { id: 'friends', label: '友链', biome: '花林' },
@@ -133,13 +133,20 @@ export function shell(ctx, page = {}) {
   const body = html`
   <canvas id="world" aria-hidden="true"></canvas>
   ${topbar()}
+  <div class="panel secret-panel" data-secret-panel inert aria-hidden="true">
+    <div class="card">
+      <h2 class="card-title"><span class="title-dot" aria-hidden="true"></span><span>？？？</span><span class="biome-chip">秋林</span></h2>
+      <p class="secret-text">你发现了路牌背后的小路。</p>
+      <p class="secret-text muted">这里还什么都没有，以后也许会有点什么。往前走就能回到起点。</p>
+    </div>
+  </div>
   <main class="stages">
     ${SECTIONS.map(
       (s, i) => html`
     <section id="${s.id}" class="stage" aria-labelledby="${s.id}-title">
       <div class="panel" data-panel="${i}">
         <div class="card">
-          <h2 class="card-title" id="${s.id}-title"><span class="title-dot" aria-hidden="true"></span><span>${s.label}</span><span class="biome-chip">${s.biome}</span></h2>
+          <h2 class="card-title" id="${s.id}-title"><span class="title-dot" aria-hidden="true"></span><span>${s.title ?? s.label}</span><span class="biome-chip">${s.biome}</span></h2>
           ${CONTENT[s.id](ctx)}
         </div>
       </div>

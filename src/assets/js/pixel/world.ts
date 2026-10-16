@@ -11,11 +11,12 @@
  */
 import { buildCharacter, hash, type CharacterFrames, type Sprite } from './sprites.js';
 import { buildScenery, COTTAGE, type Scenery } from './scenery.js';
+import { buildCat, buildGirl } from './npcs.js';
 
 type RGB = [number, number, number];
 
 interface Biome {
-  name: 'plains' | 'forest' | 'desert' | 'village' | 'cherry' | 'snow';
+  name: 'autumn' | 'plains' | 'forest' | 'desert' | 'village' | 'cherry' | 'snow';
   tint: string; // 地平线晕染（交给 CSS）
   far: string; // 远山
   mid: string; // 中景丘陵
@@ -30,7 +31,12 @@ interface Biome {
   blades: boolean; // 地表冒出草尖
 }
 
+/**
+ * 群系按世界里的板块顺序排列。第 0 个是起点左边藏着的「秋林」：双击起点的路牌把它翻过来，
+ * 才能往回走进去（世界坐标为负）。OFF 是起点在数组里的下标。
+ */
 const BIOMES: Biome[] = [
+  { name: 'autumn', tint: '#ffe0bf', far: '#d9c3b4', mid: '#d9a77a', near: '#c98a5a', treeline: 0.9, spiky: false, rim: '#f3dc8e', top: '#d6b45c', shade: '#b48d43', soil: ['#a8805b', '#8a6548', '#6c4f3c'], amp: 9, blades: true },
   { name: 'plains', tint: '#cdebff', far: '#a9c3da', mid: '#a3c99a', near: '#82b76e', treeline: 0.35, spiky: false, rim: '#d2ee95', top: '#8cc762', shade: '#68a44d', soil: ['#a8805b', '#8a6548', '#6c4f3c'], amp: 9, blades: true },
   { name: 'forest', tint: '#bfe4ff', far: '#93b1c9', mid: '#76a57b', near: '#548a5c', treeline: 1, spiky: false, rim: '#b4de80', top: '#64a854', shade: '#468345', soil: ['#8e6c4e', '#6f533f', '#534034'], amp: 13, blades: true },
   { name: 'desert', tint: '#ffe6b8', far: '#e9d2b3', mid: '#e6c595', near: '#dcb07d', treeline: 0, spiky: false, rim: '#fdebc6', top: '#f2d6a3', shade: '#e2bb86', soil: ['#d7ad78', '#c39667', '#a97e58'], amp: 15, blades: false },
@@ -39,6 +45,7 @@ const BIOMES: Biome[] = [
   { name: 'snow', tint: '#bccbea', far: '#b6c3dc', mid: '#9fafcd', near: '#8396bb', treeline: 0.85, spiky: true, rim: '#ffffff', top: '#eef3fb', shade: '#cfd9ea', soil: ['#908c9c', '#716d80', '#565368'], amp: 15, blades: false },
 ];
 
+const OFF = 1; // 起点（板块 0）在 BIOMES 里的下标
 const SECTION = 320; // 相邻板块间的世界距离（逻辑像素）
 const GROUND = 32; // 板块中心处地面高度
 const CHAR_W = 14;
@@ -90,10 +97,10 @@ function noise1(x: number): number {
 
 /** 世界坐标处的两个相邻群系及混合系数：交界在两板块正中，过渡带占整段的 40% */
 function weights(wx: number): [number, number, number] {
-  const f = wx / SECTION;
+  const f = wx / SECTION + OFF;
   const i = clamp(Math.floor(f), 0, BIOMES.length - 1);
   const j = Math.min(i + 1, BIOMES.length - 1);
-  const t = i === j ? 0 : smooth(0.3, 0.7, f - i);
+  const t = i === j || f < 0 ? 0 : smooth(0.3, 0.7, f - i);
   return [i, j, t];
 }
 
@@ -176,12 +183,18 @@ function slotItem(s: number, sc: Scenery): Item | null {
   const b = BIOMES[bi];
   if (b.name === 'village' && rel > 14 && rel < 124) return null;
   if (b.name === 'snow' && rel > 10 && rel < 40) return null;
+  if (b.name === 'forest' && rel > 30 && rel < 64) return null; // 草堆周围留空
   const r = hash(s * 7.31 + bi * 13.7);
   const v = hash(s * 3.37 + 1.9);
   const pick = (arr: Sprite[]) => arr[Math.floor(v * arr.length)];
   const tree = (arr: Sprite[]): Item => ({ sprite: pick(arr), wx, z: 0 });
   const small = (arr: Sprite[], z = 3): Item => ({ sprite: pick(arr), wx, z });
   switch (b.name) {
+    case 'autumn':
+      if (r < 0.34) return tree(sc.autumn);
+      if (r < 0.46) return small(sc.autumnBush, 2);
+      if (r < 0.62) return small(sc.dryTuft);
+      return null;
     case 'plains':
       if (r < 0.1) return tree(sc.oak);
       if (r < 0.2) return small(sc.bush, 2);
@@ -222,7 +235,8 @@ function slotItem(s: number, sc: Scenery): Item | null {
 function setPieces(sec: number, sc: Scenery): Item[] {
   const c = sec * SECTION;
   const items: Item[] = [{ sprite: sc.sign, wx: c - 32, z: 1 }];
-  const name = BIOMES[sec]?.name;
+  const name = BIOMES[sec + OFF]?.name;
+  if (name === 'forest') items.push({ sprite: sc.hay, wx: c + 46, z: 2 }); // 草堆（彩蛋）
   if (name === 'village') {
     items.push(
       { sprite: sc.cottage, wx: c + 52, z: 1, glow: 'window' },
@@ -242,9 +256,11 @@ export interface WorldOptions {
   sections: HTMLElement[];
   panels: HTMLElement[];
   slots: HTMLElement[];
+  /** 起点左边藏着的一页（双击路牌翻过来才能进） */
+  secretPanel?: HTMLElement | null;
 }
 
-export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
+export function startWorld({ canvas, sections, panels, slots, secretPanel }: WorldOptions) {
   const g = canvas.getContext('2d')!;
   // 前景（地面、植被）先画到离屏画布，深色模式在它上面盖夜色，不影响远景
   const fgCanvas = document.createElement('canvas');
@@ -321,6 +337,9 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   let activeIdx = -1;
   let lastTint = '';
   let reading = root.classList.contains('reading');
+  let secret = false; // 正在隐藏页里
+  let signFlip = 0; // 路牌翻转动画 0..1
+  let signTarget = 0; // 1 = 已翻过来，可以往回走进隐藏页
   let runningNow = false;
   let nextTurn = 6;
   let lastDraw = 0;
@@ -334,14 +353,26 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
 
   function updatePanels() {
     const shift = SECTION * S;
+    const pc = camX / SECTION; // 跟着相机走，进出隐藏页也是平滑的
+    const place = (panel: HTMLElement, i: number) => {
+      const d = i - pc;
+      const a = clamp(1 - Math.abs(d) * 1.6);
+      panel.style.transform = `translate3d(${(d * shift).toFixed(1)}px,0,0)`;
+      panel.style.opacity = a.toFixed(3);
+      panel.style.visibility = a <= 0.001 ? 'hidden' : 'visible';
+    };
+    if (secretPanel) {
+      place(secretPanel, -1);
+      secretPanel.toggleAttribute('inert', !secret);
+    }
     panels.forEach((panel, i) => {
-      const d = i - p;
+      const d = i - pc;
       const a = clamp(1 - Math.abs(d) * 1.6);
       panel.style.transform = `translate3d(${(d * shift).toFixed(1)}px,0,0)`;
       panel.style.opacity = a.toFixed(3);
       panel.style.visibility = a <= 0.001 ? 'hidden' : 'visible';
     });
-    const idx = Math.round(p);
+    const idx = secret ? -1 : Math.round(p);
     if (idx !== activeIdx) {
       activeIdx = idx;
       panels.forEach((panel, i) => {
@@ -358,6 +389,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   }
 
   function goTo(i: number) {
+    if (secret) exitSecret();
     const target = sections[clamp(i, 0, N - 1)];
     target.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth' });
     history.replaceState(null, '', `#${target.id}`);
@@ -380,10 +412,10 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       goTo(n - 1);
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
-      goTo(Math.round(p) + 1);
+      step(1);
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      goTo(Math.round(p) - 1);
+      step(-1);
     }
   });
 
@@ -396,6 +428,15 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     const now = performance.now();
     if (now < swipeLock) return;
     swipeLock = now + 650; // 一次横扫只走一格，惯性滚动不会连跳
+    // 隐藏页：路牌翻过来以后，在起点往回走一步就进去；从里面往前走就出来
+    if (secret) {
+      if (dir > 0) exitSecret();
+      return;
+    }
+    if (dir < 0 && Math.round(p) === 0 && signTarget === 1) {
+      enterSecret();
+      return;
+    }
     goTo(Math.round(p) + dir);
   };
   /*
@@ -478,6 +519,11 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       touch = null;
       // 明显的横向划动：手指往左划 = 往前走
       if (fast && Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+      // 竖向：起点顶部往下拉 = 往回走（进隐藏页）；隐藏页里往上推 = 出来
+      else if (fast && Math.abs(dy) > 48 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+        if (secret && dy < 0) step(1);
+        else if (!secret && dy > 0 && window.scrollY <= 1) step(-1);
+      }
     },
     { passive: true },
   );
@@ -554,7 +600,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       const sy = H - hgt;
       const center = Math.round(wx / SECTION) * SECTION;
       const sec = Math.round(wx / SECTION);
-      const onPath = BIOMES[sec]?.name === 'village' && Math.abs(wx - center) < 70 - hash(wx * 0.37) * 6;
+      const onPath = BIOMES[sec + OFF]?.name === 'village' && Math.abs(wx - center) < 70 - hash(wx * 0.37) * 6;
       const name = BIOMES[weights(wx)[0]].name;
       // 坡面：左高右低的一侧更亮（光从左上来）
       const slope = heights[x] - heights[x + 2];
@@ -616,6 +662,186 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
 
   const glows: { x: number; y: number; kind: 'lamp' | 'window' | 'fire'; wx: number }[] = [];
 
+  /* ---------- 彩蛋：路牌、小屋里的女孩、草堆里的三花猫 ---------- */
+
+  interface Spot {
+    kind: 'sign' | 'hay' | 'door' | 'cat';
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+  }
+  let spots: Spot[] = [];
+  const girlR = buildGirl(false);
+  const girlL = buildGirl(true);
+  const catR = buildCat(false);
+  const catL = buildCat(true);
+  let cottageX = 0;
+  let cottageY = 0;
+  let cottageWx = 0;
+  const girl = { state: 'none' as 'none' | 'out' | 'wave' | 'in', t: 0, off: 0 };
+  let hayShake = 0;
+  let hayClicks = 0;
+  let hayX = 0;
+  let hayBase = 0;
+  const cat = { state: 'hidden' as 'hidden' | 'jump' | 'sit', t: 0, x: 0, y: 0, meow: 0 };
+
+  function enterSecret() {
+    secret = true;
+    root.classList.add('secret-open');
+  }
+  function exitSecret() {
+    secret = false;
+    signTarget = 0; // 走出来就翻回去，想再进得重新双击
+    root.classList.remove('secret-open');
+  }
+
+  function onTap(lx: number, ly: number, double: boolean) {
+    const hit = spots.find((sp) => lx >= sp.x0 && lx <= sp.x1 && ly >= sp.y0 && ly <= sp.y1);
+    if (!hit) return false;
+    if (hit.kind === 'sign' && double && Math.round(p) === 0 && !secret) signTarget = signTarget ? 0 : 1;
+    if (hit.kind === 'door' && double && girl.state === 'none') Object.assign(girl, { state: 'out', t: 0, off: 0 });
+    if (hit.kind === 'hay' && cat.state === 'hidden') {
+      hayShake = 0.35;
+      if (++hayClicks >= 4) {
+        hayClicks = 0;
+        Object.assign(cat, { state: 'jump', t: 0, x: hayX, y: 0 });
+      }
+    }
+    if (hit.kind === 'cat') cat.meow = 1.4;
+    return true;
+  }
+
+  let down: { x: number; y: number; t: number } | null = null;
+  let lastTap = { x: -99, y: -99, t: 0 };
+  const blocked = (t: EventTarget | null) =>
+    reading || !!(t as Element | null)?.closest?.('.card, .hotbar, .topbar, .reader, .search, a, button');
+  window.addEventListener('pointerdown', (e) => {
+    down = blocked(e.target) ? null : { x: e.clientX, y: e.clientY, t: performance.now() };
+  });
+  window.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    const now = performance.now();
+    down = null;
+    if (moved > 10) return;
+    const double = now - lastTap.t < 380 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 28;
+    lastTap = double ? { x: -99, y: -99, t: 0 } : { x: e.clientX, y: e.clientY, t: now };
+    if (onTap(e.clientX / S, e.clientY / S, double)) e.preventDefault();
+  });
+  window.addEventListener('dblclick', (e) => {
+    if (!blocked(e.target) && spots.some((sp) => e.clientX / S >= sp.x0 && e.clientX / S <= sp.x1)) e.preventDefault(); // 别选中文字
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const lx = e.clientX / S;
+    const ly = e.clientY / S;
+    const over = !blocked(e.target) && spots.some((sp) => lx >= sp.x0 && lx <= sp.x1 && ly >= sp.y0 && ly <= sp.y1);
+    root.classList.toggle('world-hover', over);
+  });
+
+  /** 3x5 像素字：只需要 H、i、! 和心形 */
+  const GLYPHS: Record<string, string[]> = {
+    H: ['x.x', 'x.x', 'xxx', 'x.x', 'x.x'],
+    i: ['.x.', '...', '.x.', '.x.', '.x.'],
+    '!': ['.x.', '.x.', '.x.', '...', '.x.'],
+    '♥': ['.....', 'xx.xx', 'xxxxx', '.xxx.', '..x..'],
+  };
+  function bubble(cx: number, bottom: number, text: string, color: string) {
+    const glyphs = [...text].map((c) => GLYPHS[c]);
+    const w = glyphs.reduce((a, gl) => a + gl[0].length + 1, 3);
+    const h = 9;
+    const x = Math.round(cx - w / 2);
+    const y = bottom - h - 3;
+    g.fillStyle = '#2a1f22';
+    g.fillRect(x, y + 1, w, h - 2);
+    g.fillRect(x + 1, y, w - 2, h);
+    g.fillStyle = '#ffffff';
+    g.fillRect(x + 1, y + 1, w - 2, h - 2);
+    g.fillRect(Math.round(cx) - 1, y + h - 1, 2, 2); // 小尾巴
+    g.fillStyle = '#2a1f22';
+    g.fillRect(Math.round(cx) - 1, y + h + 1, 1, 1);
+    g.fillStyle = color;
+    let gx = x + 2;
+    for (const gl of glyphs) {
+      gl.forEach((row, ry) => [...row].forEach((c, rx) => c === 'x' && g.fillRect(gx + rx, y + 2 + ry, 1, 1)));
+      gx += gl[0].length + 1;
+    }
+  }
+
+  /** 每帧推进彩蛋动画，画在前景（夜色会盖上去） */
+  function drawActors(dt: number, camLeft: number) {
+    if (signFlip !== signTarget) {
+      const dir = signTarget > signFlip ? 1 : -1;
+      signFlip = clamp(signFlip + dir * dt * (reduced.matches ? 100 : 2.2), 0, 1);
+    }
+    hayShake = Math.max(0, hayShake - dt);
+    // 女孩：开门 -> 走出来 -> 招手 -> 走回去 -> 关门
+    if (girl.state !== 'none') {
+      girl.t += dt;
+      const doorX = cottageWx + 29.5;
+      if (girl.state === 'out') {
+        girl.off = Math.max(-18, -Math.max(0, girl.t - 0.35) * 20);
+        if (girl.off <= -18) Object.assign(girl, { state: 'wave', t: 0 });
+      } else if (girl.state === 'wave' && girl.t > 2.4) Object.assign(girl, { state: 'in', t: 0 });
+      else if (girl.state === 'in') {
+        girl.off = Math.min(0, -18 + girl.t * 20);
+        if (girl.off >= 0 && girl.t > 1.2) Object.assign(girl, { state: 'none', t: 0, off: 0 });
+      }
+      const wx = doorX + girl.off;
+      const facingLeft = girl.state !== 'in';
+      const fr = facingLeft ? girlL : girlR;
+      const walking = (girl.state === 'out' && girl.t > 0.35) || (girl.state === 'in' && girl.off < 0);
+      const sp = girl.state === 'wave' ? fr.wave[Math.floor(girl.t / 0.25) % 2] : walking ? fr.walk[Math.floor(girl.t * 6) % 2] : fr.idle;
+      const gy = H - Math.round(heightAt(wx));
+      // 还在门里时只露出门框内的部分
+      const inDoor = girl.off > -6;
+      const x = Math.round(wx - 7 - camLeft);
+      if (inDoor) {
+        f.save();
+        f.beginPath();
+        f.rect(cottageX + 27 - (girl.off < -1 ? 6 : 0), cottageY + 26, 40, 13);
+        f.clip();
+      }
+      if (girl.state !== 'in' || girl.off < 0 || girl.t < 1.0) f.drawImage(sp, x, gy - sp.height + (inDoor ? -1 : 0));
+      if (inDoor) f.restore();
+    }
+    // 三花猫：从草堆里跳出来落在旁边，坐着甩尾巴、眨眼
+    if (cat.state !== 'hidden') {
+      cat.t += dt;
+      const fr = catL;
+      let sp = fr.sit;
+      let cx = hayX - 18;
+      let cy = H - Math.round(heightAt(cx));
+      if (cat.state === 'jump') {
+        const u = Math.min(1, cat.t / 0.7);
+        cx = hayX - 2 - u * 16;
+        cy = Math.round(hayBase - 6 + (H - heightAt(cx) - hayBase + 6) * u - Math.sin(u * Math.PI) * 16);
+        sp = fr.jump;
+        if (u >= 1) Object.assign(cat, { state: 'sit', t: 0 });
+      } else {
+        const ph = cat.t % 4;
+        sp = ph > 3.2 ? fr.tail : ph > 1.5 && ph < 1.65 ? fr.blink : fr.sit;
+      }
+      cat.x = cx;
+      const x = Math.round(cx - sp.width / 2 - camLeft);
+      f.drawImage(sp, x, cy - sp.height + 1);
+      spots.push({ kind: 'cat', x0: x - 2, y0: cy - sp.height - 2, x1: x + sp.width + 2, y1: cy + 1 });
+    }
+  }
+
+  /** 招呼和喵的气泡画在夜色之上，晚上也看得清 */
+  function drawBubbles(dt: number, camLeft: number) {
+    if (girl.state === 'wave' && girl.t > 0.2) {
+      const wx = cottageWx + 29.5 + girl.off;
+      bubble(wx - camLeft, H - Math.round(heightAt(wx)) - 21, 'Hi!', '#d0603a');
+    }
+    if (cat.meow > 0) {
+      cat.meow -= dt;
+      bubble(cat.x - camLeft, H - Math.round(heightAt(cat.x)) - 10, '♥', '#e85d7a');
+    }
+  }
+
   function drawItems(camLeft: number) {
     glows.length = 0;
     const items: Item[] = [];
@@ -627,7 +853,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     }
     const sec0 = Math.floor((camLeft - 160) / SECTION);
     const sec1 = Math.ceil((camLeft + W + 160) / SECTION);
-    for (let s = Math.max(0, sec0); s <= Math.min(N - 1, sec1); s++) items.push(...setPieces(s, sc));
+    for (let s = Math.max(-OFF, sec0); s <= Math.min(N - 1, sec1); s++) items.push(...setPieces(s, sc));
     items.sort((a, b) => a.z - b.z || a.wx - b.wx);
     for (const it of items) {
       const sp = it.sprite;
@@ -637,7 +863,37 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       const ground = Math.max(heightAt(it.wx - sp.width * 0.25), heightAt(it.wx + sp.width * 0.25));
       const base = H - Math.round(Math.min(ground, heightAt(it.wx))) + (it.z === 0 ? 2 : 1);
       const y = base - sp.height;
-      f.drawImage(sp, x, y);
+      if (sp === sc.sign && Math.abs(it.wx + 32) < 1) {
+        // 起点的路牌：绕立柱水平翻转
+        const k = Math.cos(signFlip * Math.PI);
+        f.save();
+        f.translate(x + sp.width / 2, 0);
+        f.scale(Math.abs(k) < 0.08 ? 0.08 * Math.sign(k || 1) : k, 1);
+        f.drawImage(sp, -sp.width / 2, y);
+        f.restore();
+        spots.push({ kind: 'sign', x0: x - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height });
+      } else if (sp === sc.hay) {
+        const jig = hayShake > 0 ? Math.round(Math.sin(time * 70) * 1.5 * Math.min(1, hayShake * 4)) : 0;
+        f.drawImage(sp, x + jig, y + (hayShake > 0.15 ? -1 : 0));
+        hayX = it.wx;
+        hayBase = base;
+        spots.push({ kind: 'hay', x0: x - 2, y0: y - 3, x1: x + sp.width + 2, y1: base });
+      } else f.drawImage(sp, x, y);
+      if (sp === sc.cottage) {
+        cottageX = x;
+        cottageY = y;
+        cottageWx = it.wx - sp.width / 2;
+        // 门：女孩进出时是开着的（门洞发暗）
+        if (girl.state !== 'none' && (girl.state !== 'wave' || girl.t < 0.3)) {
+          f.fillStyle = '#3b2a22';
+          f.fillRect(x + 27, y + 27, 6, 10);
+          f.fillStyle = '#ffd77e';
+          f.globalAlpha = 0.35;
+          f.fillRect(x + 28, y + 30, 4, 7);
+          f.globalAlpha = 1;
+        }
+        spots.push({ kind: 'door', x0: x + 25, y0: y + 24, x1: x + 35, y1: y + 38 });
+      }
       if (it.glow === 'lamp') glows.push({ x: x + 3, y: y + 4, kind: 'lamp', wx: it.wx });
       if (it.glow === 'window') {
         glows.push({ x: x + COTTAGE.window[0], y: y + COTTAGE.window[1], kind: 'window', wx: it.wx });
@@ -779,7 +1035,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   let last = performance.now();
   function frame(now: number) {
     // 阅读时世界只露出一条，降到约 20 帧省电；相机还在赶路时照常全速
-    if (reading && camX === p * SECTION && now - lastDraw < 50) {
+    if (reading && camX === (secret ? -1 : p) * SECTION && now - lastDraw < 50) {
       requestAnimationFrame(frame);
       return;
     }
@@ -789,7 +1045,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     time += dt;
 
     p = progress();
-    const target = p * SECTION;
+    const target = (secret ? -1 : p) * SECTION;
     if (reduced.matches) camX = target;
     else camX += (target - camX) * Math.min(1, dt * 10);
     if (Math.abs(target - camX) < 0.05) camX = target;
@@ -826,8 +1082,10 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     drawLayer('near', 0.7, dark ? 0.14 : 0.14, camLeft);
 
     f.clearRect(0, 0, W, H);
+    spots = [];
     drawItems(camLeft);
     drawGround(camLeft);
+    drawActors(dt, camLeft);
     if (dark) {
       f.globalCompositeOperation = 'source-atop';
       f.fillStyle = NIGHT;
@@ -836,6 +1094,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     }
     g.drawImage(fgCanvas, 0, 0);
     drawGlows();
+    drawBubbles(dt, camLeft);
     weather(dt, camLeft);
     drawCharacter(running, reading && !running && Math.abs(p * SECTION - camX) < 1.5);
     drawParticles(dt, camLeft);
