@@ -36,7 +36,7 @@
   --muted: #8b93a3;
   --accent: #7ccf5c;
   --accent-soft: rgb(124 207 92 / 0.12);
-  --world-filter: brightness(0.62) saturate(0.85);
+  --world-filter: none; /* 夜色由 world.ts 绘制 */
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }

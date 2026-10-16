@@ -9,12 +9,12 @@ import { layout, topbar } from './layout.mjs';
 import { formatDate } from './util.mjs';
 
 const SECTIONS = [
-  { id: 'home', label: '起点', biome: '草原' },
+  { id: 'home', label: '起点', biome: '草甸' },
   { id: 'posts', label: '博文', biome: '森林' },
-  { id: 'tools', label: '工具', biome: '沙漠' },
-  { id: 'server', label: '服务器', biome: '村庄' },
-  { id: 'friends', label: '友链', biome: '樱花林' },
-  { id: 'about', label: '关于', biome: '雪原' },
+  { id: 'tools', label: '工具', biome: '沙丘' },
+  { id: 'server', label: '服务器', biome: '小镇' },
+  { id: 'friends', label: '友链', biome: '花林' },
+  { id: 'about', label: '关于', biome: '雪松林' },
 ];
 
 const hero = ({ posts, friends }) => {

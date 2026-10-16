@@ -2,47 +2,48 @@
  * 像素世界：页面纵向滚动 -> 世界横向前进。
  *
  * - 每个 <section> 占一屏并带 scroll-snap，滚动进度 p（0..N-1）映射到相机世界坐标 p*SECTION。
- * - 每个板块对应一个生物群系，板块中心附近地形压平，小人总能稳稳站住。
- * - 小人在相机移动时播放跑步帧（按移动距离推进，脚步和地面同步），停下后待机、眨眼。
+ * - 地形是逐像素的连续高度场（不是方块），群系之间在很宽的一段里连续插值：
+ *   起伏、地表配色、植被密度和种类都是渐变的，森林会一点点稀疏成沙丘。
+ * - 景深：远山、中景丘陵、近景树线三层视差，越远越向「雾色」（页面底色 + 群系色调）靠拢。
+ * - 深色模式不靠 CSS 滤镜压暗，而是给前景盖一层夜色，灯、窗、篝火的光单独画在夜色之上。
+ * - 小人在相机移动时播放跑步帧（按移动距离推进），停下后待机、眨眼。
  * - 内容面板固定在上方，随世界同速横移并淡入淡出；非当前面板设为 inert。
  */
-import {
-  BLOCK,
-  buildBlocks,
-  buildCharacter,
-  buildDecorations,
-  hash,
-  type BlockKind,
-  type CharacterFrames,
-  type Decorations,
-  type Sprite,
-} from './sprites.js';
+import { buildCharacter, hash, type CharacterFrames, type Sprite } from './sprites.js';
+import { buildScenery, type Scenery } from './scenery.js';
+
+type RGB = [number, number, number];
 
 interface Biome {
-  name: string;
-  sky: [string, string]; // 顶部、地平线
+  name: 'plains' | 'forest' | 'desert' | 'village' | 'cherry' | 'snow';
+  tint: string; // 地平线晕染（交给 CSS）
   far: string; // 远山
-  mid: string; // 近丘
-  top: BlockKind;
-  under: BlockKind;
-  deep: BlockKind;
-  amp: number; // 地形起伏（方块）
+  mid: string; // 中景丘陵
+  near: string; // 近景树线
+  treeline: number; // 中/近景轮廓上的树冠起伏，0 = 光秃
+  spiky: boolean; // 树线是尖的（针叶林）
+  rim: string; // 地表最上沿的受光线
+  top: string; // 表层（草 / 沙 / 雪）
+  shade: string; // 表层底部
+  soil: [string, string, string]; // 由浅到深的土层
+  amp: number; // 地形起伏（逻辑像素）
+  blades: boolean; // 地表冒出草尖
 }
 
 const BIOMES: Biome[] = [
-  { name: 'plains', sky: ['#5ea9f2', '#cdebff'], far: '#9cc3dd', mid: '#7fb36a', top: 'grass', under: 'dirt', deep: 'stone', amp: 1.2 },
-  { name: 'forest', sky: ['#4f9de6', '#bfe4ff'], far: '#86aecb', mid: '#4f8d45', top: 'grass', under: 'dirt', deep: 'stone', amp: 2 },
-  { name: 'desert', sky: ['#6fb0ea', '#ffe6b8'], far: '#e2c08d', mid: '#d9b56e', top: 'sand', under: 'sand', deep: 'sandstone', amp: 2.2 },
-  { name: 'village', sky: ['#6b8fd8', '#ffd2a1'], far: '#a59bc4', mid: '#6f9a58', top: 'grass', under: 'dirt', deep: 'stone', amp: 1.4 },
-  { name: 'cherry', sky: ['#5b4f9c', '#ff9f9a'], far: '#b48bb8', mid: '#a7759a', top: 'cherryGrass', under: 'dirt', deep: 'stone', amp: 1.8 },
-  { name: 'snow', sky: ['#0b1430', '#2d3f74'], far: '#3c4d7d', mid: '#5a6d9c', top: 'snow', under: 'dirt', deep: 'stone', amp: 2.4 },
+  { name: 'plains', tint: '#cdebff', far: '#a9c3da', mid: '#a3c99a', near: '#82b76e', treeline: 0.35, spiky: false, rim: '#d2ee95', top: '#8cc762', shade: '#68a44d', soil: ['#a8805b', '#8a6548', '#6c4f3c'], amp: 9, blades: true },
+  { name: 'forest', tint: '#bfe4ff', far: '#93b1c9', mid: '#76a57b', near: '#548a5c', treeline: 1, spiky: false, rim: '#b4de80', top: '#64a854', shade: '#468345', soil: ['#8e6c4e', '#6f533f', '#534034'], amp: 13, blades: true },
+  { name: 'desert', tint: '#ffe6b8', far: '#e9d2b3', mid: '#e6c595', near: '#dcb07d', treeline: 0, spiky: false, rim: '#fdebc6', top: '#f2d6a3', shade: '#e2bb86', soil: ['#d7ad78', '#c39667', '#a97e58'], amp: 15, blades: false },
+  { name: 'village', tint: '#ffd9ae', far: '#bcbad6', mid: '#a7c792', near: '#87b56c', treeline: 0.45, spiky: false, rim: '#d6ec94', top: '#90c664', shade: '#6aa24e', soil: ['#a8805b', '#8a6548', '#6c4f3c'], amp: 7, blades: true },
+  { name: 'cherry', tint: '#ffd0d6', far: '#d8bdd3', mid: '#dcadc6', near: '#c08cab', treeline: 0.9, spiky: false, rim: '#dcf0a2', top: '#9bcd6c', shade: '#73aa57', soil: ['#a07b63', '#816150', '#644c42'], amp: 11, blades: true },
+  { name: 'snow', tint: '#bccbea', far: '#b6c3dc', mid: '#9fafcd', near: '#8396bb', treeline: 0.85, spiky: true, rim: '#ffffff', top: '#eef3fb', shade: '#cfd9ea', soil: ['#908c9c', '#716d80', '#565368'], amp: 15, blades: false },
 ];
 
-const SECTION_BLOCKS = 40;
-const SECTION = SECTION_BLOCKS * BLOCK; // 相邻板块间的世界距离（逻辑像素）
-const GROUND = 4; // 板块中心处地面厚度（方块）
+const SECTION = 320; // 相邻板块间的世界距离（逻辑像素）
+const GROUND = 32; // 板块中心处地面高度
 const CHAR_W = 14;
 const CHAR_H = 20;
+const NIGHT = 'rgba(14, 20, 38, 0.46)';
 
 /* ---------- 小工具 ---------- */
 
@@ -52,26 +53,28 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+function parseColor(s: string): RGB {
+  s = s.trim();
+  if (s.startsWith('#')) {
+    const hex = s.length === 4 ? s.slice(1).replace(/./g, (c) => c + c) : s.slice(1);
+    const n = parseInt(hex, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  const m = s.match(/\d+(\.\d+)?/g);
+  return m ? [Number(m[0]), Number(m[1]), Number(m[2])] : [238, 241, 245];
 }
-const rgbCache = new Map<string, [number, number, number]>();
-function rgb(hex: string) {
-  let v = rgbCache.get(hex);
-  if (!v) rgbCache.set(hex, (v = hexToRgb(hex)));
+const rgbCache = new Map<string, RGB>();
+function rgb(c: string): RGB {
+  let v = rgbCache.get(c);
+  if (!v) rgbCache.set(c, (v = parseColor(c)));
   return v;
 }
-function mix(a: string, b: string, t: number): string {
-  const [r1, g1, b1] = rgb(a);
-  const [r2, g2, b2] = rgb(b);
-  const r = Math.round(r1 + (r2 - r1) * t);
-  const g = Math.round(g1 + (g2 - g1) * t);
-  const bl = Math.round(b1 + (b2 - b1) * t);
-  return `rgb(${r},${g},${bl})`;
+function mixRGB(a: RGB, b: RGB, t: number): RGB {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }
-function mixRgbStr(a: string, b: string, t: number) {
-  return mix(a, b, t);
+const css = (c: RGB) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+function mix(a: string, b: string, t: number): string {
+  return css(mixRGB(rgb(a), rgb(b), t));
 }
 
 /** 1D value noise，范围 [-1,1] */
@@ -82,40 +85,59 @@ function noise1(x: number): number {
   return (hash(i) * (1 - u) + hash(i + 1) * u) * 2 - 1;
 }
 
-/** 按进度 p 在相邻群系间插值某个颜色字段 */
-function biomeColor(p: number, pick: (b: Biome) => string): string {
-  const i = clamp(Math.floor(p), 0, BIOMES.length - 1);
-  const j = Math.min(i + 1, BIOMES.length - 1);
-  const t = smooth(0.25, 0.75, p - i);
-  return mixRgbStr(pick(BIOMES[i]), pick(BIOMES[j]), t);
-}
+/* ---------- 群系插值 ---------- */
 
-/* ---------- 地形 ---------- */
-
-function biomeAt(wx: number, col: number): number {
+/** 世界坐标处的两个相邻群系及混合系数：交界在两板块正中，过渡带占整段的 40% */
+function weights(wx: number): [number, number, number] {
   const f = wx / SECTION;
-  const j = Math.floor(f);
-  const frac = f - j;
-  // 板块交界在 frac=0.5，用抖动混合两边方块，像素风的「渐变」
-  const pRight = clamp((frac - 0.5) / 0.1 + 0.5);
-  const idx = hash(col * 1.37 + 9.1) < pRight ? j + 1 : j;
-  return clamp(idx, 0, BIOMES.length - 1);
+  const i = clamp(Math.floor(f), 0, BIOMES.length - 1);
+  const j = Math.min(i + 1, BIOMES.length - 1);
+  const t = i === j ? 0 : smooth(0.3, 0.7, f - i);
+  return [i, j, t];
 }
 
-const surfaceCache = new Map<number, number>();
-/** 某列地面高度（方块数，从屏幕底部数） */
-function surfaceBlocks(col: number): number {
-  const cached = surfaceCache.get(col);
-  if (cached !== undefined) return cached;
-  const wx = col * BLOCK + BLOCK / 2;
+const STEPS = 24; // 颜色插值量化，便于缓存
+interface Palette {
+  rim: string;
+  top: string;
+  shade: string;
+  soil: [string, string, string];
+  path: string[]; // 村庄小路
+}
+const paletteCache = new Map<number, Palette>();
+function paletteAt(wx: number): Palette {
+  const [i, j, t] = weights(wx);
+  const q = Math.round(t * STEPS);
+  const key = i * 100 + q;
+  let pal = paletteCache.get(key);
+  if (!pal) {
+    const a = BIOMES[i];
+    const b = BIOMES[j];
+    const k = q / STEPS;
+    pal = {
+      rim: mix(a.rim, b.rim, k),
+      top: mix(a.top, b.top, k),
+      shade: mix(a.shade, b.shade, k),
+      soil: [mix(a.soil[0], b.soil[0], k), mix(a.soil[1], b.soil[1], k), mix(a.soil[2], b.soil[2], k)],
+      path: ['#d8bb8c', '#c4a274', '#a9875d'],
+    };
+    paletteCache.set(key, pal);
+  }
+  return pal;
+}
+
+function biomeNum(wx: number, pick: (b: Biome) => number): number {
+  const [i, j, t] = weights(wx);
+  return pick(BIOMES[i]) * (1 - t) + pick(BIOMES[j]) * t;
+}
+
+/** 地面高度（逻辑像素，从屏幕底边数），板块中心附近压平 */
+function heightAt(wx: number): number {
   const nearest = Math.round(wx / SECTION);
-  const dist = Math.abs(wx - nearest * SECTION) / BLOCK;
-  const flat = smooth(3, 11, dist);
-  const b = BIOMES[biomeAt(wx, col)];
-  const n = noise1(col * 0.16) * 0.7 + noise1(col * 0.41 + 50) * 0.3;
-  const h = Math.max(2, GROUND + Math.round(n * b.amp * flat));
-  surfaceCache.set(col, h);
-  return h;
+  const dist = Math.abs(wx - nearest * SECTION);
+  const flat = smooth(16, 96, dist);
+  const n = noise1(wx * 0.011) * 0.66 + noise1(wx * 0.027 + 40) * 0.27 + noise1(wx * 0.085 + 7) * 0.07;
+  return GROUND + n * biomeNum(wx, (b) => b.amp) * flat;
 }
 
 /* ---------- 粒子 ---------- */
@@ -129,7 +151,87 @@ interface Particle {
   max: number;
   color: string;
   size: number;
-  kind: 'dust' | 'snow' | 'petal' | 'firefly' | 'spark' | 'smoke';
+  kind: 'dust' | 'snow' | 'petal' | 'firefly' | 'spark' | 'smoke' | 'leaf';
+}
+
+/* ---------- 布景 ---------- */
+
+interface Item {
+  sprite: Sprite;
+  wx: number; // 精灵底边中心的世界坐标
+  z: number; // 绘制顺序：小的在前
+  glow?: 'lamp' | 'window' | 'fire';
+}
+
+const SLOT = 9;
+
+function slotItem(s: number, sc: Scenery): Item | null {
+  const wx = s * SLOT + Math.floor(hash(s * 0.91 + 0.3) * 6);
+  const center = Math.round(wx / SECTION) * SECTION;
+  const rel = wx - center;
+  if (Math.abs(rel) < 24) return null; // 小人脚下与路牌留空
+  const [i, j, t] = weights(wx);
+  const bi = hash(s * 1.73 + 3.1) < t ? j : i;
+  const b = BIOMES[bi];
+  if (b.name === 'village' && rel > 14 && rel < 124) return null;
+  if (b.name === 'snow' && rel > 10 && rel < 40) return null;
+  const r = hash(s * 7.31 + bi * 13.7);
+  const v = hash(s * 3.37 + 1.9);
+  const pick = (arr: Sprite[]) => arr[Math.floor(v * arr.length)];
+  const tree = (arr: Sprite[]): Item => ({ sprite: pick(arr), wx, z: 0 });
+  const small = (arr: Sprite[], z = 3): Item => ({ sprite: pick(arr), wx, z });
+  switch (b.name) {
+    case 'plains':
+      if (r < 0.1) return tree(sc.oak);
+      if (r < 0.2) return small(sc.bush, 2);
+      if (r < 0.26) return small(sc.rock, 2);
+      if (r < 0.55) return small(sc.tuft);
+      if (r < 0.75) return small(sc.flowers);
+      return null;
+    case 'forest':
+      if (r < 0.48) return tree(r < 0.3 ? sc.forest : sc.oak);
+      if (r < 0.62) return small(sc.bush, 2);
+      if (r < 0.85) return small(sc.tuft);
+      return null;
+    case 'desert':
+      if (r < 0.1) return { sprite: pick(sc.cactus), wx, z: 1 };
+      if (r < 0.2) return small(sc.sandRock, 2);
+      if (r < 0.36) return small(sc.dryTuft);
+      return null;
+    case 'village':
+      if (r < 0.08) return tree(sc.oak);
+      if (r < 0.2) return small(sc.bush, 2);
+      if (r < 0.48) return small(sc.tuft);
+      if (r < 0.68) return small(sc.flowers);
+      return null;
+    case 'cherry':
+      if (r < 0.32) return tree(sc.blossom);
+      if (r < 0.44) return small(sc.blossomBush, 2);
+      if (r < 0.66) return small(sc.tuft);
+      if (r < 0.78) return small(sc.flowers);
+      return null;
+    case 'snow':
+      if (r < 0.38) return tree(sc.pine);
+      if (r < 0.5) return small(sc.snowRock, 2);
+      return null;
+  }
+}
+
+/** 每个板块的固定布景 */
+function setPieces(sec: number, sc: Scenery): Item[] {
+  const c = sec * SECTION;
+  const items: Item[] = [{ sprite: sc.sign, wx: c - 32, z: 1 }];
+  const name = BIOMES[sec]?.name;
+  if (name === 'village') {
+    items.push(
+      { sprite: sc.cottage, wx: c + 52, z: 1, glow: 'window' },
+      { sprite: sc.fence, wx: c + 98, z: 2 },
+      { sprite: sc.lamp, wx: c - 62, z: 1, glow: 'lamp' },
+      { sprite: sc.lamp, wx: c + 120, z: 1, glow: 'lamp' },
+    );
+  }
+  if (name === 'snow') items.push({ sprite: sc.campfire, wx: c + 24, z: 2, glow: 'fire' });
+  return items;
 }
 
 /* ---------- 主体 ---------- */
@@ -143,37 +245,51 @@ export interface WorldOptions {
 
 export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   const g = canvas.getContext('2d')!;
-  const blocks = buildBlocks();
-  const deco: Decorations = buildDecorations(blocks);
+  // 前景（地面、植被）先画到离屏画布，深色模式在它上面盖夜色，不影响远景
+  const fgCanvas = document.createElement('canvas');
+  const f = fgCanvas.getContext('2d')!;
+  const sc = buildScenery();
   const charR: CharacterFrames = buildCharacter(false);
   const charL: CharacterFrames = buildCharacter(true);
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const N = sections.length;
+  const root = document.documentElement;
 
   let S = 4; // 每个逻辑像素对应的 CSS 像素
   let W = 0;
   let H = 0;
+  let heights = new Float32Array(0);
 
   function resize() {
-    const vw = document.documentElement.clientWidth;
+    const vw = root.clientWidth;
     const vh = window.innerHeight;
     S = Math.max(2, Math.round(vh / 190));
     if (vw / S < 96) S = Math.max(2, Math.floor(vw / 96));
     W = Math.ceil(vw / S);
     H = Math.ceil(vh / S);
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = fgCanvas.width = W;
+    canvas.height = fgCanvas.height = H;
     canvas.style.width = `${W * S}px`;
     canvas.style.height = `${H * S}px`;
     g.imageSmoothingEnabled = false;
-    const root = document.documentElement.style;
-    root.setProperty('--px', `${S}px`);
+    heights = new Float32Array(W + 2);
+    root.style.setProperty('--px', `${S}px`);
     // 面板底边留出：地面 + 小人 + 一点余量
-    root.setProperty('--stage', `${(GROUND * BLOCK + CHAR_H + 14) * S}px`);
-    root.setProperty('--ground', `${GROUND * BLOCK * S}px`);
+    root.style.setProperty('--stage', `${(GROUND + CHAR_H + 14) * S}px`);
+    root.style.setProperty('--ground', `${GROUND * S}px`);
   }
   resize();
   window.addEventListener('resize', resize);
+
+  /* 主题：雾色 = 页面底色 + 一点群系色调 */
+  let dark = false;
+  let bg = '#eef1f5';
+  function readTheme() {
+    dark = root.dataset.theme === 'dark';
+    bg = getComputedStyle(root).getPropertyValue('--bg').trim() || (dark ? '#15181d' : '#eef1f5');
+  }
+  readTheme();
+  new MutationObserver(readTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 
   /* 滚动进度 */
   function progress(): number {
@@ -184,7 +300,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
   let p = progress();
   let camX = p * SECTION;
   let lastCam = camX;
-  let charY = H - surfaceBlocks(Math.floor(camX / BLOCK)) * BLOCK;
+  let charY = H - Math.round(heightAt(camX));
   let facing = 1;
   let runTimer = 0;
   let stride = 0;
@@ -242,7 +358,6 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const t = e.target as HTMLElement;
     if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    // 和 MC 一样：数字键切换快捷栏
     const n = Number(e.key);
     if (n >= 1 && n <= N) {
       e.preventDefault();
@@ -256,131 +371,205 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     }
   });
 
-  /* ---------- 绘制 ---------- */
+  /* ---------- 远景三层 ---------- */
 
-  const horizon = () => H - GROUND * BLOCK;
+  const layerColorCache = new Map<string, [string, string]>();
+  /** 某层在某处的颜色：先（深色模式下）入夜，再向雾色靠拢；第二个是轮廓上沿的受光线 */
+  function layerColor(wx: number, which: 'far' | 'mid' | 'near', haze: number): [string, string] {
+    const [i, j, t] = weights(wx);
+    const q = Math.round(t * STEPS);
+    const key = `${which}${i}${q}${dark ? 1 : 0}${bg}`;
+    let c = layerColorCache.get(key);
+    if (!c) {
+      let base = mixRGB(rgb(BIOMES[i][which]), rgb(BIOMES[j][which]), q / STEPS);
+      if (dark) base = mixRGB(base, rgb('#1d2639'), 0.62);
+      const tintRGB = mixRGB(rgb(BIOMES[i].tint), rgb(BIOMES[j].tint), q / STEPS);
+      const fog = mixRGB(rgb(bg), tintRGB, dark ? 0.08 : 0.25);
+      const body = mixRGB(base, fog, haze);
+      const lit = mixRGB(body, dark ? rgb('#8796b8') : [255, 255, 255], dark ? 0.12 : 0.28);
+      c = [css(body), css(lit)];
+      layerColorCache.set(key, c);
+    }
+    return c;
+  }
 
-  function drawLayer(factor: number, color: string, base: number, amp: number, freq: number, seed: number) {
-    const hz = horizon();
-    const off = camX * factor;
+  function treelineAt(lx: number, wx: number, freq: number, size: number): number {
+    const amt = biomeNum(wx, (b) => b.treeline);
+    if (amt < 0.02) return 0;
+    const spiky = biomeNum(wx, (b) => (b.spiky ? 1 : 0));
+    // 圆冠：一串高低错落的半圆；尖冠：锯齿
+    const u = lx * freq;
+    const cell = Math.floor(u);
+    const fr = u - cell;
+    const hgt = 0.55 + hash(cell * 1.9 + size) * 0.45;
+    const round = Math.sqrt(Math.max(0, 1 - (fr * 2 - 1) ** 2)) * hgt;
+    const tri = (1 - Math.abs(fr * 2 - 1)) * hgt * 1.4;
+    const present = hash(cell * 4.3 + size) < amt ? 1 : 0.15;
+    return (round * (1 - spiky) + tri * spiky) * size * present * Math.min(1, amt * 1.6);
+  }
+
+  function drawLayer(which: 'far' | 'mid' | 'near', factor: number, haze: number, camLeft: number) {
+    const base = H - GROUND;
+    const off = Math.round(camX * factor) - Math.floor(W / 2);
+    for (let x = 0; x < W; x++) {
+      const lx = off + x;
+      const wx = camLeft + x;
+      let h: number;
+      if (which === 'far') {
+        const ridge = 1 - Math.abs(noise1(lx * 0.0075 + 3));
+        h = 26 + ridge * ridge * 46 + noise1(lx * 0.033) * 5;
+      } else if (which === 'mid') {
+        h = 14 + (noise1(lx * 0.013 + 20) * 0.5 + 0.5) * 18 + treelineAt(lx, wx, 0.11, 6);
+      } else {
+        h = 4 + (noise1(lx * 0.021 + 60) * 0.5 + 0.5) * 12 + treelineAt(lx, wx, 0.075, 10);
+      }
+      const y = Math.round(base - h);
+      const [body, lit] = layerColor(wx, which, haze);
+      g.fillStyle = body;
+      g.fillRect(x, y, 1, H - y);
+      g.fillStyle = lit;
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+
+  /* ---------- 前景：地面 ---------- */
+
+  function drawGround(camLeft: number) {
+    for (let x = -1; x <= W; x++) heights[x + 1] = Math.round(heightAt(camLeft + x));
+    for (let x = 0; x < W; x++) {
+      const wx = camLeft + x;
+      const pal = paletteAt(wx);
+      const hgt = heights[x + 1];
+      const sy = H - hgt;
+      const center = Math.round(wx / SECTION) * SECTION;
+      const sec = Math.round(wx / SECTION);
+      const onPath = BIOMES[sec]?.name === 'village' && Math.abs(wx - center) < 70 - hash(wx * 0.37) * 6;
+      const name = BIOMES[weights(wx)[0]].name;
+      // 坡面：左高右低的一侧更亮（光从左上来）
+      const slope = heights[x] - heights[x + 2];
+      const rim = onPath ? pal.path[0] : slope < 0 ? pal.rim : slope > 0 ? pal.top : pal.rim;
+      const top = onPath ? pal.path[1] : pal.top;
+      const shade = onPath ? pal.path[2] : pal.shade;
+
+      // 表层厚度起伏，底部一行抖动过渡到土层
+      const band = 4 + Math.round((noise1(wx * 0.07) * 0.5 + 0.5) * 2);
+      f.fillStyle = top;
+      f.fillRect(x, sy, 1, band);
+      f.fillStyle = shade;
+      f.fillRect(x, sy + band - 1, 1, 1);
+      if (hash(wx * 0.53 + 1) < 0.3) f.fillRect(x, sy + band, 1, 1);
+      f.fillStyle = rim;
+      f.fillRect(x, sy, 1, 1);
+
+      // 土层：三道地层，交界随噪声起伏，边上零星散几个像素
+      const d1 = sy + band + 1;
+      const s1 = Math.round(sy + 11 + noise1(wx * 0.05 + 11) * 2);
+      const s2 = Math.round(sy + 21 + noise1(wx * 0.04 + 77) * 3);
+      f.fillStyle = pal.soil[0];
+      f.fillRect(x, d1, 1, Math.max(0, s1 - d1));
+      f.fillStyle = pal.soil[1];
+      f.fillRect(x, s1, 1, Math.max(0, s2 - s1));
+      if (hash(wx * 0.61 + 2) < 0.22) f.fillRect(x, s1 - 1, 1, 1);
+      f.fillStyle = pal.soil[2];
+      f.fillRect(x, s2, 1, H - s2);
+      if (hash(wx * 0.67 + 3) < 0.22) f.fillRect(x, s2 - 1, 1, 1);
+
+      // 嵌在土里的小石子
+      const pr = hash(wx * 0.731 + 5);
+      if (pr < 0.05) {
+        const py = sy + 9 + Math.floor(hash(wx * 1.9) * 24);
+        if (py < H - 1) {
+          f.fillStyle = pal.soil[0];
+          f.fillRect(x, py, 2, 1);
+          f.fillStyle = pal.soil[2];
+          f.fillRect(x, py + 1, 2, 1);
+        }
+      }
+      // 草尖：地表冒出的零星像素，轮廓不再是一条硬线
+      if (!onPath) {
+        const br = hash(wx * 1.31 + 2);
+        const bladeOK = biomeNum(wx, (b) => (b.blades ? 1 : 0));
+        if (br < 0.42 * bladeOK) {
+          f.fillStyle = br < 0.14 ? pal.rim : pal.top;
+          f.fillRect(x, sy - 1, 1, 1);
+          if (br < 0.06) f.fillRect(x, sy - 2, 1, 1);
+        } else if (name === 'snow' && br < 0.12) {
+          f.fillStyle = pal.rim;
+          f.fillRect(x, sy - 1, 1, 1);
+        }
+      }
+    }
+  }
+
+  /* ---------- 前景：植被与布景 ---------- */
+
+  const glows: { x: number; y: number; kind: 'lamp' | 'window' | 'fire'; wx: number }[] = [];
+
+  function drawItems(camLeft: number) {
+    glows.length = 0;
+    const items: Item[] = [];
+    const s0 = Math.floor((camLeft - 60) / SLOT);
+    const s1 = Math.ceil((camLeft + W + 60) / SLOT);
+    for (let s = s0; s <= s1; s++) {
+      const it = slotItem(s, sc);
+      if (it) items.push(it);
+    }
+    const sec0 = Math.floor((camLeft - 160) / SECTION);
+    const sec1 = Math.ceil((camLeft + W + 160) / SECTION);
+    for (let s = Math.max(0, sec0); s <= Math.min(N - 1, sec1); s++) items.push(...setPieces(s, sc));
+    items.sort((a, b) => a.z - b.z || a.wx - b.wx);
+    for (const it of items) {
+      const sp = it.sprite;
+      const x = Math.round(it.wx - sp.width / 2 - camLeft);
+      if (x > W || x + sp.width < 0) continue;
+      // 底边陷进地面 1-2 像素，坡上取两端较低处，避免悬空
+      const ground = Math.max(heightAt(it.wx - sp.width * 0.25), heightAt(it.wx + sp.width * 0.25));
+      const base = H - Math.round(Math.min(ground, heightAt(it.wx))) + (it.z === 0 ? 2 : 1);
+      const y = base - sp.height;
+      f.drawImage(sp, x, y);
+      if (it.glow === 'lamp') glows.push({ x: x + 3, y: y + 4, kind: 'lamp', wx: it.wx });
+      if (it.glow === 'window') glows.push({ x: x + 11, y: y + 23, kind: 'window', wx: it.wx });
+      if (it.glow === 'fire') glows.push({ x: x + 7, y: y + 2, kind: 'fire', wx: it.wx });
+    }
+  }
+
+  function halo(x: number, y: number, r: number, color: string, a: number) {
+    // 像素化的圆形光晕：按距离分 3 档透明度，越外越淡
     g.fillStyle = color;
-    let runX = 0;
-    let runH = -1;
-    for (let x = 0; x <= W; x++) {
-      const wx = Math.floor((off + x) / 2); // 2px 一阶，更有像素感
-      const h = x === W ? -2 : Math.round((base + (noise1(wx * freq + seed) * 0.5 + 0.5) * amp) / 2) * 2;
-      if (h !== runH) {
-        if (runH > 0) g.fillRect(runX, hz + 4 - runH, x - runX, runH);
-        runX = x;
-        runH = h;
+    for (let band = 3; band >= 1; band--) {
+      const rr = (r * band) / 3;
+      g.globalAlpha = a / (band + 0.5);
+      const ri = Math.ceil(rr);
+      for (let dy = -ri; dy <= ri; dy++) {
+        const half = Math.floor(Math.sqrt(Math.max(0, rr * rr - dy * dy)));
+        g.fillRect(x - half, y + dy, half * 2 + 1, 1);
       }
     }
+    g.globalAlpha = 1;
   }
 
-  function drawBlockAt(kind: BlockKind, x: number, y: number) {
-    g.drawImage(blocks[kind], x, y);
-  }
-
-  function decoAt(col: number, b: number, center: number): { sprite: Sprite; ox: number } | null {
-    const rel = col - center;
-    const r = hash(col * 7.31 + b * 13.7);
-    const near = Math.abs(rel) <= 2;
-    const m2 = ((col % 2) + 2) % 2;
-    const m3 = ((col % 3) + 3) % 3;
-    // 树等大件的变体，与列号取模无关，避免同一群系里总是同一棵树
-    const v3 = Math.floor(hash(col * 3.3 + 1) * 3);
-    const v2 = v3 % 2;
-    // 每个板块的固定布景
-    if (rel === -4) return { sprite: deco.sign, ox: 0 };
-    if (b === 3) {
-      if (rel === 4) return { sprite: deco.house, ox: 0 };
-      if (rel === -8 || rel === 13) return { sprite: deco.lamp, ox: 2 };
-      if (rel >= 3 && rel <= 10) return null;
-    }
-    if (near) return null;
-    switch (BIOMES[b].name) {
-      case 'plains':
-        if (r < 0.07 && m2 === 0) return { sprite: deco.oak[v3], ox: -6 };
-        if (r < 0.3) return { sprite: deco.tuft[m3], ox: 2 };
-        if (r < 0.38) return { sprite: m2 ? deco.flowerRed : deco.flowerYellow, ox: 3 };
-        return null;
-      case 'forest':
-        if (m3 === 0 && r < 0.75) return { sprite: r < 0.4 ? deco.birch[v2] : deco.oak[v3], ox: -6 };
-        if (r < 0.85) return { sprite: deco.tuft[m3], ox: 2 };
-        if (r < 0.93) return { sprite: deco.mushroom, ox: 2 };
-        return null;
-      case 'desert':
-        if (r < 0.12 && m2 === 0) return { sprite: deco.cactus[v3], ox: -2 };
-        if (r < 0.24) return { sprite: deco.deadBush, ox: 1 };
-        return null;
-      case 'village':
-        if (r < 0.06 && m2 === 0) return { sprite: deco.oak[v3], ox: -6 };
-        if (r < 0.35) return { sprite: deco.tuft[m3], ox: 2 };
-        if (r < 0.42) return { sprite: deco.flowerYellow, ox: 3 };
-        return null;
-      case 'cherry':
-        if (m3 === 0 && r < 0.5) return { sprite: deco.cherry[v3], ox: -8 };
-        if (r < 0.6) return { sprite: deco.tuft[m3], ox: 2 };
-        if (r < 0.68) return { sprite: deco.flowerRed, ox: 3 };
-        return null;
-      case 'snow':
-        if (rel === 3) return { sprite: deco.campfire, ox: -1 };
-        if (m3 === 0 && r < 0.55) return { sprite: deco.spruce[v3], ox: -6 };
-        return null;
-    }
-    return null;
-  }
-
-  function drawWorld(camLeft: number) {
-    const c0 = Math.floor(camLeft / BLOCK) - 6;
-    const c1 = Math.ceil((camLeft + W) / BLOCK) + 6;
-    // 先画装饰（在地面方块之上、小人之后）
-    for (let c = c0; c <= c1; c++) {
-      const wx = c * BLOCK + BLOCK / 2;
-      const b = biomeAt(wx, c);
-      const center = Math.round(wx / SECTION) * SECTION_BLOCKS;
-      const d = decoAt(c, b, center);
-      if (!d) continue;
-      const sy = H - surfaceBlocks(c) * BLOCK;
-      const x = Math.round(c * BLOCK + d.ox - camLeft);
-      g.drawImage(d.sprite, x, sy - d.sprite.height);
-      if (d.sprite === deco.campfire) drawFlame(x + 5, sy - 3, c * BLOCK + d.ox + 5);
-      if (d.sprite === deco.lamp) {
-        g.globalAlpha = 0.18 + 0.05 * Math.sin(time * 3 + c);
-        g.fillStyle = '#ffd36a';
-        g.fillRect(x - 3, sy - d.sprite.height - 3, 11, 12);
-        g.globalAlpha = 1;
-      }
-    }
-    // 地面
-    for (let c = c0; c <= c1; c++) {
-      const wx = c * BLOCK + BLOCK / 2;
-      const bi = biomeAt(wx, c);
-      const b = BIOMES[bi];
-      const sb = surfaceBlocks(c);
-      const x = Math.round(c * BLOCK - camLeft);
-      const center = Math.round(wx / SECTION) * SECTION_BLOCKS;
-      const top: BlockKind = bi === 3 && Math.abs(c - center) <= 7 ? 'path' : b.top;
-      const rows = sb + 1; // 多画一层，盖住非 8 倍数的屏幕底边
-      for (let k = 0; k < rows; k++) {
-        const kind: BlockKind = k === 0 ? top : k < 3 ? b.under : b.deep;
-        drawBlockAt(kind, x, H - (sb - k) * BLOCK);
-      }
+  function drawGlows() {
+    const strength = dark ? 1 : 0.35;
+    for (const gl of glows) {
+      if (gl.kind === 'lamp') halo(gl.x, gl.y, 9, '#ffd36a', (0.22 + 0.04 * Math.sin(time * 3 + gl.wx)) * strength);
+      if (gl.kind === 'window') halo(gl.x, gl.y, 8, '#ffcf70', 0.2 * strength);
+      if (gl.kind === 'fire') drawFlame(gl.x, gl.y, gl.wx);
     }
   }
 
   function drawFlame(x: number, y: number, worldX: number) {
     const flick = reduced.matches ? 0 : Math.floor(time * 10) % 3;
-    g.fillStyle = '#ff8c1a';
-    g.fillRect(x - 3, y - 6 + flick, 6, 6 - flick);
-    g.fillStyle = '#ffd34d';
-    g.fillRect(x - 1, y - 4 + (flick === 1 ? 1 : 0), 3, 4);
-    g.globalAlpha = 0.1;
-    g.fillStyle = '#ffb84d';
-    g.fillRect(x - 10, y - 12, 20, 14);
-    g.globalAlpha = 1;
+    halo(x, y - 3, 13, '#ffb55a', dark ? 0.26 : 0.12);
+    g.fillStyle = '#ff7a2a';
+    g.fillRect(x - 3, y - 5 + flick, 6, 5 - flick);
+    g.fillRect(x - 1, y - 8 + flick, 3, 3);
+    g.fillStyle = '#ffc14d';
+    g.fillRect(x - 2, y - 4 + (flick === 1 ? 1 : 0), 4, 4);
+    g.fillStyle = '#fff2b0';
+    g.fillRect(x - 1, y - 2, 2, 2);
     if (!reduced.matches && Math.random() < 0.15) {
-      spawn({ x: worldX + (Math.random() - 0.5) * 4, y: y - 6, vx: (Math.random() - 0.5) * 0.1, vy: -0.25 - Math.random() * 0.2, life: 0, max: 60 + Math.random() * 40, color: Math.random() < 0.3 ? '#ffb84d' : '#8a8a8a', size: 1, kind: Math.random() < 0.3 ? 'spark' : 'smoke' });
+      const spark = Math.random() < 0.35;
+      spawn({ x: worldX + (Math.random() - 0.5) * 4, y: y - 7, vx: (Math.random() - 0.5) * 0.1, vy: -0.25 - Math.random() * 0.2, life: 0, max: 60 + Math.random() * 40, color: spark ? '#ffb84d' : '#9aa0aa', size: 1, kind: spark ? 'spark' : 'smoke' });
     }
   }
 
@@ -389,9 +578,9 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     let sprite: Sprite;
     let bob = 0;
     if (running) {
-      const f = Math.floor(stride / 5) % 4;
-      sprite = frames.run[f];
-      bob = f % 2 === 1 ? -1 : 0;
+      const fr = Math.floor(stride / 5) % 4;
+      sprite = frames.run[fr];
+      bob = fr % 2 === 1 ? -1 : 0;
     } else {
       const blinking = time > nextBlink && time < nextBlink + 0.13;
       if (time > nextBlink + 0.13) nextBlink = time + 2.5 + Math.random() * 3;
@@ -399,8 +588,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     }
     const x = Math.round(W / 2 - CHAR_W / 2);
     const y = Math.round(charY - CHAR_H + bob);
-    // 影子
-    g.globalAlpha = 0.25;
+    g.globalAlpha = 0.22;
     g.fillStyle = '#000';
     g.fillRect(x + 2, Math.round(charY), CHAR_W - 4, 1);
     g.globalAlpha = 1;
@@ -411,14 +599,17 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     if (reduced.matches) return;
     const w = (i: number) => clamp(1 - Math.abs(p - i) * 1.3);
     const k = dt * 60;
-    if (Math.random() < w(5) * 0.9 * k) {
-      spawn({ x: camLeft + Math.random() * W, y: -2, vx: 0, vy: 0.18 + Math.random() * 0.2, life: 0, max: 900, color: '#e6edf7', size: Math.random() < 0.2 ? 2 : 1, kind: 'snow' });
+    if (Math.random() < w(5) * 0.8 * k) {
+      spawn({ x: camLeft + Math.random() * W, y: H * 0.35, vx: 0, vy: 0.16 + Math.random() * 0.18, life: 0, max: 900, color: dark ? '#dfe7f5' : '#ffffff', size: Math.random() < 0.2 ? 2 : 1, kind: 'snow' });
     }
     if (Math.random() < w(4) * 0.35 * k) {
-      spawn({ x: camLeft + Math.random() * W * 1.2, y: -2, vx: -0.15 - Math.random() * 0.15, vy: 0.2 + Math.random() * 0.12, life: 0, max: 900, color: Math.random() < 0.5 ? '#f8cfe0' : '#e89bbd', size: Math.random() < 0.3 ? 2 : 1, kind: 'petal' });
+      spawn({ x: camLeft + Math.random() * W * 1.2, y: H * 0.4, vx: -0.15 - Math.random() * 0.15, vy: 0.2 + Math.random() * 0.12, life: 0, max: 900, color: Math.random() < 0.5 ? '#ffd6e6' : '#ef9fc2', size: Math.random() < 0.3 ? 2 : 1, kind: 'petal' });
     }
-    if (Math.random() < w(1) * 0.05 * k) {
-      spawn({ x: camLeft + Math.random() * W, y: horizon() - 6 - Math.random() * 40, vx: 0, vy: 0, life: 0, max: 240 + Math.random() * 200, color: '#fff27a', size: 1, kind: 'firefly' });
+    if (Math.random() < w(1) * 0.08 * k) {
+      spawn({ x: camLeft + Math.random() * W * 1.2, y: H - GROUND - 40 - Math.random() * 20, vx: -0.1 - Math.random() * 0.1, vy: 0.12 + Math.random() * 0.08, life: 0, max: 600, color: Math.random() < 0.5 ? '#8fc66b' : '#c9b25a', size: 1, kind: 'leaf' });
+    }
+    if (dark && Math.random() < w(1) * 0.06 * k) {
+      spawn({ x: camLeft + Math.random() * W, y: H - GROUND - 6 - Math.random() * 36, vx: 0, vy: 0, life: 0, max: 240 + Math.random() * 200, color: '#fff27a', size: 1, kind: 'firefly' });
     }
   }
 
@@ -428,7 +619,7 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       const pt = particles[i];
       pt.life += k;
       if (pt.kind === 'snow') pt.vx = Math.sin((pt.life + pt.x) * 0.03) * 0.15;
-      if (pt.kind === 'petal') pt.vx += Math.sin(pt.life * 0.05) * 0.004;
+      if (pt.kind === 'petal' || pt.kind === 'leaf') pt.vx += Math.sin(pt.life * 0.05) * 0.004;
       if (pt.kind === 'firefly') {
         pt.vx += (Math.random() - 0.5) * 0.02;
         pt.vy += (Math.random() - 0.5) * 0.02;
@@ -439,15 +630,15 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
       pt.x += pt.vx * k;
       pt.y += pt.vy * k;
       const sx = Math.round(pt.x - camLeft);
-      const groundY = H - surfaceBlocks(Math.floor(pt.x / BLOCK)) * BLOCK;
+      const groundY = H - heightAt(pt.x);
       if (pt.life > pt.max || pt.y > groundY + 1 || sx < -20 || sx > W + 20) {
         particles.splice(i, 1);
         continue;
       }
-      let a = 1;
+      let a = Math.min(1, pt.life / 30); // 从半空淡入，衔接上方的渐隐遮罩
       if (pt.kind === 'dust' || pt.kind === 'smoke' || pt.kind === 'spark') a = 1 - pt.life / pt.max;
       if (pt.kind === 'firefly') a = (0.5 + 0.5 * Math.sin(pt.life * 0.08)) * Math.min(1, (pt.max - pt.life) / 40);
-      g.globalAlpha = clamp(a) * (pt.kind === 'smoke' ? 0.5 : 1);
+      g.globalAlpha = clamp(a) * (pt.kind === 'smoke' ? 0.45 : 1);
       g.fillStyle = pt.color;
       g.fillRect(sx, Math.round(pt.y), pt.size, pt.size);
     }
@@ -478,30 +669,37 @@ export function startWorld({ canvas, sections, panels, slots }: WorldOptions) {
     const running = runTimer > 0 && !reduced.matches;
 
     const camLeft = Math.round(camX - W / 2);
-    const footCol = Math.floor(camX / BLOCK);
-    const groundY = H - surfaceBlocks(footCol) * BLOCK;
+    const groundY = H - Math.round(heightAt(camX));
     if (reduced.matches) charY = groundY;
     else charY += (groundY - charY) * Math.min(1, dt * 18);
 
     if (running && Math.random() < 0.5) {
-      spawn({ x: camX - facing * 4, y: charY - 1, vx: -facing * (0.2 + Math.random() * 0.3), vy: -0.2 - Math.random() * 0.2, life: 0, max: 22, color: '#d8cfc0', size: 1, kind: 'dust' });
+      const pal = paletteAt(camX);
+      spawn({ x: camX - facing * 4, y: charY - 1, vx: -facing * (0.2 + Math.random() * 0.3), vy: -0.2 - Math.random() * 0.2, life: 0, max: 22, color: pal.rim, size: 1, kind: 'dust' });
+    }
+
+    const tint = mix(BIOMES[weights(camX)[0]].tint, BIOMES[weights(camX)[1]].tint, weights(camX)[2]);
+    if (tint !== lastTint) {
+      lastTint = tint;
+      root.style.setProperty('--tint', tint);
     }
 
     g.clearRect(0, 0, W, H);
-    // 天空不再画像素：页面背景本身就是天空（亮色近白 / 暗色深灰），
-    // 只把当前群系的色调交给 CSS，在地平线附近做一层很淡的晕染
-    const tint = biomeColor(p, (b) => b.sky[1]);
-    if (tint !== lastTint) {
-      lastTint = tint;
-      document.documentElement.style.setProperty('--tint', tint);
+    drawLayer('far', 0.18, dark ? 0.55 : 0.62, camLeft);
+    drawLayer('mid', 0.42, dark ? 0.32 : 0.36, camLeft);
+    drawLayer('near', 0.7, dark ? 0.14 : 0.14, camLeft);
+
+    f.clearRect(0, 0, W, H);
+    drawItems(camLeft);
+    drawGround(camLeft);
+    if (dark) {
+      f.globalCompositeOperation = 'source-atop';
+      f.fillStyle = NIGHT;
+      f.fillRect(0, 0, W, H);
+      f.globalCompositeOperation = 'source-over';
     }
-    // 远景越远越淡，最终交给 CSS 遮罩融进天空
-    g.globalAlpha = 0.4;
-    drawLayer(0.2, biomeColor(p, (b) => b.far), 24, 46, 0.035, 10);
-    g.globalAlpha = 0.75;
-    drawLayer(0.45, biomeColor(p, (b) => b.mid), 6, 22, 0.06, 90);
-    g.globalAlpha = 1;
-    drawWorld(camLeft);
+    g.drawImage(fgCanvas, 0, 0);
+    drawGlows();
     weather(dt, camLeft);
     drawCharacter(running);
     drawParticles(dt, camLeft);
