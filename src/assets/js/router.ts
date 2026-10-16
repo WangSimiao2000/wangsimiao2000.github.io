@@ -86,6 +86,19 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     el.animate(frames, { fill: 'both', ...opt }).finished.catch(() => {});
   const contentFade = (c: HTMLElement, show: boolean, opt: KeyframeAnimationOptions) =>
     Promise.all([...c.children].map((ch) => play(ch, show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], opt)));
+  /** 面板两侧的目录 / 信息卡片（只算当前宽度下真正显示出来的那些） */
+  const sides = () =>
+    [...reader.querySelectorAll<HTMLElement>('.reader-side')].filter((el) => getComputedStyle(el).display !== 'none' && !el.classList.contains('is-open'));
+  /** 侧栏：从正文卡片那一侧滑出来 / 滑回去 */
+  const sideFade = (show: boolean, opt: KeyframeAnimationOptions) =>
+    Promise.all(
+      sides().map((el) => {
+        const dx = el.classList.contains('side-left') ? 14 : -14;
+        const off = { opacity: 0, transform: `translateX(${dx}px)` };
+        const on = { opacity: 1, transform: 'none' };
+        return play(el, show ? [off, on] : [on, off], opt);
+      }),
+    );
   /** FLIP 的起点：把面板卡片变换成 r 所在的位置和大小 */
   const flipFrom = (c: HTMLElement, r: DOMRect) => {
     const t = c.getBoundingClientRect();
@@ -106,23 +119,32 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     if (!closing) {
       const wasOpen = isOpen();
       const r0 = from?.getBoundingClientRect();
+      if (wasOpen && card()) {
+        // 面板里换页：旧内容和侧栏先淡出，再换上新的
+        const old = card()!;
+        await Promise.all([contentFade(old, false, { duration: 120, easing: 'ease-in' }), sideFade(false, { duration: 120, easing: 'ease-in' })]);
+      }
       update();
       const c = card();
       if (!c) return;
       c.getAnimations().forEach((an) => an.cancel());
       if (wasOpen) {
         // 面板里换页：卡片不动，只换内容
-        await contentFade(c, true, { duration: 200, easing: 'ease-out' });
+        await Promise.all([contentFade(c, true, { duration: 200, easing: 'ease-out' }), sideFade(true, { duration: 220, easing: 'ease-out' })]);
       } else if (r0 && r0.width) {
         c.style.transformOrigin = '0 0';
         await Promise.all([
           play(c, [{ transform: flipFrom(c, r0) }, { transform: 'none' }], { duration: 380, easing: EASE }),
           contentFade(c, true, { duration: 220, delay: 120, easing: 'ease-out' }),
+          sideFade(true, { duration: 260, delay: 140, easing: EASE }),
         ]);
       } else {
-        await play(c, [{ opacity: 0, transform: 'translateY(16px) scale(0.98)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE });
+        await Promise.all([
+          play(c, [{ opacity: 0, transform: 'translateY(16px) scale(0.98)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE }),
+          sideFade(true, { duration: 260, delay: 120, easing: EASE }),
+        ]);
       }
-      c.getAnimations({ subtree: true }).forEach((an) => an.cancel());
+      reader.getAnimations({ subtree: true }).forEach((an) => an.cancel());
       return;
     }
     const c = card();
@@ -138,13 +160,17 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
       const target = flipFrom(c, r1);
       await Promise.all([
         contentFade(c, false, { duration: 140, easing: 'ease-in' }),
+        sideFade(false, { duration: 140, easing: 'ease-in' }),
         play(c, [{ transform: 'none', opacity: 1 }, { transform: target, opacity: 1, offset: 0.75 }, { transform: target, opacity: 0 }], { duration: 380, easing: EASE }),
       ]);
     } else {
-      await play(c, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(12px) scale(0.98)' }], { duration: 200, easing: 'ease-in' });
+      await Promise.all([
+        play(c, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(12px) scale(0.98)' }], { duration: 200, easing: 'ease-in' }),
+        sideFade(false, { duration: 160, easing: 'ease-in' }),
+      ]);
     }
     update();
-    c.getAnimations({ subtree: true }).forEach((an) => an.cancel());
+    reader.getAnimations({ subtree: true }).forEach((an) => an.cancel());
   }
 
   function scrollToAnchor(hash: string, smooth = true) {

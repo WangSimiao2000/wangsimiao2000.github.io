@@ -44,6 +44,19 @@ export function mountComments(root: ParentNode) {
   for (const [k, v] of Object.entries(attrs)) s.setAttribute(k, v);
   s.async = true;
   box.after(s); // client.js 会把 iframe 放进同级的 .giscus 容器
+  // iframe 一插进来是空白的，等它加载完再淡入，不要「啪」一下冒出来
+  const host = box.parentElement;
+  if (host) {
+    const mo = new MutationObserver(() => {
+      const frame = host.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      if (!frame) return;
+      mo.disconnect();
+      const ready = () => frame.classList.add('is-ready');
+      frame.addEventListener('load', ready, { once: true });
+      setTimeout(ready, 4000);
+    });
+    mo.observe(host, { childList: true, subtree: true });
+  }
   if (!observer) {
     observer = new MutationObserver(syncTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
