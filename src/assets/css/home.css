@@ -9,6 +9,13 @@
   background: linear-gradient(to bottom, transparent 40%, color-mix(in srgb, var(--tint) 32%, transparent) 100%);
   pointer-events: none;
 }
+/* 大屏：卡片和快捷栏按 --ui（world.ts 按屏幕尺寸算，1440x900 为 1）整体放大，和变粗的像素世界相称 */
+.js .panel > * { zoom: var(--ui, 1); }
+#sky {
+  position: fixed; inset: 0; display: none; pointer-events: none;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
+.js #sky { display: block; }
 #world {
   position: fixed;
   inset: 0;
@@ -33,7 +40,8 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 .js .panel {
   position: fixed; z-index: 2;
   top: 72px; bottom: var(--stage);
-  left: 50%; width: min(760px, calc(100vw - 32px)); margin-left: calc(min(760px, calc(100vw - 32px)) / -2);
+  --pw: min(calc(760px * var(--ui, 1)), calc(100vw - 32px));
+  left: 50%; width: var(--pw); max-width: none; margin-left: calc(var(--pw) / -2);
   display: flex; flex-direction: column; justify-content: flex-end;
   will-change: transform, opacity;
 }
@@ -107,8 +115,8 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
   box-shadow: 8px 8px 20px rgb(0 0 0 / 0.22), -4px -4px 12px var(--sh-light), inset 1px 1px 0 var(--edge);
 }
 .hb-slot {
-  position: relative; min-width: 62px; height: 40px; padding: 0 12px; display: grid; place-items: center;
-  text-decoration: none; color: var(--muted); font-size: 13px; border-radius: 13px;
+  position: relative; min-width: calc(62px * var(--ui, 1)); height: calc(40px * var(--ui, 1)); padding: 0 calc(12px * var(--ui, 1)); display: grid; place-items: center;
+  text-decoration: none; color: var(--muted); font-size: calc(13px * var(--ui, 1)); border-radius: calc(13px * var(--ui, 1));
   transition: box-shadow 0.15s, color 0.15s;
 }
 .hb-slot:hover { color: var(--text); }
@@ -413,12 +421,14 @@ html.world-hover body { cursor: pointer; }
 .ss-drag .ss-ball { cursor: grabbing; }
 .ss-ball.ss-pop { animation: ss-ball-pop 0.5s ease-out forwards; }
 .ss-ball.ss-miss { animation: ss-ball-miss 0.5s ease-in forwards; }
+.ss-ball.ss-reload { animation: ss-ball-reload 0.32s 0.12s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+@keyframes ss-ball-reload { from { scale: 0.2; opacity: 0; } }
 @keyframes ss-ball-pop { 30% { scale: 1.8; opacity: 1; } 100% { scale: 0.2; opacity: 0; } }
 @keyframes ss-ball-miss { to { translate: 0 30px; opacity: 0; } }
 .hb-slot.ss-target { color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent), 3px 3px 7px var(--sh-dark), -3px -3px 7px var(--sh-light); }
 .hb-slot.ss-hit { animation: ss-hit 0.3s ease-out; }
 @keyframes ss-hit { 40% { transform: translateY(3px) scale(0.94); } }
-@media (prefers-reduced-motion: reduce) { .slingshot.ss-in, .slingshot.ss-out, .ss-ball.ss-pop, .ss-ball.ss-miss, .hb-slot.ss-hit { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .slingshot.ss-in, .slingshot.ss-out, .ss-ball.ss-pop, .ss-ball.ss-miss, .ss-ball.ss-reload, .hb-slot.ss-hit { animation: none; } }
 
 /* ---- 过渡：所有出现 / 消失都有动画，不突变（减少动态效果时全部关闭） ---- */
 .search { opacity: 0; transition: opacity 0.2s ease; }

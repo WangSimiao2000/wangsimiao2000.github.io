@@ -1,5 +1,5 @@
 /**
- * 彩蛋角色：小屋里的女孩、草堆里的三花猫。画法和主角一致（字符矩阵 + 选择性描边 + 左上光源），
+ * 彩蛋角色：小屋里的女孩、草堆里的彩狸猫。画法和主角一致（字符矩阵 + 选择性描边 + 左上光源），
  * 由 sprites.ts 的 rowsToCanvas 渲染。
  */
 import { renderRows, type Sprite } from './sprites.js';
@@ -61,38 +61,43 @@ export function buildGirl(flip: boolean): GirlFrames {
   };
 }
 
-/** 三花猫：白、黑、橘三色大致各占三分之一，黄褐色眼睛 */
+/**
+ * 彩狸猫：白底上分布着两种虎斑块 —— 棕灰虎斑（棕底 + 深色条纹）和橘虎斑（橘底 + 深橘条纹），
+ * 额头有 M 形纹，尾巴是一圈圈的环纹；口鼻、胸口、爪子是白的，黄褐色眼睛
+ */
 const CAT_PALETTE: Record<string, string> = {
   k: '#2a1f22',
   w: '#fbf8f2',
-  o: '#e39a4a', // 橘斑
-  n: '#3a3236', // 黑斑
+  b: '#9a7a5c', // 棕虎斑底色
+  d: '#4a372c', // 棕虎斑条纹
+  o: '#e6a457', // 橘虎斑底色
+  r: '#b8652e', // 橘虎斑条纹
   p: '#f2a7b5', // 粉鼻子 / 耳内
   g: '#c99a3a', // 黄褐色眼睛
 };
 
-// 12x9，朝右坐着；尾巴在左边翘起。头顶一半黑一半橘，背上黑斑，腿和胸口是白的
+// 12x9，朝右坐着；尾巴在左边翘起。头顶左棕右橘，背上棕、橘虎斑交错，腿和胸口是白的
 const CAT_SIT = [
   '........k..k',
-  '.......knkko',
-  'kk.....knnoo',
-  'knk...kwgwgw',
-  '.kok..kwwpwk',
-  '..knkknnwwk.',
-  '...knnnoowwk',
-  '...kooownwwk',
+  '.......kdkkr',
+  'kk.....kdbro',
+  'kdk...kwgwgw',
+  '.kbk..kwwpwk',
+  '..kdkkbdwwk.',
+  '...kbdborwwk',
+  '...kordbwwwk',
   '...kkwkkkwkk',
 ];
-const CAT_SIT_TAIL = CAT_SIT.map((r, i) => (i === 2 ? '.......knnoo' : i === 3 ? 'kk....kwgwgw' : i === 4 ? 'knkk..kwwpwk' : r));
+const CAT_SIT_TAIL = CAT_SIT.map((r, i) => (i === 2 ? '.......kdbro' : i === 3 ? 'kk....kwgwgw' : i === 4 ? 'kdkk..kwwpwk' : r));
 const CAT_BLINK = CAT_SIT.map((r, i) => (i === 3 ? r.replace(/g/g, 'k') : r));
 // 跳起：身体拉长
 const CAT_JUMP = [
   '..........kk',
-  '.........kno',
-  'kk......knoo',
-  'knkkkkkkwgwg',
-  '.knnnwooowwk',
-  '..kwwnnwwwk.',
+  '.........kdr',
+  'kk......kdro',
+  'kdkkkkkkwgwg',
+  '.kbdbworowwk',
+  '..kwwbdwwwk.',
   '.kwk.....kwk',
   'kk.........k',
   '............',

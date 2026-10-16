@@ -87,6 +87,7 @@ export function startSlingshot({ slots, goTo }: Options) {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   let hideTimer = 0;
+  let outTimer = 0; // 收起动画结束后再真正隐藏
   let dragging = false;
   let flying = false;
   let pull = { x: 0, y: 0 };
@@ -105,6 +106,11 @@ export function startSlingshot({ slots, goTo }: Options) {
   function show() {
     if (document.documentElement.classList.contains('reading')) return;
     clearTimeout(hideTimer);
+    if (box.classList.contains('ss-out')) {
+      // 正在收起时又悬停回来：取消收起，原地弹回
+      clearTimeout(outTimer);
+      box.classList.remove('ss-out');
+    }
     if (box.hidden) {
       box.hidden = false;
       place();
@@ -119,7 +125,7 @@ export function startSlingshot({ slots, goTo }: Options) {
     hideTimer = window.setTimeout(() => {
       if (dragging || flying) return scheduleHide(800);
       box.classList.add('ss-out');
-      window.setTimeout(() => {
+      outTimer = window.setTimeout(() => {
         box.hidden = true;
         box.classList.remove('ss-in', 'ss-out');
         clearTargets();
@@ -127,10 +133,15 @@ export function startSlingshot({ slots, goTo }: Options) {
     }, ms);
   }
 
-  function resetBall() {
+  /** reload：石子打出去就没了，皮兜里重新冒出一颗新的（淡入），而不是原来那颗瞬移回来 */
+  function resetBall(reload = false) {
     pull = { x: 0, y: 0 };
     ball.style.transform = 'translate(0px, 0px)';
-    ball.classList.remove('ss-fly');
+    ball.classList.remove('ss-fly', 'ss-reload');
+    if (reload) {
+      void ball.offsetWidth;
+      ball.classList.add('ss-reload');
+    }
     drawBands();
     aim.innerHTML = '';
   }
@@ -227,6 +238,7 @@ export function startSlingshot({ slots, goTo }: Options) {
     const land = landing({ x: sx, y: sy }, vx, vy);
     const target = slotAt(land.x);
     const from = slots.indexOf(origin);
+    ball.classList.remove('ss-reload');
     aim.innerHTML = '';
     pull = { x: 0, y: 0 };
     drawBands(); // 皮筋弹回
@@ -258,8 +270,8 @@ export function startSlingshot({ slots, goTo }: Options) {
       } else ball.classList.add('ss-miss');
       window.setTimeout(() => {
         ball.classList.remove('ss-pop', 'ss-miss');
-        resetBall();
-        scheduleHide(600);
+        resetBall(true);
+        scheduleHide(900);
       }, 520);
     };
     requestAnimationFrame(step);
@@ -343,8 +355,9 @@ export function startSlingshot({ slots, goTo }: Options) {
     if (!dragging) return;
     dragging = false;
     box.classList.remove('ss-drag');
-    // 拉得太短、或者几乎是竖直地拉（弹不出去）：石子回位
-    if (Math.hypot(pull.x, pull.y) < 12 || Math.abs(pull.x) < 4) {
+    // 只是点了一下、几乎没拉开：原地不动。其余情况一律照物理发射——拉得短就弹得近，
+    // 竖直拉就往上蹦再落下，落回自己这一格或快捷栏外面就掉下去消失，不会再「弹回」皮兜
+    if (Math.hypot(pull.x, pull.y) < 4) {
       resetBall();
       clearTargets();
       scheduleHide();
