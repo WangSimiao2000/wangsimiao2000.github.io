@@ -10,13 +10,6 @@
 .post-head h1 { margin: 0 0 14px; font-size: 30px; line-height: 1.35; font-weight: 800; }
 .post-info { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-.toc { margin: 0 0 28px; padding: 14px 18px; border-radius: 16px; box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light); }
-.toc summary { cursor: pointer; font-weight: 600; color: var(--muted); }
-.toc ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
-.toc .lv3 { padding-left: 1.2em; }
-.toc a { text-decoration: none; color: var(--muted); }
-.toc a:hover { color: var(--accent); }
-
 /* ---- 正文排版 ---- */
 .prose { font-size: 16px; line-height: 1.85; overflow-wrap: anywhere; }
 .prose > :first-child { margin-top: 0; }

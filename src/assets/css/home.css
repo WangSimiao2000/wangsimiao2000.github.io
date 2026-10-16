@@ -184,3 +184,64 @@ html.js.reading { overflow: hidden; }
 }
 /* 正文滚到面板上沿时淡出，不和返回按钮硬切 */
 .js .reader-scroll { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px); mask-image: linear-gradient(to bottom, transparent 0, #000 18px); }
+
+/* ---- 阅读面板两侧：左目录、右文章信息。正文卡片只放标题和正文 ---- */
+.reader-bar-end { display: flex; align-items: center; gap: 12px; }
+.toc-btn {
+  display: none; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; border: 0;
+  padding: 7px 13px; border-radius: 12px; background: var(--surface);
+  box-shadow: 4px 4px 10px var(--sh-dark), -4px -4px 10px var(--sh-light); transition: box-shadow 0.15s, color 0.15s;
+}
+.toc-btn:hover { color: var(--accent); }
+.toc-btn[aria-expanded='true'] { color: var(--accent); box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+
+.reader-side { padding: 18px 16px; margin-bottom: 16px; }
+.side-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0.5px; }
+.read-progress { height: 6px; border-radius: 3px; margin: 0 2px 12px; box-shadow: inset 1px 1px 3px var(--sh-dark), inset -1px -1px 3px var(--sh-light); overflow: hidden; }
+.read-progress span { display: block; height: 100%; width: calc(var(--read, 0) * 100%); background: var(--accent); border-radius: 3px; transition: width 0.1s linear; }
+.toc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 13px; line-height: 1.45; }
+.toc-list a { display: block; padding: 5px 10px; border-radius: 10px; text-decoration: none; color: var(--muted); transition: color 0.15s, box-shadow 0.15s; }
+.toc-list .lv3 a { padding-left: 22px; font-size: 12.5px; }
+.toc-list .lv4 a { padding-left: 34px; font-size: 12px; }
+.toc-list a:hover { color: var(--text); }
+.toc-list a.is-active { color: var(--accent); font-weight: 600; box-shadow: inset 2px 2px 5px var(--sh-dark), inset -2px -2px 5px var(--sh-light); }
+.meta-list { margin: 0 0 6px; display: grid; gap: 10px; }
+.meta-list div { display: grid; grid-template-columns: 36px 1fr; gap: 8px; font-size: 13px; }
+.meta-list dt { color: var(--muted); }
+.meta-list dd { margin: 0; font-variant-numeric: tabular-nums; }
+.meta-cats { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.meta-cats a { text-decoration: none; }
+.meta-cats a:hover, .side-tags a:hover { color: var(--accent); }
+.side-right .side-title { margin-top: 16px; }
+.side-right .side-tags { margin: 0; gap: 8px; }
+.side-tags .tag { font-size: 12px; padding: 4px 10px; }
+
+/* 有 JS：两侧卡片绝对定位在面板外侧，有没有目录都不影响正文位置 */
+.js .reader-side { display: none; position: absolute; top: 0; z-index: 1; width: 220px; max-height: 100%; margin: 0; overflow: auto; }
+.js .side-left { right: calc(100% + 20px); }
+.js .side-right { left: calc(100% + 20px); max-height: calc(100% - 40px); }
+
+@media (min-width: 1000px) {
+  .js .inline-meta { display: none; }
+  .js .reader { left: calc(50% - 120px); width: min(760px, calc(100vw - 340px)); }
+  .js .side-right { display: block; }
+  .js .post-head { margin-bottom: 20px; }
+}
+@media (min-width: 1280px) {
+  .js .reader { left: 50%; width: min(800px, calc(100vw - 560px)); }
+  .js .side-left { display: flex; flex-direction: column; }
+  .js .side-left .toc-list { overflow: auto; min-height: 0; scrollbar-width: thin; }
+}
+/* 窄一些时：目录收进顶栏按钮，点开是浮在正文上的卡片 */
+@media (max-width: 1279.98px) {
+  .js .toc-btn { display: inline-block; }
+  .js .side-left.is-open {
+    display: flex; flex-direction: column; right: auto; left: 16px; top: 58px; z-index: 6;
+    width: min(320px, calc(100% - 32px)); max-height: min(60%, 460px);
+    box-shadow: 14px 14px 32px var(--sh-dark), -8px -8px 22px var(--sh-light), inset 1px 1px 0 var(--edge);
+  }
+  .js .side-left.is-open .toc-list { overflow: auto; min-height: 0; }
+}
+@media (max-width: 640px) {
+  .js .side-left.is-open { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 65%; }
+}

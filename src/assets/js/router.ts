@@ -8,6 +8,7 @@
  * - 取页失败（404、断网）就退回普通跳转，不会卡住。
  */
 import type { World } from './pixel/world.js';
+import { bindToc } from './toc.js';
 
 interface RouterOptions {
   world: World;
@@ -29,6 +30,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   const cache = new Map<string, Promise<string>>();
   let source: HTMLElement | null = null; // 打开面板的链接，关闭后把焦点还给它
   let token = 0;
+  let unbindToc = () => {};
   let pendingSection: string | null = null; // 关闭后要去的板块（经 history.back() 时暂存）
 
   const isOpen = () => !reader.hidden;
@@ -104,10 +106,12 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   }
 
   function setReading(on: boolean) {
+    unbindToc();
     reader.hidden = !on;
     root.classList.toggle('reading', on);
     if (stages) stages.inert = on;
     world.setReading(on);
+    unbindToc = on ? bindToc(reader) : () => {};
   }
 
   async function open(href: string, push: boolean, from?: HTMLElement) {

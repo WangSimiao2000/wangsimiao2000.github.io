@@ -108,7 +108,8 @@ export const sectionOf = (id) => {
  *
  * @param {{ posts: any[], friends: any[], tools: any[], asset: (p: string) => string, extraHead?: string }} ctx
  * @param {{ title?: string, description?: string, path?: string, type?: 'website' | 'article', math?: boolean,
- *   reader?: { section: string, body: unknown } }} [page]
+ *   reader?: { section: string, body: unknown, left?: unknown, right?: unknown, toc?: boolean } }} [page]
+ *   left / right：面板两侧的卡片（文章的目录、信息），toc：顶栏放「目录」按钮（窄屏时打开左侧卡片）
  */
 export function shell(ctx, page = {}) {
   const reader = page.reader;
@@ -137,15 +138,20 @@ export function shell(ctx, page = {}) {
   <div class="reader" data-reader ${reader ? '' : 'hidden'}>
     ${reader
       ? html`
+    ${reader.left ?? ''}
     <div class="reader-card card" data-section="${sec.id}">
       <div class="reader-bar">
         <a class="reader-back" href="/#${sec.id}" data-reader-close><span aria-hidden="true">←</span> 回到${sec.biome}</a>
-        <span class="reader-hint">Esc 关闭</span>
+        <span class="reader-bar-end">
+          ${reader.toc ? html`<button type="button" class="toc-btn" data-toc-toggle aria-expanded="false" aria-controls="reader-toc">目录</button>` : ''}
+          <span class="reader-hint">Esc 关闭</span>
+        </span>
       </div>
       <div class="reader-scroll" data-reader-scroll tabindex="-1">
         ${reader.body}
       </div>
-    </div>`
+    </div>
+    ${reader.right ?? ''}`
       : ''}
   </div>`;
   return layout({
