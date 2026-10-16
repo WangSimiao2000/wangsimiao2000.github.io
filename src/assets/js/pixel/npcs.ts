@@ -9,8 +9,9 @@ const GIRL_PALETTE: Record<string, string> = {
   k: '#2a1f22',
   R: '#8e3f2c', // 棕红长发
   r: '#b8613f', // 发丝高光
-  f: '#f6d3b0',
-  F: '#e7b693', // 腮红 / 阴影
+  f: '#fde7d6', // 白皙的皮肤
+  F: '#f3c9b6', // 腮红 / 阴影
+  S: '#ffffff', // 白短袜
   w: '#ffffff',
   e: '#6a4a3a', // 棕色眼睛
   E: '#3a2620',
@@ -38,9 +39,9 @@ const G_HEAD = [
   'kRRkkffffkkRRk',
 ];
 const G_BODY = ['kRkWWYkYWWWkRk', 'kRfWWyYyWWWfRk', 'kRkBBBBBBBBkRk', '.kBBBbBBbBBBk.'];
-const G_LEGS_IDLE = ['..kbBBBBBBbk..', '...kffkkffk...', '...kffkkffk...', '...kookkook...'];
-const G_LEGS_A = ['..kbBBBBBBbk..', '..kffk..kffk..', '.kffk....kffk.', '.kook....kook.'];
-const G_LEGS_B = ['..kbBBBBBBbk..', '....kffffk....', '....kffkfk....', '....kookok....'];
+const G_LEGS_IDLE = ['..kbBBBBBBbk..', '...kffkkffk...', '...kSSkkSSk...', '...kookkook...'];
+const G_LEGS_A = ['..kbBBBBBBbk..', '..kffk..kffk..', '.kSSk....kSSk.', '.kook....kook.'];
+const G_LEGS_B = ['..kbBBBBBBbk..', '....kffffk....', '....kSSkSk....', '....kookok....'];
 // 招手：右手举到脸旁
 const G_BODY_WAVE = ['kRkWWYkYWWWkRf', 'kRfWWyYyWWWkRf', 'kRkBBBBBBBBkRk', '.kBBBbBBbBBBk.'];
 const G_HEAD_WAVE = G_HEAD.map((r, i) => (i === 9 || i === 10 ? r.slice(0, 13) + 'f' : r));

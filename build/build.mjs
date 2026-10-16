@@ -19,6 +19,7 @@ import {
   browsePage,
   categoryPage,
   friendsPage,
+  guestbookPage,
   notFoundPage,
   tagPage,
   redirectPage,
@@ -87,6 +88,7 @@ export async function build() {
     ['/tools/', toolsPage(home)],
     ['/friends/', friendsPage(home)],
     ['/about/', aboutPage(home)],
+    ['/guestbook/', guestbookPage(home)],
     ...[...tax.cats.values()].map((c) => [`/browse/categories/${c.slug}/`, categoryPage(home, c, tax)]),
     ...[...tax.tags.values()].map((t) => [`/browse/tags/${t.slug}/`, tagPage(home, t)]),
     // 迁走的工具：旧地址跳到仓库自己的 Pages
@@ -106,7 +108,7 @@ export async function build() {
     sitemap([
       { path: '/', lastmod: lastPost },
       ...byDate.map((p) => ({ path: p.url, lastmod: p.updated ?? p.date })),
-      ...pages.filter(([url]) => !tools.some((t) => t.legacy === url)).map(([url]) => ({ path: url })),
+      ...pages.filter(([url]) => url !== '/guestbook/' && !tools.some((t) => t.legacy === url)).map(([url]) => ({ path: url })),
     ]),
   );
   await emit('/robots.txt', robots());

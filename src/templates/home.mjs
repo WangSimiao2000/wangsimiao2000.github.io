@@ -59,8 +59,7 @@ const toolGrid = ({ tools }) => html`
 
 const server = () => html`
   <div class="server" data-mc-status>
-    <p class="server-desc">我和朋友们的 Minecraft 生存服，白名单制，跑在家里的一台小主机上。想一起玩就加 QQ 群
-      <button type="button" class="qq-chip" data-copy="${site.qqGroup}" title="点击复制群号">${site.qqGroup}<span class="qq-copied" aria-live="polite"></span></button></p>
+    <p class="server-desc">家里小主机上的 Minecraft 生存服，白名单制。<span class="qq-line">加入：QQ 群 <button type="button" class="qq-chip" data-copy="${site.qqGroup}" title="点击复制群号">${site.qqGroup}<span class="qq-copied" aria-live="polite"></span></button></span></p>
     <dl class="stats">
       <div><dt>状态</dt><dd data-k="state">读取中…</dd></div>
       <div><dt>在线</dt><dd data-k="players">-</dd></div>
@@ -113,6 +112,7 @@ const CONTENT = { home: hero, posts: postList, tools: toolGrid, server, friends:
 
 /** 板块 id -> 序号与名称，路由和阅读面板用 */
 export const sectionOf = (id) => {
+  if (id === 'secret') return { index: -1, id: 'secret', label: '？？？', biome: '秋林' };
   const i = SECTIONS.findIndex((s) => s.id === id);
   return { index: Math.max(0, i), ...SECTIONS[Math.max(0, i)] };
 };
@@ -133,11 +133,12 @@ export function shell(ctx, page = {}) {
   const body = html`
   <canvas id="world" aria-hidden="true"></canvas>
   ${topbar()}
-  <div class="panel secret-panel" data-secret-panel inert aria-hidden="true">
+  <div class="panel secret-panel" id="secret" data-secret-panel inert aria-hidden="true">
     <div class="card">
       <h2 class="card-title"><span class="title-dot" aria-hidden="true"></span><span>？？？</span><span class="biome-chip">秋林</span></h2>
       <p class="secret-text">你发现了路牌背后的小路。</p>
-      <p class="secret-text muted">这里还什么都没有，以后也许会有点什么。往前走就能回到起点。</p>
+      <p class="secret-text muted">藏在路牌背后的留言板：随便写点什么，打个招呼也好。往前走就能回到起点。</p>
+      <p class="more"><a class="btn btn-open" href="/guestbook/">打开留言板<span class="open-icon" aria-hidden="true"></span></a></p>
     </div>
   </div>
   <main class="stages">
