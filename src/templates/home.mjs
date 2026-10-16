@@ -45,12 +45,15 @@ const postList = ({ posts }) => html`
   </ol>
   <p class="more"><a class="btn btn-open" href="/archives/">全部文章<span class="open-icon" aria-hidden="true"></span></a><a class="btn btn-open" href="/browse/">分类与标签<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
+/** 工具卡片：web 工具是同域的独立页面（仓库自己的 Pages），整页打开；repo 链到 GitHub */
+export const toolLink = (t) =>
+  t.kind === 'web'
+    ? html`<a class="slot-link tool" href="${t.url}" data-no-router><span><span class="item-name">${t.name}<span class="tool-badge on">在线使用</span></span><span class="item-desc">${t.description}</span></span></a>`
+    : html`<a class="slot-link tool" href="https://github.com/${t.repo}" target="_blank" rel="noopener"><span><span class="item-name">${t.name}${t.lang ? html`<span class="tool-badge">${t.lang}</span>` : ''}</span><span class="item-desc">${t.description}</span></span></a>`;
+
 const toolGrid = ({ tools }) => html`
-  <ul class="grid">
-    ${tools.map(
-      (t) => html`
-      <li><a class="slot-link" href="${t.url}"><span><span class="item-name">${t.name}</span><span class="item-desc">${t.description}</span></span></a></li>`,
-    )}
+  <ul class="grid tools">
+    ${tools.slice(0, 4).map((t) => html`<li>${toolLink(t)}</li>`)}
   </ul>
   <p class="more"><a class="btn btn-open" href="/tools/">全部工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
 

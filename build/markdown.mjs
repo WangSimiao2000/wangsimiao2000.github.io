@@ -160,6 +160,8 @@ md.renderer.rules.table_close = () => '</table></div>\n';
 function preprocess(src) {
   let inFence = false;
   return src
+    // Jekyll 的 {% raw %} / {% endraw %} 只是让 Liquid 不解析中间内容，这里没有 Liquid，直接去掉
+    .replace(/\{%-?\s*(?:end)?raw\s*-?%\}\n?/g, '')
     .split('\n')
     .map((line) => {
       if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;

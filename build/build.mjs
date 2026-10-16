@@ -18,6 +18,7 @@ import {
   categoryPage,
   friendsPage,
   tagPage,
+  redirectPage,
   taxonomy,
   toolsPage,
 } from '../src/templates/pages.mjs';
@@ -76,6 +77,8 @@ export async function build() {
     ['/about/', aboutPage(home)],
     ...[...tax.cats.values()].map((c) => [`/browse/categories/${c.slug}/`, categoryPage(home, c, tax)]),
     ...[...tax.tags.values()].map((t) => [`/browse/tags/${t.slug}/`, tagPage(home, t)]),
+    // 迁走的工具：旧地址跳到仓库自己的 Pages
+    ...tools.filter((t) => t.legacy).map((t) => [t.legacy, redirectPage(t.url)]),
   ];
   await Promise.all(pages.map(([url, page]) => emit(url, page)));
 

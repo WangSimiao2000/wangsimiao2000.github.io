@@ -303,3 +303,12 @@ html.js.reading { overflow: hidden; }
 .js .reader-scroll { flex: 0 1 auto; }
 /* 没有侧栏的短页面贴近地面，和首页卡片的位置一致 */
 .js .reader:not(:has(.reader-side)) { display: flex; flex-direction: column; justify-content: flex-end; }
+
+/* 工具 */
+.tool .item-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tool-badge { font-size: 11px; font-weight: 500; color: var(--muted); padding: 1px 8px; border-radius: 999px; box-shadow: inset 1px 1px 3px var(--sh-dark), inset -1px -1px 3px var(--sh-light); }
+.tool-badge.on { color: var(--accent); }
+.group-title { font-size: 15px; color: var(--muted); margin: 6px 0 12px; }
+.group-title ~ .group-title { margin-top: 26px; }
+.grid.tools { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 640px) { .grid.tools { grid-template-columns: 1fr; } .grid.tools li:nth-child(n + 3) { display: none; } }

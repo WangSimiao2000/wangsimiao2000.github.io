@@ -1,4 +1,41 @@
+# 工具列表
+# kind: web  = 能在浏览器里直接用的工具，仓库自己开 GitHub Pages，地址是 /<仓库名>/（同域，不用在本仓库放内容）
+#       repo = 需要下载 / 部署的开源项目，链接到 GitHub
+# legacy: 旧博客里的地址，构建时生成跳转页，已分享出去的链接不失效
+
 - name: "称骨算命"
-  description: "传统称骨算命小工具"
-  url: "/tools/bazi-fortune/"
-  icon: "fas fa-balance-scale"
+  description: "袁天罡称骨术：阳历自动转农历、精确节气、男女解命诗，纯前端"
+  kind: web
+  url: "/bazi-fortune/"
+  repo: "WangSimiao2000/bazi-fortune"
+  legacy: "/tools/bazi-fortune/"
+
+- name: "mc-ops"
+  description: "自托管 Minecraft（Fabric）服务器一体化运维平台：Web 面板、备份回退、升级、安全审计、QQ 机器人"
+  kind: repo
+  repo: "WangSimiao2000/mcops"
+  lang: "Python"
+
+- name: "Miao Minecraft Launcher"
+  description: "Rust 写的跨平台 Minecraft 启动器，CLI + 原生 GUI，支持模组加载器、模组平台和整合包"
+  kind: repo
+  repo: "WangSimiao2000/MiaoMinecraftLauncher"
+  lang: "Rust"
+
+- name: "Minecraft Skin Raytracer"
+  description: "把 Minecraft 皮肤 PNG 渲染成高质量图片的 CPU 光线追踪器，带 Qt6 实时预览"
+  kind: repo
+  repo: "WangSimiao2000/MinecraftSkin_Raytracer"
+  lang: "C++"
+
+- name: "Fabric Server Manager"
+  description: "Fabric 服务器管理脚本：一键部署、备份恢复、Mod 管理、版本升级与回退（已由 mc-ops 接替）"
+  kind: repo
+  repo: "WangSimiao2000/fabric-server-manager"
+  lang: "Shell"
+
+- name: "GameFramework"
+  description: "通用游戏框架，Unity C# 与 Godot GDScript 双版本：事件、对象池、资源、UI、场景、输入、计时器、音频"
+  kind: repo
+  repo: "WangSimiao2000/GameFramework"
+  lang: "C#"

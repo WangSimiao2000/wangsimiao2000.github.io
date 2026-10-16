@@ -9,3 +9,17 @@ document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
     /* 隐私模式下不可写，忽略 */
   }
 });
+
+/* 滚动条默认隐藏：哪个容器在滚，就给它加 .is-scrolling，停下 900ms 后去掉（样式见 base.css） */
+const scrollTimers = new WeakMap<Element, number>();
+document.addEventListener(
+  'scroll',
+  (e) => {
+    const el = e.target === document ? document.documentElement : (e.target as Element);
+    if (!(el instanceof Element)) return;
+    el.classList.add('is-scrolling');
+    clearTimeout(scrollTimers.get(el));
+    scrollTimers.set(el, window.setTimeout(() => el.classList.remove('is-scrolling'), 900));
+  },
+  { capture: true, passive: true },
+);

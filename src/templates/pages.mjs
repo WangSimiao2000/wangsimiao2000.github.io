@@ -10,7 +10,7 @@
  */
 import { html } from '../../build/html.mjs';
 import { site } from '../site.mjs';
-import { comments, shell } from './home.mjs';
+import { comments, shell, toolLink } from './home.mjs';
 import { categoryUrl, formatDate, slugify, tagUrl } from './util.mjs';
 
 /* ---------- 共用小件 ---------- */
@@ -214,17 +214,24 @@ export function tagPage(home, tag) {
 /* ---------- 工具 ---------- */
 
 export function toolsPage(home) {
+  const web = home.tools.filter((t) => t.kind === 'web');
+  const repos = home.tools.filter((t) => t.kind !== 'web');
   const body = html`
     <article class="post">
-      ${pageHead('工具', '自己写的一些小东西')}
-      <ul class="grid big">
-        ${home.tools.map(
-          (t) => html`
-        <li><a class="slot-link" href="${t.url}"><span><span class="item-name">${t.name}</span><span class="item-desc">${t.description}</span></span></a></li>`,
-        )}
-      </ul>
+      ${pageHead('工具', '自己写的一些小东西，都开源在 GitHub')}
+      ${web.length ? html`<h2 class="group-title">在线使用</h2><ul class="grid big">${web.map((t) => html`<li>${toolLink(t)}</li>`)}</ul>` : ''}
+      ${repos.length ? html`<h2 class="group-title">开源项目</h2><ul class="grid big">${repos.map((t) => html`<li>${toolLink(t)}</li>`)}</ul>` : ''}
     </article>`;
   return shell(home, { title: '工具', path: '/tools/', reader: { section: 'tools', body } });
+}
+
+/** 旧地址跳转页：/tools/bazi-fortune/ -> /bazi-fortune/ */
+export function redirectPage(to) {
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>已迁移</title>
+<link rel="canonical" href="${new URL(to, site.url).href}"><meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=${to}"></head>
+<body><p>页面已迁移到 <a href="${to}">${to}</a>。</p><script>location.replace(${JSON.stringify(to)} + location.search + location.hash)</script></body></html>
+`;
 }
 
 /* ---------- 友链 ---------- */

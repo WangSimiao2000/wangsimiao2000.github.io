@@ -143,12 +143,13 @@ a { color: inherit; }
 /* ---- 滚动条：页面本身不显示（首页靠快捷栏指示位置），卡片内是自绘的细圆条 ---- */
 html.js { scrollbar-width: none; }
 html.js::-webkit-scrollbar { display: none; }
-* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent; }
+/* 默认看不见，滚动时（theme.ts 加 .is-scrolling）才浮现，停下约 0.9 秒后再隐去 */
+* { scrollbar-width: thin; }
+.js * { scrollbar-color: transparent transparent; }
+.js .is-scrolling { scrollbar-color: color-mix(in srgb, var(--muted) 50%, transparent) transparent; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  border: 2px solid transparent; border-radius: 8px; background-clip: padding-box;
-  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
-}
-::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--muted) 65%, transparent); }
-::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 8px; background-clip: padding-box; background-color: color-mix(in srgb, var(--muted) 45%, transparent); }
+.js ::-webkit-scrollbar-thumb { background-color: transparent; }
+.js .is-scrolling::-webkit-scrollbar-thumb { background-color: color-mix(in srgb, var(--muted) 45%, transparent); }
+.js .is-scrolling::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--muted) 70%, transparent); }
