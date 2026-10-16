@@ -11,6 +11,9 @@ export const topbar = () => html`
       <a href="/archives/">归档</a>
       <a href="/browse/">分类</a>
       <a href="/feed.xml">RSS</a>
+      <button type="button" class="theme-btn" data-search-open aria-label="搜索文章（/）" title="搜索（/ 或 Ctrl+K）">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+      </button>
       <button type="button" class="theme-btn" data-theme-toggle aria-label="切换深色模式">
         <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" /></svg>
         <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>
@@ -44,7 +47,13 @@ export function layout(o) {
   <title>${fullTitle}</title>
   <meta name="description" content="${desc}">
   <link rel="canonical" href="${canonical}">
-  <link rel="icon" href="${site.avatar}">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" href="/assets/img/favicons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/img/favicons/favicon-96x96.png" type="image/png" sizes="96x96">
+  <link rel="apple-touch-icon" href="/assets/img/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="/assets/img/favicons/site.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="${site.title}">
+  <meta property="og:image" content="${new URL(site.avatar, site.url).href}">
   <link rel="alternate" type="application/rss+xml" title="${site.title}" href="/feed.xml">
   <meta property="og:type" content="${o.type ?? 'website'}">
   <meta property="og:site_name" content="${site.title}">

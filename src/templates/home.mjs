@@ -43,7 +43,7 @@ const postList = ({ posts }) => html`
       </li>`,
     )}
   </ol>
-  <p class="more"><a class="btn btn-open" href="/archives/">全部文章<span class="open-icon" aria-hidden="true"></span></a><a class="btn btn-open" href="/browse/">分类与标签<span class="open-icon" aria-hidden="true"></span></a></p>`;
+  <p class="more"><a class="btn btn-open" href="/archives/">查看全部 ${posts.length} 篇<span class="open-icon" aria-hidden="true"></span></a><a class="btn btn-open" href="/browse/">分类与标签<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 /** 工具卡片：web 工具是同域的独立页面（仓库自己的 Pages），整页打开；repo 链到 GitHub */
 export const toolLink = (t) =>
@@ -55,7 +55,7 @@ const toolGrid = ({ tools }) => html`
   <ul class="grid tools">
     ${tools.slice(0, 4).map((t) => html`<li>${toolLink(t)}</li>`)}
   </ul>
-  <p class="more"><a class="btn btn-open" href="/tools/">全部工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
+  <p class="more"><a class="btn btn-open" href="/tools/">查看全部 ${tools.length} 个工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 const server = () => html`
   <div class="server" data-mc-status>
@@ -70,7 +70,7 @@ const server = () => html`
     <p class="server-foot" data-k="updated">每 10 分钟更新一次</p>
   </div>`;
 
-const friendGrid = ({ friends }) => html`
+const friendGrid = ({ friends, graveyard }) => html`
   <ul class="grid friends">
     ${friends.slice(0, 6).map(
       (f) => html`
@@ -84,7 +84,7 @@ const friendGrid = ({ friends }) => html`
       </li>`,
     )}
   </ul>
-  <p class="more"><a class="btn btn-open" href="/friends/">友链页面<span class="open-icon" aria-hidden="true"></span></a></p>`;
+  <p class="more"><a class="btn btn-open" href="/friends/">查看全部友链（${friends.length + (graveyard?.length ?? 0)}）<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
 const about = () => html`
   <div class="about">
@@ -150,6 +150,17 @@ export function shell(ctx, page = {}) {
       (s, i) => html`<a class="hb-slot" href="/#${s.id}" title="${s.label}（${i + 1}）"><span class="hb-label">${s.label}</span></a>`,
     )}
   </nav>
+  <div class="search" data-search hidden role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-card card">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+        <input type="search" data-search-input placeholder="搜索文章标题和正文" aria-label="搜索关键词" autocomplete="off" spellcheck="false">
+        <kbd>Esc</kbd>
+      </div>
+      <p class="search-hint" data-search-hint aria-live="polite">输入关键词开始搜索</p>
+      <ol class="search-results" data-search-results></ol>
+    </div>
+  </div>
   <div class="reader" data-reader ${reader ? '' : 'hidden'}>
     ${reader
       ? html`

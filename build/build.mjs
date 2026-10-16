@@ -8,7 +8,8 @@ import { cp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { buildAssets } from './assets.mjs';
 import { loadData, loadPosts } from './content.mjs';
-import { excerpt, renderMarkdown } from './markdown.mjs';
+import { excerpt, plainText, renderMarkdown } from './markdown.mjs';
+import { formatDate } from '../src/templates/util.mjs';
 import { atomFeed, robots, sitemap } from './feeds.mjs';
 import { homePage } from '../src/templates/home.mjs';
 import { postPage } from '../src/templates/post.mjs';
@@ -109,6 +110,14 @@ export async function build() {
     ]),
   );
   await emit('/robots.txt', robots());
+
+  // 站内搜索索引：全部文章的纯文本，浏览器里做子串匹配（中文不依赖分词，搜得全）
+  await emit(
+    '/search.json',
+    JSON.stringify(
+      byDate.map((p) => ({ u: p.url, t: p.title, d: formatDate(p.date), c: p.categories.join(' / '), g: p.tags, x: plainText(p.body) })),
+    ),
+  );
 
   // 换上新产物：旧目录先挪开再删，替换本身是两次 rename，几乎是瞬时的
   const old = `${DIST}.old-${process.pid}`;
