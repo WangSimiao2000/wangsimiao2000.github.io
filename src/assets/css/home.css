@@ -212,7 +212,15 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 }
 .reader-back:hover { color: var(--accent); }
 .reader-back:active { box-shadow: var(--i2); }
-.reader-hint { font-size: 12px; color: var(--muted); opacity: 0.7; }
+.reader-back [data-back-label] { display: inline-block; max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+/* 关闭：不管点进了几层，一次回到世界 */
+.reader-close {
+  display: grid; place-items: center; width: 32px; height: 32px; color: var(--muted); border-radius: var(--r-in);
+  background: var(--surface); box-shadow: var(--e2); transition: box-shadow 0.15s, color 0.15s;
+}
+.reader-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; }
+.reader-close:hover { color: var(--accent); }
+.reader-close:active { box-shadow: var(--i2); }
 .js .reader-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; outline: none; }
 .reader-scroll .prose h2, .reader-scroll .prose h3, .reader-scroll .prose h4 { scroll-margin-top: 16px; }
 
@@ -232,7 +240,7 @@ html.js.reading { overflow: hidden; }
 
 @media (max-width: 640px) {
   .js .reader { top: 60px; width: calc(100vw - 16px); }
-  .reader-hint { display: none; }
+  .reader-back [data-back-label] { max-width: 9em; }
 }
 /* 正文滚到面板上沿时淡出，不和返回按钮硬切 */
 .js .reader-scroll { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px); mask-image: linear-gradient(to bottom, transparent 0, #000 18px); }

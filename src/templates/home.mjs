@@ -176,10 +176,10 @@ export function shell(ctx, page = {}) {
     ${reader.left ?? ''}
     <div class="reader-card card" data-section="${sec.id}">
       <div class="reader-bar">
-        <a class="reader-back" href="/#${sec.id}" data-reader-close><span aria-hidden="true">←</span> 回到${sec.biome}</a>
+        <a class="reader-back" href="/#${sec.id}" data-reader-back title="返回（Esc）"><span aria-hidden="true">←</span> <span data-back-label>回到${sec.biome}</span></a>
         <span class="reader-bar-end">
           ${reader.toc ? html`<button type="button" class="toc-btn" data-toc-toggle aria-expanded="false" aria-controls="reader-toc">目录</button>` : ''}
-          <span class="reader-hint">Esc 关闭</span>
+          <a class="reader-close" href="/#${sec.id}" data-reader-close title="关闭，回到${sec.biome}" aria-label="关闭，回到${sec.biome}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></a>
         </span>
       </div>
       <div class="reader-scroll" data-reader-scroll tabindex="-1">
