@@ -268,6 +268,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   const actorCanvas = document.createElement('canvas');
   const a = actorCanvas.getContext('2d')!;
   const f = fgCanvas.getContext('2d')!;
+  // 自发光层：灯泡、亮着的窗。和前景同序绘制（后画的物体会擦掉它身后的光），夜里叠在夜色之上，亮度和营火一致
+  const emCanvas = document.createElement('canvas');
+  const e = emCanvas.getContext('2d')!;
   // 天空单独一张画布，不吃世界的自下而上渐隐：白天一轮淡淡的太阳，夜里月亮和星星
   const skyCanvas = document.createElement('canvas');
   skyCanvas.id = 'sky';
@@ -318,8 +321,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     HALF = Math.ceil(vw / S) / 2;
     W = Math.ceil(vw / S) + 1;
     H = Math.ceil(vh / S);
-    canvas.width = fgCanvas.width = actorCanvas.width = skyCanvas.width = heroCanvas.width = W;
-    canvas.height = fgCanvas.height = actorCanvas.height = skyCanvas.height = heroCanvas.height = H;
+    canvas.width = fgCanvas.width = emCanvas.width = actorCanvas.width = skyCanvas.width = heroCanvas.width = W;
+    canvas.height = fgCanvas.height = emCanvas.height = actorCanvas.height = skyCanvas.height = heroCanvas.height = H;
     canvas.style.width = skyCanvas.style.width = heroCanvas.style.width = `${W * S}px`;
     canvas.style.height = skyCanvas.style.height = heroCanvas.style.height = `${H * S}px`;
     hc.imageSmoothingEnabled = false;
@@ -925,19 +928,24 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
         hayX = it.wx;
         hayBase = base;
         spots.push({ kind: 'hay', x0: x - 2, y0: y - 3, x1: x + sp.width + 2, y1: base });
-      } else f.drawImage(sp, x, y);
+      } else {
+        f.drawImage(sp, x, y);
+        emit(sp, x, y);
+      }
       if (sp === sc.cottage) {
         cottageX = x;
         cottageY = y;
         cottageWx = it.wx - sp.width / 2;
-        // 门：女孩进出时是开着的（门洞发暗）
+        // 门：女孩进出时是开着的（门洞发暗，屋里的暖光透出来，算自发光）
         if (girl.state !== 'none' && (girl.state !== 'wave' || girl.t < 0.3)) {
           f.fillStyle = '#3b2a22';
           f.fillRect(x + 27, y + 27, 6, 10);
-          f.fillStyle = '#ffd77e';
-          f.globalAlpha = 0.35;
-          f.fillRect(x + 28, y + 30, 4, 7);
-          f.globalAlpha = 1;
+          for (const ctx of [f, e]) {
+            ctx.fillStyle = '#ffd77e';
+            ctx.globalAlpha = 0.35;
+            ctx.fillRect(x + 28, y + 30, 4, 7);
+            ctx.globalAlpha = 1;
+          }
         }
         spots.push({ kind: 'door', x0: x + 25, y0: y + 24, x1: x + 35, y1: y + 38 });
       }
@@ -955,6 +963,15 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     }
   }
 
+  /** 物体画进前景时同步维护自发光层：先擦掉它挡住的光，再画它自己的发光像素 */
+  function emit(sp: Sprite & { emissive?: HTMLCanvasElement }, x: number, y: number) {
+    if (!dark) return;
+    e.globalCompositeOperation = 'destination-out';
+    e.drawImage(sp, x, y);
+    e.globalCompositeOperation = 'source-over';
+    if (sp.emissive) e.drawImage(sp.emissive, x, y);
+  }
+
   function halo(x: number, y: number, r: number, color: string, a: number) {
     // 像素化的圆形光晕：按距离分 3 档透明度，越外越淡
     g.fillStyle = color;
@@ -970,18 +987,20 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     g.globalAlpha = 1;
   }
 
+  // 所有光源同一套亮度：夜里的光晕强度和营火一致（0.26），白天按同样比例减弱
+  const GLOW = { night: 0.26, day: 0.12 };
   function drawGlows() {
-    const strength = dark ? 1 : 0.35;
+    const base = dark ? GLOW.night : GLOW.day;
     for (const gl of glows) {
-      if (gl.kind === 'lamp') halo(gl.x, gl.y, 9, '#ffd36a', (0.22 + 0.04 * Math.sin(time * 3 + gl.wx)) * strength);
-      if (gl.kind === 'window') halo(gl.x, gl.y, 8, '#ffcf70', 0.2 * strength);
+      if (gl.kind === 'lamp') halo(gl.x, gl.y, 11, '#ffd36a', base * (0.92 + 0.08 * Math.sin(time * 3 + gl.wx)));
+      if (gl.kind === 'window') halo(gl.x, gl.y, 11, '#ffcf70', base);
       if (gl.kind === 'fire') drawFlame(gl.x, gl.y, gl.wx);
     }
   }
 
   function drawFlame(x: number, y: number, worldX: number) {
     const flick = reduced.matches ? 0 : Math.floor(time * 10) % 3;
-    halo(x, y - 3, 13, '#ffb55a', dark ? 0.26 : 0.12);
+    halo(x, y - 3, 13, '#ffb55a', dark ? GLOW.night : GLOW.day);
     g.fillStyle = '#ff7a2a';
     g.fillRect(x - 3, y - 5 + flick, 6, 5 - flick);
     g.fillRect(x - 1, y - 8 + flick, 3, 3);
@@ -1195,6 +1214,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawLayer('near', 0.7, dark ? 0.14 : 0.14, camLeft);
 
     f.clearRect(0, 0, W, H);
+    e.clearRect(0, 0, W, H);
     spots = [];
     drawItems(camLeft);
     drawGround(camLeft);
@@ -1211,6 +1231,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       }
     }
     g.drawImage(fgCanvas, 0, 0);
+    if (dark) g.drawImage(emCanvas, 0, 0); // 灯泡和窗格不吃夜色
     drawGlows();
     g.drawImage(actorCanvas, 0, 0);
     drawBubbles(dt, camLeft);
