@@ -437,7 +437,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     const url = a && routable(a);
     if (url && url.pathname !== '/' && url.pathname.endsWith('/') && !isApp(url.pathname)) {
       load(url.href).catch(() => {});
-      if (url.pathname === '/server/map/') void import('./mcmap.js').then((m) => m.warmMap()).catch(() => {});
+      if (url.pathname === '/server/map/') void import('./mcmap.js').then((m) => m.warmMap(true)).catch(() => {});
     }
   };
   document.addEventListener('pointerover', prefetch, { passive: true });
@@ -482,6 +482,17 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
         .finally(() => idle(next));
     };
     idle(next);
+  }
+  // 停到服务器板块（「世界地图」按钮露出来）时，提前取开图视野里的清晰瓦片
+  const mapBtn = document.querySelector('.stages a[href="/server/map/"]');
+  if (mapBtn && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => {
+      if (!es.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+      if (!conn?.saveData) void import('./mcmap.js').then((m) => m.warmMap(true)).catch(() => {});
+    }, { threshold: 0.6 });
+    io.observe(mapBtn);
   }
   if (document.readyState === 'complete') setTimeout(warmUp, 800);
   else window.addEventListener('load', () => setTimeout(warmUp, 800), { once: true });
