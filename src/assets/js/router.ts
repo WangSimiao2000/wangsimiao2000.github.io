@@ -18,11 +18,25 @@ interface RouterOptions {
   reader: HTMLElement;
 }
 
+/**
+ * 面板里的导航栈（存在 history.state 里，刷新、前进后退都不丢）：
+ * - 从列表点进条目（归档 -> 文章、分类 -> 标签）是「深入」：新开一条历史，返回时回到来的那页；
+ * - 上一篇 / 下一篇、归档和分类与标签互相切换是「平移」：替换当前这条，连读几篇后返回仍回到列表；
+ * - 返回按钮、Esc、浏览器后退都只退一级；右上角关闭一次回到世界。
+ */
 interface NavState {
   reader?: boolean;
-  /** 从首页点进来后又在面板里连着翻了几篇：关闭时 history.go(-homeDepth) 回到那条首页记录，不在历史里堆首页 */
+  /** 从首页点进来后在面板里走了几级：关闭时 history.go(-homeDepth) 回到那条首页记录，不在历史里堆首页 */
   homeDepth?: number;
+  /** 上一级面板页（返回按钮回到这里）；没有就说明是从世界里或外部直接打开的 */
+  back?: { href: string; label: string };
+  /** 离开这一页时正文滚到哪、点的是哪个链接：返回时恢复位置和焦点 */
+  scroll?: number;
+  focus?: string;
 }
+
+/** 两个顶层列表页之间的切换算平移 */
+const LISTS = new Set(['/archives/', '/browse/']);
 
 export function startRouter({ world, sections, reader }: RouterOptions) {
   const root = document.documentElement;
@@ -227,24 +241,63 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     if (my !== token) return; // 期间又点了别的
 
     const wasOpen = isOpen();
+    const nav = (history.state ?? {}) as NavState;
     if (push) {
-      const prev = (history.state ?? {}) as NavState;
-      const homeDepth = wasOpen ? (prev.homeDepth ? prev.homeDepth + 1 : undefined) : location.pathname === '/' ? 1 : undefined;
-      const state: NavState = { reader: true, homeDepth };
-      history.pushState(state, '', href);
+      const lateral = wasOpen && (!!from?.closest('.post-nav') || (LISTS.has(location.pathname) && LISTS.has(new URL(href, location.href).pathname)));
+      if (lateral) {
+        // 平移：替换当前这条，返回目标不变
+        history.replaceState({ ...nav, scroll: undefined, focus: undefined } satisfies NavState, '', href);
+      } else {
+        let back: NavState['back'];
+        if (wasOpen) {
+          // 深入：先在当前这条记下滚动位置和点的链接，返回时恢复
+          history.replaceState({ ...nav, scroll: scroller()?.scrollTop ?? 0, focus: from?.getAttribute('href') ?? undefined } satisfies NavState, '');
+          back = { href: location.pathname + location.search, label: pageLabel() };
+        }
+        const homeDepth = wasOpen ? (nav.homeDepth ? nav.homeDepth + 1 : undefined) : location.pathname === '/' ? 1 : undefined;
+        history.pushState({ reader: true, homeDepth, back } satisfies NavState, '', href);
+      }
     }
+    const state = (history.state ?? {}) as NavState;
     document.title = doc.title;
     const fromCard = !wasOpen ? (from?.closest<HTMLElement>('.card') ?? null) : null;
     await transition(() => {
       reader.innerHTML = next.innerHTML;
+      labelBack(state);
       setReading(true);
       moveTo(card.dataset.section ?? 'home');
       const sc = scroller();
       const hash = new URL(href, location.href).hash;
-      if (!hash || !scrollToAnchor(hash, false)) sc?.scrollTo({ top: 0, behavior: 'instant' });
+      // 返回到上一级：回到离开时的位置；新打开的页从头开始
+      if (!push && state.scroll) sc?.scrollTo({ top: state.scroll, behavior: 'instant' });
+      else if (!hash || !scrollToAnchor(hash, false)) sc?.scrollTo({ top: 0, behavior: 'instant' });
     }, fromCard);
-    scroller()?.focus({ preventScroll: true });
+    const prevLink = !push && state.focus ? reader.querySelector<HTMLElement>(`a[href="${CSS.escape(state.focus)}"]`) : null;
+    (prevLink ?? scroller())?.focus({ preventScroll: true });
     if (!wasOpen) source = from ?? null;
+  }
+
+  /** 当前面板页的短名字，给下一级的返回按钮用：「归档」「#Minecraft」、文章标题截短 */
+  function pageLabel(): string {
+    const h1 = reader.querySelector('.reader-scroll h1')?.textContent?.trim() ?? '';
+    const text = h1 || document.title.split(/\s[|–-]\s/)[0];
+    return text.length > 14 ? text.slice(0, 13) + '…' : text;
+  }
+
+  /** 有上一级时，返回按钮写明回到哪；没有就保持模板里的「回到森林」 */
+  function labelBack(state: NavState) {
+    const btn = reader.querySelector<HTMLAnchorElement>('[data-reader-back]');
+    const label = btn?.querySelector('[data-back-label]');
+    if (!btn || !label || !state.back) return;
+    btn.href = state.back.href;
+    label.textContent = state.back.label;
+    btn.title = `返回${state.back.label}（Esc）`;
+  }
+
+  /** 返回一级：有上一级面板页就退回去，没有就关闭面板回到世界 */
+  function goBack() {
+    if (((history.state ?? {}) as NavState).back) history.back();
+    else close(true);
   }
 
   function close(push: boolean, then?: string) {
@@ -307,6 +360,11 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     if (!a) return;
     const url = routable(a);
     if (!url) return;
+    if (a.hasAttribute('data-reader-back')) {
+      e.preventDefault();
+      goBack();
+      return;
+    }
     if (a.hasAttribute('data-reader-close')) {
       e.preventDefault();
       close(true);
@@ -384,14 +442,16 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) {
       e.preventDefault();
-      close(true);
+      goBack();
     }
   });
 
-  // 直接打开的是带正文的页面
+  // 直接打开的是带正文的页面（刷新时 history.state 还在，返回按钮照样写明上一级）
   if (isOpen()) {
     setReading(true);
-    history.replaceState({ reader: true } satisfies NavState, '');
+    const kept = (history.state ?? {}) as NavState;
+    history.replaceState({ ...kept, reader: true } satisfies NavState, '');
+    labelBack(kept);
     const hash = location.hash;
     if (hash) requestAnimationFrame(() => scrollToAnchor(hash, false));
     scroller()?.focus({ preventScroll: true });

@@ -61,6 +61,41 @@ t.ok(/\/posts\//.test(page.url()), '浏览器前进回到文章');
 await page.keyboard.press('Escape');
 await wait(600);
 
+// 导航栈：归档 -> 文章 -> 下一篇（平移）-> Esc 回到归档原位 -> 关闭回到世界
+await page.click('#posts a.btn-open[href="/archives/"]');
+await page.waitForFunction(() => location.pathname === '/archives/');
+await wait(500);
+await page.$eval('.reader-scroll', (el) => el.scrollTo({ top: 600, behavior: 'instant' }));
+await wait(200);
+const target = await page.evaluateHandle(() => {
+  const sc = document.querySelector('.reader-scroll');
+  const r = sc.getBoundingClientRect();
+  return [...sc.querySelectorAll('.post-list a')].find((a) => a.getBoundingClientRect().top > r.top + 40);
+});
+const picked = await target.evaluate((a) => a.getAttribute('href'));
+await target.click();
+await page.waitForFunction(() => location.pathname.startsWith('/posts/'));
+await wait(500);
+t.ok((await page.$eval('[data-back-label]', (el) => el.textContent)) === '归档', '从归档进的文章，返回按钮写「归档」');
+const nextLink = await page.$('.post-nav a');
+if (nextLink) {
+  await nextLink.click();
+  await page.waitForFunction((p) => location.pathname !== p, picked);
+  await wait(500);
+  t.ok((await page.$eval('[data-back-label]', (el) => el.textContent)) === '归档', '上一篇/下一篇是平移，返回仍是「归档」');
+}
+await page.keyboard.press('Escape');
+await page.waitForFunction(() => location.pathname === '/archives/');
+await wait(500);
+const top = await page.$eval('.reader-scroll', (el) => el.scrollTop);
+t.ok(Math.abs(top - 600) < 40, `Esc 退回归档，回到原来的位置（${top}）`);
+t.ok((await page.evaluate(() => document.activeElement?.getAttribute('href'))) === picked, '焦点回到刚才点的那篇');
+t.ok((await page.$eval('[data-back-label]', (el) => el.textContent)) === '回到森林', '归档是从世界打开的，返回写「回到森林」');
+await page.click('[data-reader-close]');
+await page.waitForFunction(() => !document.documentElement.classList.contains('reading'));
+t.ok(new URL(page.url()).pathname === '/', '关闭按钮回到世界');
+await wait(500);
+
 // 搜索
 await page.keyboard.press('/');
 await page.waitForSelector('.search.is-open');
