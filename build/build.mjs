@@ -20,6 +20,7 @@ import {
   categoryPage,
   friendsPage,
   guestbookPage,
+  mapPage,
   notFoundPage,
   tagPage,
   redirectPage,
@@ -89,6 +90,7 @@ export async function build() {
     ['/friends/', friendsPage(home)],
     ['/about/', aboutPage(home)],
     ['/guestbook/', guestbookPage(home)],
+    ['/server/map/', mapPage(home)],
     ...[...tax.cats.values()].map((c) => [`/browse/categories/${c.slug}/`, categoryPage(home, c, tax)]),
     ...[...tax.tags.values()].map((t) => [`/browse/tags/${t.slug}/`, tagPage(home, t)]),
     // 迁走的工具：旧地址跳到仓库自己的 Pages

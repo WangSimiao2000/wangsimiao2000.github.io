@@ -12,6 +12,7 @@ import path from 'node:path';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const PORT = Number(process.argv[2] ?? process.env.PORT ?? 4399);
+const MCMAP_DIR = process.env.MCMAP_DIR ? path.resolve(process.env.MCMAP_DIR) : null;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -54,8 +55,21 @@ http
       req.on('close', () => clients.delete(res));
       return;
     }
-    // /mc-status/ 是另一个仓库的 Pages，本地没有：转发线上的公开数据，预览和线上一致
-    if (url.pathname.startsWith('/mc-status/')) {
+    // 本地调试地图：MCMAP_DIR 指向 mc-ops 渲染出的目录时，/mc-map/ 直接读本地文件
+    if (MCMAP_DIR && url.pathname.startsWith('/mc-map/')) {
+      const f = path.normalize(path.join(MCMAP_DIR, decodeURIComponent(url.pathname.slice('/mc-map/'.length))));
+      if (!f.startsWith(MCMAP_DIR + path.sep)) { res.writeHead(403).end(); return; }
+      try {
+        await stat(f);
+        res.writeHead(200, { 'content-type': f.endsWith('.json') ? 'application/json' : 'image/webp', 'cache-control': 'no-cache' });
+        createReadStream(f).pipe(res);
+      } catch {
+        res.writeHead(404).end();
+      }
+      return;
+    }
+    // /mc-status/、/mc-map/ 是另外仓库的 Pages，本地没有：转发线上的公开数据，预览和线上一致
+    if (url.pathname.startsWith('/mc-status/') || url.pathname.startsWith('/mc-map/')) {
       try {
         const r = await fetch(new URL(url.pathname, 'https://blog.mickeymiao.cn'));
         res.writeHead(r.status, { 'content-type': r.headers.get('content-type') ?? 'application/json', 'cache-control': 'no-cache' });

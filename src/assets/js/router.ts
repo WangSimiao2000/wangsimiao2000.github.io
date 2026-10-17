@@ -32,6 +32,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   let source: HTMLElement | null = null; // 打开面板的链接，关闭后把焦点还给它
   let token = 0;
   let unbindToc = () => {};
+  let unbindMap = () => {};
   let pendingSection: string | null = null; // 关闭后要去的板块（经 history.back() 时暂存）
 
   const isOpen = () => !reader.hidden;
@@ -189,6 +190,15 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     if (stages) stages.inert = on;
     world.setReading(on);
     unbindToc = on ? bindToc(reader) : () => {};
+    unbindMap();
+    unbindMap = () => {};
+    // 服务器地图：只有地图页才加载查看器脚本
+    if (on && reader.querySelector('[data-mc-map]')) {
+      const my = token;
+      void import('./mcmap.js').then((m) => {
+        if (my === token && isOpen()) unbindMap = m.bindMap(reader);
+      });
+    }
     // 评论（Giscus iframe）很重：等开合动画播完、浏览器空闲时再加载，不抢动画的帧
     if (on) {
       const my = token;

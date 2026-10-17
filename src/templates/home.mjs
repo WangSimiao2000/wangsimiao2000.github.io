@@ -67,7 +67,7 @@ const server = () => html`
       <div><dt>已开服</dt><dd data-k="uptime">-</dd></div>
     </dl>
     <figure class="spark-box" hidden><svg data-spark preserveAspectRatio="none" aria-hidden="true"></svg><figcaption>最近 24 小时在线人数</figcaption></figure>
-    <p class="server-foot" data-k="updated">每 10 分钟更新一次</p>
+    <p class="server-foot"><span data-k="updated">每 10 分钟更新一次</span><a class="btn btn-open map-open" href="/server/map/">世界地图<span class="open-icon" aria-hidden="true"></span></a></p>
   </div>`;
 
 const friendGrid = ({ friends, graveyard }) => html`
@@ -170,7 +170,7 @@ export function shell(ctx, page = {}) {
       <ol class="search-results" data-search-results></ol>
     </div>
   </div>
-  <div class="reader" data-reader ${reader ? '' : 'hidden'}>
+  <div class="reader${reader?.wide ? ' reader-wide' : ''}" data-reader ${reader ? '' : 'hidden'}>
     ${reader
       ? html`
     ${reader.left ?? ''}
