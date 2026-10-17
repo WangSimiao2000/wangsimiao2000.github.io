@@ -12,7 +12,9 @@
     "dev": "node --disable-warning=ExperimentalWarning build/dev.mjs",
     "build": "node --disable-warning=ExperimentalWarning build/build.mjs",
     "check-friends": "node build/check-friends.mjs",
-    "verify": "node build/verify.mjs"
+    "verify": "node build/verify.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --import ./tests/register.mjs --test \"tests/unit/*.test.*\"",
+    "test:e2e": "node tests/e2e/flow.mjs"
   },
   "dependencies": {
     "highlight.js": "11.12.0",

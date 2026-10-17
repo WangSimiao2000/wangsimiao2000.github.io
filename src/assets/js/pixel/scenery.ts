@@ -258,8 +258,20 @@ function flower(petal: string, petalDark: string, stem = '#4f8f3c'): Sprite {
 
 /* ---------------- 人造物 ---------------- */
 
-/** 小屋上会发光 / 冒烟的位置（相对精灵左上角），world.ts 用来画光晕和炊烟 */
-export const COTTAGE = { window: [14, 28], lantern: [36, 29], chimney: [29, 1] } as const;
+/** 小屋上会发光 / 冒烟 / 可交互的位置（相对精灵左上角），world.ts 和 eggs.ts 用来画光晕、开门和判定点击 */
+export const COTTAGE = {
+  window: [14, 28],
+  lantern: [36, 29],
+  chimney: [29, 1],
+  /** 门洞（x, y, w, h）、门里透出的暖光、门的点击区域（x0, y0, x1, y1）、门口中心的 x */
+  door: [27, 27, 6, 10],
+  doorLight: [28, 30, 4, 7],
+  doorHit: [25, 24, 35, 38],
+  doorCenter: 29.5,
+} as const;
+/** 路灯灯泡、营火火焰的中心（相对精灵左上角） */
+export const LAMP_BULB = [3, 4] as const;
+export const CAMPFIRE_FLAME = [7, 2] as const;
 
 /**
  * 童话风小屋：四坡屋顶（左坡受光、正面、右坡背光三档）、错缝瓦片、砖砌烟囱，
