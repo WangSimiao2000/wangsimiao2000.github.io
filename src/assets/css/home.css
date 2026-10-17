@@ -113,7 +113,6 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 .mini-stats dd { margin: 2px 0 0; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 [data-online='1'] .mini-stats dd[data-k='state'], [data-online='1'].map-inline [data-k='state'] { color: var(--accent); }
 [data-online='0'] .mini-stats dd[data-k='state'], [data-online='0'].map-inline [data-k='state'] { color: var(--danger); }
-.map-side .spark-box svg { height: 30px; }
 .side-note { margin: 0 0 8px; font-size: 13px; line-height: 1.7; }
 .side-note.muted { color: var(--muted); font-size: 12px; }
 .map-inline { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
@@ -150,6 +149,33 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 }
 @media (max-height: 620px) {
   .map-head .page-sub { display: none; }
+}
+/* 布局：默认上下排（标题 + 一行状态在上，地图在下），状态块只在左右排时出现 */
+.map-layout { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.map-status-block { display: none; }
+.map-status-block .spark-box svg { height: 30px; }
+.js .reader-wide .map-info { zoom: var(--ui, 1); }
+/*
+ * 横屏宽屏：左栏文字，右边地图接近 5:4。面板高度是定的，所以先按高度算出地图该有多宽（--mh × 1.25），
+ * 再让面板宽度刚好包住「左栏 + 间距 + 地图」，地图不会被拉成长条，也不会顶出卡片
+ */
+@media (min-width: 1000px) and (min-aspect-ratio: 6/5) {
+  .js .reader.reader-wide {
+    --u: var(--ui, 1);
+    --col: calc(272px * var(--u));
+    --mh: calc(100dvh - 70px - var(--strip) - 52px * var(--u) - var(--inset) * var(--u));
+    width: min(calc(var(--col) + 28px * var(--u) + var(--mh) * 1.25 + var(--inset) * var(--u) * 2), calc(1280px * var(--u)), calc(100vw - 32px));
+  }
+  .map-layout { flex-direction: row; gap: calc(28px * var(--ui, 1)); }
+  .map-info { flex: none; width: 272px; min-height: 0; overflow: auto; scrollbar-width: none; }
+  .map-info .map-head { padding-top: 12px; margin-bottom: 20px; }
+  .map-info .map-stamp { display: block; margin: 6px 0 0; }
+  .js .map-head .map-inline { display: none; }
+  .map-status-block { display: block; }
+  .mcmap { flex: 1; min-width: 0; }
+}
+@media (min-width: 1000px) and (min-aspect-ratio: 6/5) and (max-height: 640px) {
+  .map-status-block .side-note.muted { display: none; } /* 矮屏左栏放不下时先省掉这一行 */
 }
 
 .about p { margin: 0 0 12px; }
@@ -207,7 +233,7 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
   width: min(calc(860px * var(--ui, 1)), calc(100vw - 32px)); max-width: none; margin: 0; padding: 0; transform: translateX(-50%);
 }
 /* 大屏：面板和两侧卡片的内容按 --ui 整体放大（地图本身不缩放，只是面板变大） */
-.js .reader-bar, .js .reader:not(.reader-wide) .reader-scroll > *, .js .reader-wide .map-head, .js .reader-side > * { zoom: var(--ui, 1); }
+.js .reader-bar, .js .reader:not(.reader-wide) .reader-scroll > *, .js .reader-side > * { zoom: var(--ui, 1); }
 /* 面板外壳不 zoom，圆角单独按 --ui 放大，才能和里面放大了的按钮保持同心 */
 .js .reader-card, .js .reader-side { border-radius: calc(var(--radius) * var(--ui, 1)); }
 .js .reader-wide .reader-scroll { padding: 0 calc(var(--inset) * var(--ui, 1)) calc(var(--inset) * var(--ui, 1)); }
