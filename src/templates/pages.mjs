@@ -338,9 +338,10 @@ export function guestbookPage(home) {
 /* ---------- 服务器地图 ---------- */
 
 export function mapPage(home) {
-  // 右侧：服务器状态小卡片（宽屏）；窄屏收成地图上方的一行（inline-meta，≥1000px 时隐藏）
-  const right = html`
-    <aside class="reader-side side-right card map-side" aria-label="服务器状态" data-mc-status>
+  // 横屏宽屏：左栏放标题、说明和服务器状态，右边是接近方形的地图（地图高度由面板定，宽度按比例收）。
+  // 竖屏 / 窄屏：上下排，状态收成标题下面的一行
+  const status = html`
+    <div class="map-status-block" data-mc-status>
       <p class="side-title">服务器状态</p>
       <dl class="mini-stats">
         <div><dt>状态</dt><dd data-k="state">读取中…</dd></div>
@@ -352,31 +353,36 @@ export function mapPage(home) {
       <p class="side-title">加入</p>
       <p class="side-note">白名单制，加 QQ 群申请：<br><button type="button" class="qq-chip" data-copy="${site.qqGroup}" title="点击复制群号">${site.qqGroup}<span class="qq-copied" aria-live="polite"></span></button></p>
       <p class="side-note muted" data-k="updated">每 10 分钟更新一次</p>
-    </aside>`;
+    </div>`;
   const inline = html`
-    <p class="map-inline inline-meta" data-mc-status>
+    <p class="map-inline" data-mc-status>
       <span data-k="state">读取中…</span> · 在线 <span data-k="players">-</span> · <span data-k="version">-</span> · 已开服 <span data-k="uptime">-</span>
     </p>`;
   const body = html`
-    <header class="post-head map-head">
-      <h1>世界地图</h1>
-      <p class="page-sub">主世界的 45° 像素俯瞰图，mc-ops 每天清晨渲染一次。玩家常去的地方有高清细节。<span class="map-stamp" data-map-stamp hidden></span></p>
-      ${inline}
-    </header>
-    <div class="mcmap" data-mc-map>
-      <canvas tabindex="0" aria-label="服务器地图：拖动平移，滚轮或双指缩放，双击放大"></canvas>
-      <p class="map-status" data-map-status>地图需要启用 JavaScript。</p>
-      <div class="map-tools" role="group" aria-label="地图缩放">
-        <button type="button" class="btn map-btn" data-map-act="in" aria-label="放大">+</button>
-        <button type="button" class="btn map-btn" data-map-act="out" aria-label="缩小">−</button>
-        <button type="button" class="btn map-btn" data-map-act="home" title="回到出生点" aria-label="回到出生点">⌂</button>
+    <div class="map-layout">
+      <div class="map-info">
+        <header class="post-head map-head">
+          <h1>世界地图</h1>
+          <p class="page-sub">主世界的 45° 像素俯瞰图，mc-ops 每天清晨渲染一次。玩家常去的地方有高清细节。<span class="map-stamp" data-map-stamp hidden></span></p>
+          ${inline}
+        </header>
+        ${status}
+      </div>
+      <div class="mcmap" data-mc-map>
+        <canvas tabindex="0" aria-label="服务器地图：拖动平移，滚轮或双指缩放，双击放大"></canvas>
+        <p class="map-status" data-map-status>地图需要启用 JavaScript。</p>
+        <div class="map-tools" role="group" aria-label="地图缩放">
+          <button type="button" class="btn map-btn" data-map-act="in" aria-label="放大">+</button>
+          <button type="button" class="btn map-btn" data-map-act="out" aria-label="缩小">−</button>
+          <button type="button" class="btn map-btn" data-map-act="home" title="回到出生点" aria-label="回到出生点">⌂</button>
+        </div>
       </div>
     </div>`;
   return shell(home, {
     title: '世界地图',
     description: 'Minecraft 生存服主世界的等轴测像素地图，每天更新。',
     path: '/server/map/',
-    reader: { section: 'server', body, wide: true, right },
+    reader: { section: 'server', body, wide: true },
   });
 }
 
