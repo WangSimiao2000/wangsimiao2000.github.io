@@ -56,6 +56,11 @@ jobs:
       - name: Verify
         run: node build/verify.mjs
 
+      - name: Keep previous assets
+        # 部署后 10 分钟内拿着旧 HTML 的访客，仍能加载到配套的旧样式和脚本；失败不阻塞部署
+        continue-on-error: true
+        run: node build/keep-previous.mjs
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4
         with:

@@ -72,10 +72,13 @@ http
     if (url.pathname.startsWith('/mc-status/') || url.pathname.startsWith('/mc-map/')) {
       try {
         const r = await fetch(new URL(url.pathname, 'https://blog.mickeymiao.cn'));
+        // 先读完再写响应头：读的途中出错（断网、浏览器取消）时还能回 502，不会写两次头把开发服务器弄崩
+        const body = Buffer.from(await r.arrayBuffer());
         res.writeHead(r.status, { 'content-type': r.headers.get('content-type') ?? 'application/json', 'cache-control': 'no-cache' });
-        res.end(Buffer.from(await r.arrayBuffer()));
+        res.end(body);
       } catch {
-        res.writeHead(502).end();
+        if (!res.headersSent) res.writeHead(502);
+        res.end();
       }
       return;
     }
