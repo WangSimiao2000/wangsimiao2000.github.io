@@ -24,8 +24,11 @@ const MAX_SCALE = 6; // 屏幕像素 / 第 0 级像素
 const CACHE_LIMIT = 400;
 /** 开图时的缩放（屏幕像素 / 第 0 级像素），对应第 1 级 */
 const HOME_K = 0.5;
-/** 垫底用的粗图比当前级粗几级：粗 2 级 = 一张顶 16 张，一屏只要一两张、每张几 KB */
-const COARSE = 2;
+/**
+ * 垫底用的预览：倒数第二级（约 1/64），一张约 30KB、覆盖整个开图视野。
+ * 再细几级的瓦片同样是 512² 的整张、内容密的地方 60-100KB，拿来垫底并不省流量，所以直接跳到这一级。
+ */
+const previewLevel = (m: Manifest) => Math.max(m.full_level, m.levels - 2);
 
 const tileUrl = (m: Manifest, key: string) => `${BASE}tiles/${key}.webp?v=${encodeURIComponent(m.generated_at ?? '')}`;
 const homeCenter = (m: Manifest): [number, number] => {
@@ -55,29 +58,37 @@ function getManifest(signal?: AbortSignal): Promise<Manifest> {
   });
 }
 
-const warmed: HTMLImageElement[] = [];
+const warmed = new Map<string, HTMLImageElement>();
+/** 取回出生点附近、第 z 级、覆盖 hw×hh（屏幕像素的一半）视野的瓦片 */
+function warmLevel(m: Manifest, z: number, hw: number, hh: number) {
+  const span = m.tile * 2 ** z;
+  const [cx, cy] = homeCenter(m);
+  const set = new Set((m.tiles[String(z)] ?? []).map(([x, y]) => `${x}_${y}`));
+  for (let ty = Math.floor((cy - hh / HOME_K) / span); ty <= Math.floor((cy + hh / HOME_K) / span); ty++)
+    for (let tx = Math.floor((cx - hw / HOME_K) / span); tx <= Math.floor((cx + hw / HOME_K) / span); tx++) {
+      const key = `${z}/${tx}_${ty}`;
+      if (!set.has(`${tx}_${ty}`) || warmed.has(key)) continue;
+      const im = new Image();
+      im.src = tileUrl(m, key);
+      warmed.set(key, im);
+    }
+}
+
 /**
- * 首页空闲时调用：先把 manifest 和出生点附近的粗图取好（总共二三十 KB），
- * 打开地图时第一帧就有画面，清晰的瓦片再逐张换上。
+ * 预热地图。
+ * - 首页空闲时（full=false）：只取 manifest（约 20KB，查看器脚本由调用方顺带加载）；
+ * - 访客停到服务器板块、或指向「世界地图」按钮时（full=true）：再取开图视野里的预览级和清晰瓦片
+ *   （合计约 300-400KB），点开时直接就是清晰的。只在可能要看的时候才花这份流量。
  */
-export function warmMap(): void {
+export function warmMap(full = false): void {
   getManifest()
     .then((m) => {
-      if (!m.levels || warmed.length) return;
-      const z = Math.min(m.levels - 1, m.full_level + COARSE);
-      const span = m.tile * 2 ** z;
-      const [cx, cy] = homeCenter(m);
-      // 按一块 2000×1300 的大屏、开图缩放来估视野
-      const hw = 1000 / HOME_K;
-      const hh = 650 / HOME_K;
-      const set = new Set((m.tiles[String(z)] ?? []).map(([x, y]) => `${x}_${y}`));
-      for (let ty = Math.floor((cy - hh) / span); ty <= Math.floor((cy + hh) / span); ty++)
-        for (let tx = Math.floor((cx - hw) / span); tx <= Math.floor((cx + hw) / span); tx++) {
-          if (!set.has(`${tx}_${ty}`)) continue;
-          const im = new Image();
-          im.src = tileUrl(m, `${z}/${tx}_${ty}`);
-          warmed.push(im);
-        }
+      if (!m.levels || !full) return;
+      // 地图在面板里大约占窗口宽的 55%、高的 65%
+      const hw = (innerWidth * 0.55) / 2;
+      const hh = (innerHeight * 0.65) / 2;
+      warmLevel(m, previewLevel(m), hw, hh);
+      warmLevel(m, m.full_level, hw, hh);
     })
     .catch(() => {});
 }
@@ -139,7 +150,7 @@ export function bindMap(root: ParentNode): () => void {
 
   const ready = (im: HTMLImageElement | null): im is HTMLImageElement => !!im && im.complete && im.naturalWidth > 0;
 
-  /** 画一张第 z 级瓦片；没加载好就从上一级裁一块放大顶着（最多往上找 3 级） */
+  /** 画一张第 z 级瓦片；没加载好就从更粗的一级裁一块放大顶着（往上 3 级，再不行用预览级） */
   function drawTile(z: number, tx: number, ty: number, levels: number) {
     const T = man!.tile;
     const span = T * 2 ** z; // 这张瓦片覆盖多少第 0 级像素
@@ -151,7 +162,11 @@ export function bindMap(root: ParentNode): () => void {
       ctx.drawImage(im, sx, sy, size, size);
       return;
     }
-    for (let up = 1; up <= 3 && z + up < levels; up++) {
+    // 往上找最多 3 级；再往上直接用预览级（放大倍数大，这时用平滑插值，糊一点比马赛克好看）
+    const pre = previewLevel(man!);
+    const ups = [1, 2, 3].filter((u) => z + u < levels);
+    if (pre - z > 3) ups.push(pre - z);
+    for (const up of ups) {
       const pz = z + up;
       const f = 2 ** up;
       const px = Math.floor(tx / f);
@@ -159,7 +174,10 @@ export function bindMap(root: ParentNode): () => void {
       const pim = cache.get(`${pz}/${px}_${py}`) ?? null;
       if (ready(pim)) {
         const sub = T / f;
+        const smooth = ctx.imageSmoothingEnabled;
+        if (up > 3) ctx.imageSmoothingEnabled = true;
         ctx.drawImage(pim, (tx - px * f) * sub, (ty - py * f) * sub, sub, sub, sx, sy, size, size);
+        ctx.imageSmoothingEnabled = smooth;
         img(pz, px, py);
         return;
       }
@@ -173,8 +191,8 @@ export function bindMap(root: ParentNode): () => void {
     const x1 = Math.floor((cx + w / 2 / k) / span);
     const y0 = Math.floor((cy - h / 2 / k) / span);
     const y1 = Math.floor((cy + h / 2 / k) / span);
-    // 先排粗图的请求：几张小图最先到，整屏先有一个糊的轮廓，清晰的瓦片再逐张换上
-    const zc = Math.min(man!.levels - 1, z + COARSE);
+    // 先排预览级的请求：一两张小图最先到，整屏先有一个糊的轮廓，清晰的瓦片再逐张换上
+    const zc = previewLevel(man!);
     if (zc > z) {
       const f = 2 ** (zc - z);
       for (let ty = Math.floor(y0 / f); ty <= Math.floor(y1 / f); ty++)

@@ -41,24 +41,27 @@ const FAKE = '/_s/0000000000/';
 }
 
 {
-  // 3. 地图：首页预热 + 打开时先粗后细
+  // 3. 地图：首页空闲时只预热 manifest；停到服务器板块再取清晰瓦片；点开时很快有画面
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const reqs = [];
   page.on('request', (r) => {
     const u = new URL(r.url());
-    if (u.pathname.startsWith('/mc-map/')) reqs.push({ p: u.pathname, at: Date.now() });
+    if (u.pathname.startsWith('/mc-map/')) reqs.push(u.pathname);
   });
+  const levels = () => reqs.filter((p) => p.endsWith('.webp')).map((p) => Number(p.split('/')[3]));
   await page.goto(BASE + '/');
   await page.waitForTimeout(9000);
-  const warm = reqs.filter((r) => r.p.endsWith('.webp'));
-  t.ok(reqs.some((r) => r.p.endsWith('manifest.json')) && warm.length > 0, `首页空闲时预热了 manifest 和 ${warm.length} 张粗图`);
-  reqs.length = 0;
+  const idle = levels();
+  t.ok(reqs.some((p) => p.endsWith('manifest.json')) && idle.length === 0, `首页空闲时只预热 manifest，不取瓦片（${idle.length} 张）`);
 
   await page.goto(BASE + '/#server');
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(4000);
+  const atServer = levels().slice(idle.length);
+  t.ok(atServer.includes(1), `停到服务器板块后预取预览级和清晰瓦片（${atServer.join(',')}）`);
+  reqs.length = 0;
+
   const t0 = Date.now();
   await page.click('.stages a[href="/server/map/"]');
-  // 画布上第一次有不透明像素的时间
   const painted = await page
     .waitForFunction(
       () => {
@@ -72,14 +75,25 @@ const FAKE = '/_s/0000000000/';
       { timeout: 15000, polling: 50 },
     )
     .then(() => Date.now() - t0, () => -1);
-  await page.waitForTimeout(3000);
-  const tiles = reqs.filter((r) => r.p.endsWith('.webp')).map((r) => Number(r.p.split('/')[3]));
-  const firstFine = tiles.indexOf(1);
-  const coarseBefore = tiles.slice(0, Math.max(0, firstFine)).filter((z) => z >= 3).length;
-  console.log(`     打开地图后请求的瓦片级别：${tiles.join(',')}；首帧有画面 ${painted}ms`);
-  t.ok(painted >= 0 && painted < 1500, `打开地图后很快有画面（${painted}ms）`);
-  t.ok(firstFine === -1 || coarseBefore > 0 || warm.length > 0, '粗图先于清晰瓦片（或已预热）');
+  await page.waitForTimeout(2000);
+  t.ok(painted >= 0 && painted < 1500, `预热后打开地图很快有画面（${painted}ms，新请求瓦片 ${levels().length} 张）`);
   await page.close();
+}
+
+{
+  // 4. 直接打开地图页（没有预热）：预览级先于清晰瓦片请求
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  const z = [];
+  page.on('request', (r) => {
+    const u = new URL(r.url());
+    if (u.pathname.startsWith('/mc-map/tiles/')) z.push(Number(u.pathname.split('/')[3]));
+  });
+  await page.goto(BASE + '/server/map/');
+  await page.waitForTimeout(4000);
+  const first = z.indexOf(1);
+  t.ok(first > 0 && z.slice(0, first).every((l) => l >= 5), `直接打开时预览级先请求（${z.join(',')}）`);
+  await ctx.close();
 }
 
 await browser.close();
