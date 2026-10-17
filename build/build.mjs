@@ -115,6 +115,9 @@ export async function build() {
   );
   await emit('/robots.txt', robots());
 
+  // 网站版本：资源目录 /_s/<哈希>/。前端据此发现「线上已更新」，部署时据此保留上一版资源
+  await emit('/version.json', JSON.stringify({ assets: asset('') }));
+
   // 站内搜索索引：全部文章的纯文本，浏览器里做子串匹配（中文不依赖分词，搜得全）
   await emit(
     '/search.json',

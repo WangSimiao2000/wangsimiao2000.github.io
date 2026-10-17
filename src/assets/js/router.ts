@@ -65,15 +65,51 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     window.scrollTo({ top: sectionIndex(id) * h, behavior: 'instant' });
   }
 
+  /**
+   * 网站版本 = 页面引用的资源目录 /_s/<内容哈希>/。部署后哈希就变。
+   * 面板换页只换 HTML、不换已经加载的 CSS/JS，新旧混搭就会样式错乱，
+   * 所以取回的页面版本和当前不一样时，改成整页加载。
+   */
+  const versionOf = (root: ParentNode) =>
+    root.querySelector<HTMLLinkElement>('link[rel="stylesheet"][href^="/_s/"]')?.getAttribute('href')?.match(/^\/_s\/[^/]+\//)?.[0] ?? null;
+  const VERSION = versionOf(document);
+  /** 已经知道线上有新版：之后取页面一律绕过浏览器的 HTTP 缓存（GitHub Pages 固定让 HTML 缓存 10 分钟） */
+  let stale = false;
+
   function load(href: string): Promise<string> {
     const key = href.split('#')[0];
     let p = cache.get(key);
     if (!p) {
-      p = fetch(key, { headers: { accept: 'text/html' } }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
+      p = fetch(key, { headers: { accept: 'text/html' }, cache: stale ? 'reload' : 'default' }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
       p.catch(() => cache.delete(key));
       cache.set(key, p);
     }
     return p;
+  }
+
+  /**
+   * 问一下线上现在是哪个版本（version.json 每次绕开缓存取，只有几十字节）。
+   * 发现更新了：没开面板就直接刷新；正在读就不打断，下次换页时整页加载新版。
+   * 同一个版本最多自动刷新一次，CDN 还没换过来时不会反复刷新。
+   */
+  async function checkVersion() {
+    if (!VERSION || stale) return;
+    let live: string | undefined;
+    try {
+      const r = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) return;
+      live = ((await r.json()) as { assets?: string }).assets;
+    } catch {
+      return;
+    }
+    if (!live || live === VERSION) return;
+    stale = true;
+    cache.clear();
+    const mark = `reloaded:${live}`;
+    if (!isOpen() && !sessionStorage.getItem(mark)) {
+      sessionStorage.setItem(mark, '1');
+      location.reload();
+    }
   }
 
   /** 把目标页面需要、当前页面还没有的样式（如 KaTeX）加进来，等它加载完再展示 */
@@ -237,6 +273,12 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
       location.assign(href);
       return;
     }
+    const v = versionOf(doc);
+    if (VERSION && v && v !== VERSION) {
+      // 网站更新过：整页加载，换上新的样式和脚本（load 已经把新页面写进了 HTTP 缓存）
+      location.assign(href);
+      return;
+    }
     await adoptStyles(doc);
     if (my !== token) return; // 期间又点了别的
 
@@ -395,6 +437,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     const url = a && routable(a);
     if (url && url.pathname !== '/' && url.pathname.endsWith('/') && !isApp(url.pathname)) {
       load(url.href).catch(() => {});
+      if (url.pathname === '/server/map/') void import('./mcmap.js').then((m) => m.warmMap()).catch(() => {});
     }
   };
   document.addEventListener('pointerover', prefetch, { passive: true });
@@ -417,7 +460,11 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     )];
     const next = () => {
       const u = urls.shift();
-      if (!u) return;
+      if (!u) {
+        // 最后预热世界地图：查看器脚本、manifest 和出生点附近的粗图
+        if (document.querySelector('.stages a[href="/server/map/"]')) void import('./mcmap.js').then((m) => m.warmMap()).catch(() => {});
+        return;
+      }
       load(u)
         .then(async (text) => {
           const doc = new DOMParser().parseFromString(text, 'text/html');
@@ -438,6 +485,16 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   }
   if (document.readyState === 'complete') setTimeout(warmUp, 800);
   else window.addEventListener('load', () => setTimeout(warmUp, 800), { once: true });
+
+  // 版本检查：进站后一次，之后每次切回这个标签页时（至少隔 1 分钟）再查
+  let checkedAt = 0;
+  const maybeCheck = () => {
+    if (document.visibilityState !== 'visible' || Date.now() - checkedAt < 60_000) return;
+    checkedAt = Date.now();
+    void checkVersion();
+  };
+  setTimeout(maybeCheck, 1500);
+  document.addEventListener('visibilitychange', maybeCheck);
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) {

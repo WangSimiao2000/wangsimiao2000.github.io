@@ -58,6 +58,9 @@ export async function buildAssets(dist) {
   for (const font of await readdir(path.join(KATEX, 'fonts'))) {
     if (font.endsWith('.woff2')) await cp(path.join(KATEX, 'fonts', font), path.join(outDir, 'katex/fonts', font));
   }
+  // 这一版资源的文件清单：下次部署时据此把这一版整套留在线上（见 build/keep-previous.mjs）
+  const list = (await walk(outDir)).map((f) => path.relative(outDir, f).split(path.sep).join('/')).sort();
+  await writeFile(path.join(outDir, 'files.txt'), list.join('\n') + '\n');
 
   return (p) => base + p.replace(/^\//, '');
 }

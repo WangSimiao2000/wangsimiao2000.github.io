@@ -22,6 +22,65 @@ interface Manifest {
 const BASE = '/mc-map/';
 const MAX_SCALE = 6; // 屏幕像素 / 第 0 级像素
 const CACHE_LIMIT = 400;
+/** 开图时的缩放（屏幕像素 / 第 0 级像素），对应第 1 级 */
+const HOME_K = 0.5;
+/** 垫底用的粗图比当前级粗几级：粗 2 级 = 一张顶 16 张，一屏只要一两张、每张几 KB */
+const COARSE = 2;
+
+const tileUrl = (m: Manifest, key: string) => `${BASE}tiles/${key}.webp?v=${encodeURIComponent(m.generated_at ?? '')}`;
+const homeCenter = (m: Manifest): [number, number] => {
+  const sp = m.spawn;
+  return sp ? [4 * (sp[0] - sp[2]), 2 * (sp[0] + sp[2]) - 4 * (sp[1] + 1)] : [0, 0];
+};
+
+/**
+ * manifest 一次只取一份，预热和真正打开共用；超过 5 分钟才重新取，保证看到当天新渲染的。
+ * 每天只变一次，不需要每次打开都绕开缓存再等一轮。
+ */
+let manifestReq: { at: number; p: Promise<Manifest> } | null = null;
+function getManifest(signal?: AbortSignal): Promise<Manifest> {
+  if (!manifestReq || Date.now() - manifestReq.at > 5 * 60_000) {
+    const p = fetch(`${BASE}manifest.json?t=${Date.now()}`, { cache: 'no-store' }).then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json() as Promise<Manifest>;
+    });
+    p.catch(() => (manifestReq = null));
+    manifestReq = { at: Date.now(), p };
+  }
+  const p = manifestReq.p;
+  if (!signal) return p;
+  return new Promise((ok, fail) => {
+    signal.addEventListener('abort', () => fail(new DOMException('aborted', 'AbortError')), { once: true });
+    p.then(ok, fail);
+  });
+}
+
+const warmed: HTMLImageElement[] = [];
+/**
+ * 首页空闲时调用：先把 manifest 和出生点附近的粗图取好（总共二三十 KB），
+ * 打开地图时第一帧就有画面，清晰的瓦片再逐张换上。
+ */
+export function warmMap(): void {
+  getManifest()
+    .then((m) => {
+      if (!m.levels || warmed.length) return;
+      const z = Math.min(m.levels - 1, m.full_level + COARSE);
+      const span = m.tile * 2 ** z;
+      const [cx, cy] = homeCenter(m);
+      // 按一块 2000×1300 的大屏、开图缩放来估视野
+      const hw = 1000 / HOME_K;
+      const hh = 650 / HOME_K;
+      const set = new Set((m.tiles[String(z)] ?? []).map(([x, y]) => `${x}_${y}`));
+      for (let ty = Math.floor((cy - hh) / span); ty <= Math.floor((cy + hh) / span); ty++)
+        for (let tx = Math.floor((cx - hw) / span); tx <= Math.floor((cx + hw) / span); tx++) {
+          if (!set.has(`${tx}_${ty}`)) continue;
+          const im = new Image();
+          im.src = tileUrl(m, `${z}/${tx}_${ty}`);
+          warmed.push(im);
+        }
+    })
+    .catch(() => {});
+}
 
 export function bindMap(root: ParentNode): () => void {
   const box = root.querySelector<HTMLElement>('[data-mc-map]');
@@ -65,7 +124,7 @@ export function bindMap(root: ParentNode): () => void {
       im = new Image();
       im.decoding = 'async';
       im.onload = () => schedule();
-      im.src = `${BASE}tiles/${key}.webp?v=${encodeURIComponent(man?.generated_at ?? '')}`;
+      im.src = tileUrl(man!, key);
       cache.set(key, im);
       if (cache.size > CACHE_LIMIT) {
         const first = cache.keys().next().value as string;
@@ -114,6 +173,13 @@ export function bindMap(root: ParentNode): () => void {
     const x1 = Math.floor((cx + w / 2 / k) / span);
     const y0 = Math.floor((cy - h / 2 / k) / span);
     const y1 = Math.floor((cy + h / 2 / k) / span);
+    // 先排粗图的请求：几张小图最先到，整屏先有一个糊的轮廓，清晰的瓦片再逐张换上
+    const zc = Math.min(man!.levels - 1, z + COARSE);
+    if (zc > z) {
+      const f = 2 ** (zc - z);
+      for (let ty = Math.floor(y0 / f); ty <= Math.floor(y1 / f); ty++)
+        for (let tx = Math.floor(x0 / f); tx <= Math.floor(x1 / f); tx++) img(zc, tx, ty);
+    }
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) drawTile(z, tx, ty, man!.levels);
   }
 
@@ -190,12 +256,8 @@ export function bindMap(root: ParentNode): () => void {
   }
 
   function home() {
-    const sp = man?.spawn;
-    if (sp) {
-      cx = 4 * (sp[0] - sp[2]);
-      cy = 2 * (sp[0] + sp[2]) - 4 * (sp[1] + 1);
-    }
-    k = clampK(0.5);
+    if (man) [cx, cy] = homeCenter(man);
+    k = clampK(HOME_K);
     schedule();
   }
 
@@ -334,11 +396,7 @@ export function bindMap(root: ParentNode): () => void {
   /* ---------- 数据 ---------- */
 
   say('正在读取地图…');
-  fetch(`${BASE}manifest.json?t=${Date.now()}`, { cache: 'no-store', signal: ac.signal })
-    .then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json() as Promise<Manifest>;
-    })
+  getManifest(ac.signal)
     .then((m) => {
       if (!alive) return;
       if (!m.levels || !m.tiles?.[String(m.full_level)]?.length) {
