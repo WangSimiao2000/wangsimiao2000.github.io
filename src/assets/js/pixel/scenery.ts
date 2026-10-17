@@ -8,17 +8,32 @@
  */
 import { hash } from './sprites.js';
 
-export type Sprite = HTMLCanvasElement;
-type Put = (x: number, y: number, color: string) => void;
+export type Sprite = HTMLCanvasElement & {
+  /** 自发光像素（灯泡、亮着的窗）：夜里不盖夜色，按原色画在夜色之上 */
+  emissive?: HTMLCanvasElement;
+};
+/** glow=true 的像素记进自发光层；之后同一位置被普通像素覆盖时，自发光层也跟着擦掉 */
+type Put = (x: number, y: number, color: string, glow?: boolean) => void;
 
 function make(w: number, h: number, draw: (put: Put, g: CanvasRenderingContext2D) => void): Sprite {
-  const c = document.createElement('canvas');
+  const c = document.createElement('canvas') as Sprite;
   c.width = w;
   c.height = h;
   const g = c.getContext('2d')!;
-  const put: Put = (x, y, color) => {
+  let eg: CanvasRenderingContext2D | null = null;
+  const put: Put = (x, y, color, glow = false) => {
     g.fillStyle = color;
     g.fillRect(x, y, 1, 1);
+    if (glow) {
+      if (!eg) {
+        c.emissive = document.createElement('canvas');
+        c.emissive.width = w;
+        c.emissive.height = h;
+        eg = c.emissive.getContext('2d')!;
+      }
+      eg.fillStyle = color;
+      eg.fillRect(x, y, 1, 1);
+    } else eg?.clearRect(x, y, 1, 1);
   };
   draw(put, g);
   return c;
@@ -255,8 +270,8 @@ function cottage(): Sprite {
   const h = 42;
   const tile: Ramp = ['#ee9d7c', '#d27459', '#b05a45', '#874337'];
   return make(w, h, (put) => {
-    const R = (x0: number, y0: number, x1: number, y1: number, c: string) => {
-      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) put(x, y, c);
+    const R = (x0: number, y0: number, x1: number, y1: number, c: string, glow = false) => {
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) put(x, y, c, glow);
     };
     const n = (x: number, y: number) => hash(x * 12.9 + y * 78.2 + 3);
 
@@ -291,12 +306,12 @@ function cottage(): Sprite {
     for (let y = 25; y <= 30; y++) {
       for (let x = 12; x <= 17; x++) {
         const bar = x === 14 || x === 15 || y === 27 || y === 28;
-        put(x, y, bar ? '#7a5236' : y < 27 && x < 14 ? '#fff4c8' : '#ffd77e');
+        put(x, y, bar ? '#7a5236' : y < 27 && x < 14 ? '#fff4c8' : '#ffd77e', !bar);
       }
     }
     R(14, 25, 15, 30, '#7a5236');
     R(12, 27, 17, 28, '#7a5236');
-    put(12, 25, '#fffbe6');
+    put(12, 25, '#fffbe6', true);
     for (const sx of [9, 19]) {
       for (let y = 24; y <= 31; y++) {
         put(sx, y, sx === 9 ? '#7fae78' : '#5e8c5a');
@@ -329,8 +344,8 @@ function cottage(): Sprite {
     // 门边小灯
     put(36, 26, '#3d3a3c');
     R(35, 27, 37, 27, '#3d3a3c');
-    R(35, 28, 37, 30, '#ffd36a');
-    put(35, 28, '#fff3c4');
+    R(35, 28, 37, 30, '#ffd36a', true);
+    put(35, 28, '#fff3c4', true);
     R(35, 31, 37, 31, '#3d3a3c');
 
     // ---- 石砌地基与台阶 ----
@@ -414,7 +429,7 @@ function lamp(): Sprite {
     for (let x = 1; x < 6; x++) put(x, 25, '#2e3137');
     // 灯笼
     for (let x = 0; x < 7; x++) put(x, 1, '#2e3137');
-    for (let y = 2; y < 7; y++) for (let x = 1; x < 6; x++) put(x, y, x === 1 || x === 5 ? '#2e3137' : y < 4 ? '#fff3c4' : '#ffd36a');
+    for (let y = 2; y < 7; y++) for (let x = 1; x < 6; x++) { const frame = x === 1 || x === 5; put(x, y, frame ? '#2e3137' : y < 4 ? '#fff3c4' : '#ffd36a', !frame); }
     put(3, 0, '#2e3137');
     for (let x = 1; x < 6; x++) put(x, 7, '#2e3137');
   });
