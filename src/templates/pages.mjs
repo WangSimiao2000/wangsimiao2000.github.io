@@ -335,6 +335,31 @@ export function guestbookPage(home) {
   return shell(home, { title: '留言板', path: '/guestbook/', reader: { section: 'secret', body } });
 }
 
+/* ---------- 服务器地图 ---------- */
+
+export function mapPage(home) {
+  const body = html`
+    <header class="post-head map-head">
+      <h1>世界地图</h1>
+      <p class="page-sub">主世界的 45° 像素俯瞰图，mc-ops 每天清晨渲染一次。玩家常去的地方有高清细节。<span class="map-stamp" data-map-stamp hidden></span></p>
+    </header>
+    <div class="mcmap" data-mc-map>
+      <canvas tabindex="0" aria-label="服务器地图：拖动平移，滚轮或双指缩放，双击放大"></canvas>
+      <p class="map-status" data-map-status>地图需要启用 JavaScript。</p>
+      <div class="map-tools" role="group" aria-label="地图缩放">
+        <button type="button" class="btn map-btn" data-map-act="in" aria-label="放大">+</button>
+        <button type="button" class="btn map-btn" data-map-act="out" aria-label="缩小">−</button>
+        <button type="button" class="btn map-btn" data-map-act="home" title="回到出生点" aria-label="回到出生点">⌂</button>
+      </div>
+    </div>`;
+  return shell(home, {
+    title: '世界地图',
+    description: 'Minecraft 生存服主世界的等轴测像素地图，每天更新。',
+    path: '/server/map/',
+    reader: { section: 'server', body, wide: true },
+  });
+}
+
 /* ---------- 404 ---------- */
 
 export function notFoundPage(home) {

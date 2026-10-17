@@ -10,7 +10,7 @@ import path from 'node:path';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 // 同域但由别的仓库提供的路径（各自仓库的 GitHub Pages），本站产物里没有
-const EXTERNAL = ['/bazi-fortune/', '/mc-status/'];
+const EXTERNAL = ['/bazi-fortune/', '/mc-status/', '/mc-map/'];
 
 const errors = [];
 const exists = (p) => stat(p).then(() => true, () => false);
