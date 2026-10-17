@@ -82,6 +82,27 @@ a { color: inherit; }
 .theme-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .theme-btn .i-moon { fill: currentColor; stroke: none; }
 [data-theme='light'] .i-moon, [data-theme='dark'] .i-sun { display: none; }
+/* 全屏按钮：方头线端、直角折线，和像素世界一个调性；不支持的浏览器（iPhone）保持 hidden */
+.fs-btn[hidden] { display: none; }
+.fs-btn svg { stroke-linecap: square; stroke-linejoin: miter; stroke-width: 2.2; }
+.fs-btn .i-fs-off, .is-fullscreen .fs-btn .i-fs-on { display: none; }
+.is-fullscreen .fs-btn .i-fs-off { display: block; }
+.fs-btn[aria-pressed='true'] { color: var(--accent); box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+/* 首次访问的提示气泡：轻拟物小卡片，带一个指向按钮的方块尖角，淡入后自动淡出 */
+.fs-hint {
+  position: fixed; z-index: 30; pointer-events: none;
+  padding: 8px 13px; border-radius: 12px; font-size: 13px; color: var(--text);
+  background: linear-gradient(145deg, var(--surface-hi), var(--surface-lo));
+  box-shadow: 6px 6px 16px var(--sh-dark), -5px -5px 14px var(--sh-light), inset 1px 1px 0 var(--edge);
+  opacity: 0; transform: translateY(-6px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.fs-hint::before {
+  content: ''; position: absolute; top: -5px; right: 14px; width: 10px; height: 10px;
+  background: var(--surface-hi); transform: rotate(45deg);
+}
+.fs-hint.show { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .fs-hint { transition: opacity 0.2s; transform: none; } }
 
 /* ---- 凸起卡片 ---- */
 .card {
