@@ -342,7 +342,7 @@ export function bindMap(root: ParentNode): () => void {
     .then((m) => {
       if (!alive) return;
       if (!m.levels || !m.tiles?.[String(m.full_level)]?.length) {
-        say('地图还在生成，明天再来看看。');
+        say('第一张地图正在生成（全图首次渲染约需一小时），稍后刷新再来看看。');
         return;
       }
       man = m;

@@ -91,11 +91,11 @@ const about = () => html`
     <p class="hero-name">嗨，我是${site.author}</p>
     <p>图形渲染开发工程师 @ 小米。喜欢图形学、游戏和折腾服务器。</p>
     <p class="more">
-      <a class="btn btn-open" href="/about/">完整介绍<span class="open-icon" aria-hidden="true"></span></a>
       <a class="btn" href="${site.links.github}" target="_blank" rel="noopener">GitHub</a>
       <a class="btn" href="${site.links.bilibili}" target="_blank" rel="noopener">Bilibili</a>
       <a class="btn" href="${site.links.steam}" target="_blank" rel="noopener">Steam</a>
     </p>
+    <p class="more"><a class="btn btn-open" href="/about/">完整介绍<span class="open-icon" aria-hidden="true"></span></a></p>
   </div>`;
 
 /** 评论区占位：阅读面板打开后由 comments.ts 按当前地址加载 Giscus */

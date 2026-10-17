@@ -338,10 +338,30 @@ export function guestbookPage(home) {
 /* ---------- 服务器地图 ---------- */
 
 export function mapPage(home) {
+  // 右侧：服务器状态小卡片（宽屏）；窄屏收成地图上方的一行（inline-meta，≥1000px 时隐藏）
+  const right = html`
+    <aside class="reader-side side-right card map-side" aria-label="服务器状态" data-mc-status>
+      <p class="side-title">服务器状态</p>
+      <dl class="mini-stats">
+        <div><dt>状态</dt><dd data-k="state">读取中…</dd></div>
+        <div><dt>在线</dt><dd data-k="players">-</dd></div>
+        <div><dt>版本</dt><dd data-k="version">-</dd></div>
+        <div><dt>已开服</dt><dd data-k="uptime">-</dd></div>
+      </dl>
+      <figure class="spark-box" hidden><svg data-spark preserveAspectRatio="none" aria-hidden="true"></svg><figcaption>最近 24 小时在线人数</figcaption></figure>
+      <p class="side-title">加入</p>
+      <p class="side-note">白名单制，加 QQ 群申请：<br><button type="button" class="qq-chip" data-copy="${site.qqGroup}" title="点击复制群号">${site.qqGroup}<span class="qq-copied" aria-live="polite"></span></button></p>
+      <p class="side-note muted" data-k="updated">每 10 分钟更新一次</p>
+    </aside>`;
+  const inline = html`
+    <p class="map-inline inline-meta" data-mc-status>
+      <span data-k="state">读取中…</span> · 在线 <span data-k="players">-</span> · <span data-k="version">-</span> · 已开服 <span data-k="uptime">-</span>
+    </p>`;
   const body = html`
     <header class="post-head map-head">
       <h1>世界地图</h1>
       <p class="page-sub">主世界的 45° 像素俯瞰图，mc-ops 每天清晨渲染一次。玩家常去的地方有高清细节。<span class="map-stamp" data-map-stamp hidden></span></p>
+      ${inline}
     </header>
     <div class="mcmap" data-mc-map>
       <canvas tabindex="0" aria-label="服务器地图：拖动平移，滚轮或双指缩放，双击放大"></canvas>
@@ -356,7 +376,7 @@ export function mapPage(home) {
     title: '世界地图',
     description: 'Minecraft 生存服主世界的等轴测像素地图，每天更新。',
     path: '/server/map/',
-    reader: { section: 'server', body, wide: true },
+    reader: { section: 'server', body, wide: true, right },
   });
 }
 

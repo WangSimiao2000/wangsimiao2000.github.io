@@ -10,6 +10,7 @@
 import type { World } from './pixel/world.js';
 import { bindToc } from './toc.js';
 import { mountComments } from './comments.js';
+import { paintStatus } from './status.js';
 
 interface RouterOptions {
   world: World;
@@ -190,6 +191,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     if (stages) stages.inert = on;
     world.setReading(on);
     unbindToc = on ? bindToc(reader) : () => {};
+    if (on) paintStatus(reader);
     unbindMap();
     unbindMap = () => {};
     // 服务器地图：只有地图页才加载查看器脚本

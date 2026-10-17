@@ -105,7 +105,17 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 .server-foot .map-open { margin: 0; padding: 7px 13px; font-size: 13px; }
 
 /* ---- 世界地图（/server/map/）：宽面板，地图填满正文区 ---- */
-.js .reader.reader-wide { width: min(1280px, calc(100vw - 32px)); }
+.js .reader.reader-wide { width: min(calc(1280px * var(--ui, 1)), calc(100vw - 32px)); }
+.mini-stats { margin: 0 0 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mini-stats div { padding: 8px 10px; border-radius: 12px; box-shadow: inset 3px 3px 7px var(--sh-dark), inset -3px -3px 7px var(--sh-light); }
+.mini-stats dt { font-size: 11px; color: var(--muted); }
+.mini-stats dd { margin: 3px 0 0; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+[data-online='1'] .mini-stats dd[data-k='state'], [data-online='1'].map-inline [data-k='state'] { color: var(--accent); }
+[data-online='0'] .mini-stats dd[data-k='state'], [data-online='0'].map-inline [data-k='state'] { color: #d9534f; }
+.map-side .spark-box svg { height: 30px; }
+.side-note { margin: 0 0 8px; font-size: 13px; line-height: 1.7; }
+.side-note.muted { color: var(--muted); font-size: 12px; }
+.map-inline { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .js .reader-wide .reader-scroll { display: flex; flex-direction: column; overflow: hidden; padding: 0 18px 18px; }
 .map-head { margin-bottom: 14px; }
 .map-head h1 { margin-bottom: 6px; }
@@ -181,8 +191,10 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 .js .has-reader .stages { display: block; }
 .js .reader {
   position: fixed; z-index: 4; top: 70px; bottom: var(--strip); left: 50%;
-  width: min(860px, calc(100vw - 32px)); margin: 0; padding: 0; transform: translateX(-50%);
+  width: min(calc(860px * var(--ui, 1)), calc(100vw - 32px)); max-width: none; margin: 0; padding: 0; transform: translateX(-50%);
 }
+/* 大屏：面板和两侧卡片的内容按 --ui 整体放大（地图本身不缩放，只是面板变大） */
+.js .reader-bar, .js .reader:not(.reader-wide) .reader-scroll > *, .js .reader-wide .map-head, .js .reader-side > * { zoom: var(--ui, 1); }
 .reader-card { padding: 0; }
 .js .reader-card { height: 100%; max-height: none; display: flex; flex-direction: column; overflow: hidden; }
 .reader-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 4px; }
@@ -250,18 +262,20 @@ html.js.reading { overflow: hidden; }
 .side-tags .tag { font-size: 12px; padding: 4px 10px; }
 
 /* 有 JS：两侧卡片绝对定位在面板外侧，有没有目录都不影响正文位置 */
-.js .reader-side { display: none; position: absolute; top: 0; z-index: 1; width: 220px; max-height: 100%; margin: 0; overflow: auto; }
-.js .side-left { right: calc(100% + 20px); }
-.js .side-right { left: calc(100% + 20px); max-height: calc(100% - 40px); }
+.js .reader-side { display: none; position: absolute; top: 0; z-index: 1; width: calc(220px * var(--ui, 1)); max-height: 100%; margin: 0; overflow: auto; }
+.js .side-left { right: calc(100% + 20px * var(--ui, 1)); }
+.js .side-right { left: calc(100% + 20px * var(--ui, 1)); max-height: calc(100% - 40px); }
 
 @media (min-width: 1000px) {
   .js .inline-meta { display: none; }
-  .js .reader:has(.side-right) { left: calc(50% - 120px); width: min(760px, calc(100vw - 340px)); }
+  .js .reader:has(.side-right) { left: calc(50% - 120px * var(--ui, 1)); width: min(calc(760px * var(--ui, 1)), calc(100vw - 340px * var(--ui, 1))); }
+  .js .reader-wide:has(.side-right) { width: min(calc(1100px * var(--ui, 1)), calc(100vw - 340px * var(--ui, 1))); }
   .js .side-right { display: block; }
   .js .post-head { margin-bottom: 20px; }
 }
 @media (min-width: 1280px) {
-  .js .reader:has(.side-right), .js .reader:has(.side-left) { left: 50%; width: min(800px, calc(100vw - 560px)); }
+  .js .reader:has(.side-right), .js .reader:has(.side-left) { left: 50%; width: min(calc(800px * var(--ui, 1)), calc(100vw - 560px * var(--ui, 1))); }
+  .js .reader-wide:has(.side-right):not(:has(.side-left)) { left: calc(50% - 120px * var(--ui, 1)); width: min(calc(1100px * var(--ui, 1)), calc(100vw - 340px * var(--ui, 1))); }
   .js .side-left { display: flex; flex-direction: column; }
   .js .side-left .toc-list { overflow: auto; min-height: 0; scrollbar-width: thin; }
 }
@@ -337,6 +351,9 @@ html.js.reading { overflow: hidden; }
 /* 内容短的页面（工具、分类）面板按内容收高，不撑满 */
 .js .reader-card { height: auto; max-height: 100%; }
 .js .reader-scroll { flex: 0 1 auto; }
+/* 地图页撑满面板，地图越大越好用 */
+.js .reader-wide .reader-card { height: 100%; }
+.js .reader-wide .reader-scroll { flex: 1 1 auto; }
 /* 没有侧栏的短页面贴近地面，和首页卡片的位置一致 */
 .js .reader:not(:has(.reader-side)) { display: flex; flex-direction: column; justify-content: flex-end; }
 
@@ -404,14 +421,17 @@ html.searching { overflow: hidden; }
 .search-results mark { background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 0 2px; }
 @media (max-width: 640px) { .search { padding-top: 64px; } .search-card { max-height: calc(100dvh - 80px); } }
 .spark-box { margin: 0 0 12px; padding: 8px 12px 6px; border-radius: 14px; color: var(--accent); box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light); }
-.spark-box svg { display: block; width: 100%; height: 36px; }
-.spark-box figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
-@media (max-height: 760px) { .spark-box { display: none; } }
-.spark-box { margin: 0 0 12px; padding: 8px 12px 6px; border-radius: 14px; color: var(--accent); box-shadow: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light); }
 .spark-box[hidden] { display: none; }
 .spark-box svg { display: block; width: 100%; height: 36px; }
 .spark-box figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
-@media (max-height: 760px) { .spark-box { display: none; } }
+/* 矮屏：折线压扁、说明并到一行，卡片仍放得下；实在太矮（<600）才不显示 */
+@media (max-height: 760px) {
+  .server .spark-box { display: flex; align-items: center; gap: 10px; padding: 5px 12px; margin-bottom: 10px; }
+  .server .spark-box[hidden] { display: none; }
+  .server .spark-box svg { flex: 1; height: 20px; }
+  .server .spark-box figcaption { margin: 0; white-space: nowrap; }
+}
+@media (max-height: 600px) { .server .spark-box { display: none !important; } }
 .qq-chip {
   position: relative; font: inherit; font-weight: 700; color: var(--accent); cursor: pointer; border: 0;
   margin-left: 4px; padding: 2px 10px; border-radius: 10px; background: var(--surface);
