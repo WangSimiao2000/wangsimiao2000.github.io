@@ -12,6 +12,10 @@ export const topbar = () => html`
       <button type="button" class="theme-btn" data-search-open aria-label="搜索文章（/）" title="搜索（/ 或 Ctrl+K）">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
       </button>
+      <button type="button" class="theme-btn fs-btn" data-fullscreen-toggle hidden aria-label="全屏浏览，更沉浸（F）" title="全屏浏览，更沉浸（F）">
+        <svg class="i-fs-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
+        <svg class="i-fs-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" /></svg>
+      </button>
       <button type="button" class="theme-btn" data-theme-toggle aria-label="切换深色模式">
         <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" /></svg>
         <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>
@@ -67,6 +71,7 @@ export function layout(o) {
   ${(o.css ?? []).map((c) => html`<link rel="stylesheet" href="${o.asset(c)}">`)}
   ${o.math ? html`<link rel="stylesheet" href="${o.asset('katex/katex.min.css')}">` : ''}
   <script type="module" src="${o.asset('js/theme.js')}"></script>
+  <script type="module" src="${o.asset('js/fullscreen.js')}"></script>
   ${(o.js ?? []).map((j) => html`<script type="module" src="${o.asset(j)}"></script>`)}
   ${raw(o.extraHead ?? '')}
 </head>
