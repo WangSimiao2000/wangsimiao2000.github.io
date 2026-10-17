@@ -172,6 +172,11 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     const idx = secret ? -1 : Math.round(fr.p);
     if (idx === activeIdx) return;
     activeIdx = idx;
+    // 地址栏跟着当前板块走（触屏原生滑动、键盘、快捷栏都一样）：起点不带锚点，其他板块是 #posts 这种
+    if (idx >= 0 && !reading && location.pathname === '/') {
+      const want = idx === 0 ? '' : `#${sections[idx].id}`;
+      if (location.hash !== want) history.replaceState(history.state, '', want || location.pathname + location.search);
+    }
     panels.forEach((panel, i) => {
       const on = i === idx;
       panel.toggleAttribute('inert', !on);
@@ -188,7 +193,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     if (secret) exitSecret();
     const target = sections[clamp(i, 0, N - 1)];
     target.scrollIntoView({ behavior: reducedMq.matches ? 'auto' : 'smooth' });
-    history.replaceState(null, '', `#${target.id}`);
   }
 
   slots.forEach((s, i) =>

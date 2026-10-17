@@ -27,6 +27,18 @@ t.ok((await active()) === '博文', '← 回到博文');
 await page.click('.hb-slot:has-text("关于")');
 await wait(1200);
 t.ok((await active()) === '关于', '点快捷栏到关于');
+t.ok(new URL(page.url()).hash === '#about', '地址栏跟着变成 #about');
+
+// 带锚点刷新：停在那个板块，地址栏和画面一致
+await page.goto(BASE + '/#posts', { waitUntil: 'load' });
+await wait(800);
+t.ok((await active()) === '博文', '打开 /#posts 停在博文');
+await page.reload({ waitUntil: 'load' });
+await wait(800);
+t.ok((await active()) === '博文' && new URL(page.url()).hash === '#posts', '刷新后仍在博文，地址仍是 #posts');
+await page.keyboard.press('1');
+await wait(1200);
+t.ok(new URL(page.url()).hash === '', '回到起点后地址不带锚点');
 
 // 一次带惯性的滚轮手势只翻一页
 await page.keyboard.press('1');
