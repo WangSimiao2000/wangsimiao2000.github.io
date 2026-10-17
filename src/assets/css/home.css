@@ -123,7 +123,8 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 .map-head h1 { margin-bottom: 8px; }
 .map-stamp { margin-left: 8px; font-size: 12px; opacity: 0.8; }
 .mcmap {
-  position: relative; flex: 1; min-height: 320px; border-radius: var(--r-in); overflow: hidden; background: var(--surface-lo);
+  /* 不设死最小高度：矮屏上地图跟着面板收，不会顶出卡片底边（以前 min-height: 320px 在视口矮于约 700px 时溢出） */
+  position: relative; flex: 1; min-height: 120px; border-radius: var(--r-in); overflow: hidden; background: var(--surface-lo);
   box-shadow: var(--i3);
 }
 .mcmap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; outline: none; }
@@ -140,6 +141,15 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 @media (max-width: 640px) {
   .map-head .page-sub { font-size: 13px; }
   .map-tools { right: 12px; bottom: 12px; }
+}
+/* 矮屏（缩放后的笔记本）：标题区收紧，把高度让给地图 */
+@media (max-height: 720px) {
+  .map-head { padding-top: 6px; margin-bottom: 12px; }
+  .map-head h1 { margin-bottom: 4px; }
+  .map-head .page-sub { font-size: 13px; }
+}
+@media (max-height: 620px) {
+  .map-head .page-sub { display: none; }
 }
 
 .about p { margin: 0 0 12px; }
