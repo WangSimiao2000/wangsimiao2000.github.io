@@ -4,6 +4,9 @@ import { startRouter } from './router.js';
 import { startSlingshot } from './slingshot.js';
 import './search.js';
 import { paintStatus } from './status.js';
+import { removeLegacyServiceWorker } from './legacy-sw.js';
+
+void removeLegacyServiceWorker();
 
 const canvas = document.getElementById('world') as HTMLCanvasElement;
 const sections = [...document.querySelectorAll<HTMLElement>('.stage')];
