@@ -304,6 +304,9 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     document.title = doc.title;
     const fromCard = !wasOpen ? (from?.closest<HTMLElement>('.card') ?? null) : null;
     await transition(() => {
+      // 面板外壳的版式（地图页是宽面板）跟着新页面走；以前只换内容不换 class，
+      // 从首页卡片进地图时还是窄面板，地图贴边、被挤变形，刷新才正常
+      reader.classList.toggle('reader-wide', next.classList.contains('reader-wide'));
       reader.innerHTML = next.innerHTML;
       labelBack(state);
       setReading(true);

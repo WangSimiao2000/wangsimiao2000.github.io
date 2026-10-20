@@ -280,9 +280,10 @@ export function bindMap(root: ParentNode): () => void {
   }
 
   function resize() {
-    const r = canvas.getBoundingClientRect();
-    w = r.width;
-    h = r.height;
+    // 用布局尺寸而不是 getBoundingClientRect：面板开合动画期间整块带着 transform 缩放，
+    // 按缩放后的尺寸建画布，动画结束后布局尺寸没变、ResizeObserver 不会再触发，画面就一直被拉伸
+    w = canvas.clientWidth;
+    h = canvas.clientHeight;
     dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);

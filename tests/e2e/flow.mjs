@@ -167,6 +167,37 @@ await page.mouse.move(cx, cy);
 await wait(200);
 t.ok(await page.evaluate(() => document.documentElement.classList.contains('world-hover')), '草堆点 4 下跳出猫');
 
+// 从服务器卡片进地图：面板换成宽版，地图离卡片边 16px，画布不被拉伸（以前要刷新才正常）
+const mapGeom = () =>
+  page.evaluate(() => {
+    const c = document.querySelector('.mcmap canvas');
+    const m = document.querySelector('.mcmap').getBoundingClientRect();
+    const card = document.querySelector('.reader-card').getBoundingClientRect();
+    return {
+      wide: document.querySelector('[data-reader]').classList.contains('reader-wide'),
+      gapR: Math.round(card.right - m.right),
+      gapB: Math.round(card.bottom - m.bottom),
+      sharp: Math.abs(c.width - Math.round(c.clientWidth * devicePixelRatio)) <= 1 && Math.abs(c.height - Math.round(c.clientHeight * devicePixelRatio)) <= 1,
+    };
+  });
+await page.goto(BASE + '/#server', { waitUntil: 'load' });
+await wait(1500);
+await page.click('.map-open');
+await wait(1800);
+const g1 = await mapGeom();
+t.ok(g1.wide && g1.gapR === 16 && g1.gapB === 16 && g1.sharp, `从卡片进地图版式正确 ${JSON.stringify(g1)}`);
+await page.reload({ waitUntil: 'load' });
+await wait(1500);
+const g2 = await mapGeom();
+t.ok(JSON.stringify(g1) === JSON.stringify(g2), '和直接打开地图一致');
+await page.click('.reader-close');
+await wait(1200);
+await page.goto(BASE + '/#posts', { waitUntil: 'load' });
+await wait(1200);
+await page.click('#posts a.btn-open[href="/archives/"]');
+await wait(1500);
+t.ok(!(await page.$eval('[data-reader]', (el) => el.classList.contains('reader-wide'))), '再打开归档时面板变回普通宽度');
+
 t.ok(errors.length === 0, `没有 JS 报错${errors.length ? '：' + errors.join(' | ') : ''}`);
 await browser.close();
 t.done();
