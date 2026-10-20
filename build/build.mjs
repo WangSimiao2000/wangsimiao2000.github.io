@@ -7,6 +7,7 @@
 import { cp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { buildAssets } from './assets.mjs';
+import { buildAtlas } from './atlas.mjs';
 import { loadData, loadPosts } from './content.mjs';
 import { excerpt, plainText, renderMarkdown } from './markdown.mjs';
 import { formatDate } from '../src/templates/util.mjs';
@@ -48,6 +49,8 @@ export async function build() {
   const t0 = performance.now();
   await rm(OUT, { recursive: true, force: true });
   await cp(path.join(ROOT, 'public'), OUT, { recursive: true });
+  // 像素图集：src/art/ 的小图拼成 src/assets/img/atlas.png（检查不过直接失败，不会带着坏图上线）
+  await buildAtlas();
 
   const [asset, posts, friends, tools] = await Promise.all([
     buildAssets(OUT),

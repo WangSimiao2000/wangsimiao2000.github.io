@@ -1,5 +1,6 @@
 /**
- * 图集：所有固定的像素精灵都在一张 atlas.png 上，坐标见 atlas-map.ts（素材以 PNG 为准）。
+ * 图集：所有固定的像素精灵拼在一张 atlas.png 上。源图是 src/art/ 下每个精灵一张 PNG，
+ * 构建时由 build/atlas.mjs 打包，同时生成坐标表 atlas-map.ts（生成文件，不进 git）。
  *
  * sprite(name) 立刻返回一张尺寸正确的小 canvas，图集加载好后再把像素画进去：
  * 用到精灵的代码不用关心加载时机（还没加载完的那几帧只是画了空白），世界也不用等它才开始跑。
@@ -48,7 +49,7 @@ function cut(r: readonly [number, number, number, number]): HTMLCanvasElement {
 
 const cache = new Map<string, Sprite>();
 
-/** 按名字取一个精灵；名字不在坐标表里直接报错（多半是改图后忘了改 atlas-map.ts） */
+/** 按名字取一个精灵；名字不在坐标表里直接报错（src/art/ 里没有对应的图） */
 export function sprite(name: string): Sprite {
   let s = cache.get(name);
   if (s) return s;

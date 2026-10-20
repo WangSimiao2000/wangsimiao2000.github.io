@@ -41,7 +41,8 @@ src/
 ├── content/posts/ # 文章，文件名 YYYY-MM-DD-slug.md，URL 为 /posts/slug/
 ├── data/          # friends.yml 友链、tools.yml 工具、contact.yml 联系方式
 ├── templates/     # 页面模板（纯 JS 函数）
-├── assets/        # css/ 与 js/（js/pixel/ 是首页像素世界）、img/atlas.png（像素精灵图集）
+├── art/           # 像素精灵源图，每个精灵一张 PNG（构建时打包成图集）
+├── assets/        # css/ 与 js/（js/pixel/ 是首页像素世界）
 └── site.mjs       # 站点信息
 public/            # 原样复制的静态文件（配图、头像、简历、CNAME）
 tools/             # 旧站的工具页，待迁移
@@ -49,10 +50,16 @@ tools/             # 旧站的工具页，待迁移
 
 ## 像素素材
 
-首页世界里固定的精灵（主角、女孩、猫、树、房子、路牌、营火、孔明灯、生日帽、弹弓……）都在一张图集
-`src/assets/img/atlas.png` 上，以这张 PNG 为准：用 Aseprite / Piskel 直接改像素即可。
-每个精灵的位置写在 `src/assets/js/pixel/atlas-map.ts`（`[x, y, 宽, 高]`），挪了位置、改了尺寸或新加精灵时改对应一行；
-`名字#glow` 是同尺寸的自发光遮罩（夜里不盖夜色的像素，比如窗户、灯泡）。
+首页世界里固定的精灵（主角、女孩、猫、树、房子、路牌、营火、孔明灯、生日帽、弹弓……）每个一张 PNG，放在 `src/art/`，
+文件路径就是精灵名：`src/art/hero/r/run/0.png` 是 `hero.r.run.0`，`src/art/scenery/cottage.glow.png` 是小屋的自发光遮罩
+（夜里不盖夜色的像素，比如窗户、灯泡，尺寸要和本体一样）。用 Aseprite / Piskel 直接改、尺寸随便改，新加精灵就放一张新图。
+
+`npm run dev` / `npm run build` / `npm test` 会先跑 `build/atlas.mjs`，把这些小图拼成一张图集（`src/assets/img/atlas.png` 和坐标表
+`src/assets/js/pixel/atlas-map.ts`，都是生成文件、不进 git），访客只加载这一张图。打包时会检查：代码要用的精灵缺了、
+角色同一动作的各帧尺寸不一致、自发光遮罩尺寸不对，都会直接报错，CI 也就停在部署之前。
+
+注意：小屋（窗户光晕、门洞、门的点击区域、烟囱）、路灯灯泡、营火火焰的位置是写在 `src/assets/js/pixel/scenery.ts`
+里的像素坐标（`COTTAGE`、`LAMP_BULB`、`CAMPFIRE_FLAME`），挪动这几张图里的门窗灯火时要同步改这些数字。
 主角、女孩左右各一套（光照永远在左上，不是简单镜像）。地形、天空、粒子、烟花是按坐标实时算的，仍在代码里。
 
 ## 文章写法
