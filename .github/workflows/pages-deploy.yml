@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  discussions: read # 留言板的留言变成秋林里的灯笼
   pages: write
   id-token: write
 
@@ -49,6 +50,13 @@ jobs:
         # 检测失败（如网络抖动）不阻塞部署，按全部存活处理
         continue-on-error: true
         run: node build/check-friends.mjs
+
+      - name: Fetch guestbook lanterns
+        # 留言板的留言 -> 秋林里的灯笼；失败不阻塞部署
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node build/fetch-guestbook.mjs
 
       - name: Fetch latest resume
         # 从 WangSimiao2000/Resume 取最新的 resume.pdf；下载失败或不是 PDF 就沿用仓库里的副本，不阻塞部署
