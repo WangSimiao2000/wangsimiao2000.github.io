@@ -495,6 +495,24 @@ html.searching { overflow: hidden; }
 .qq-chip:active { box-shadow: var(--i1); }
 .qq-copied { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 
+/* ---- 关于页：微信 / QQ 二维码浮层（原生 popover，顶层渲染，点外面或 Esc 关闭） ---- */
+.about-hero .more + .more { margin-top: 0; }
+.qr-pop {
+  margin: auto; border: 0; padding: var(--inset); width: calc(220px + 2 * var(--inset));
+  border-radius: var(--radius); background: var(--surface); color: var(--text); box-shadow: var(--e4);
+  text-align: center; opacity: 0; transform: translateY(8px) scale(0.97);
+  transition: opacity 0.2s ease, transform 0.2s ease, overlay 0.2s allow-discrete, display 0.2s allow-discrete;
+}
+.qr-pop:popover-open { opacity: 1; transform: none; }
+@starting-style { .qr-pop:popover-open { opacity: 0; transform: translateY(8px) scale(0.97); } }
+.qr-pop img { display: block; width: 220px; height: 220px; border-radius: var(--r-in); }
+.qr-pop p { margin: 12px 0 0; font-size: 14px; }
+.qr-pop p.small { margin-top: 4px; font-size: 12px; }
+.qr-pop::backdrop { background: rgb(0 0 0 / 0); transition: background 0.2s ease, overlay 0.2s allow-discrete, display 0.2s allow-discrete; }
+.qr-pop:popover-open::backdrop { background: rgb(0 0 0 / 0.45); }
+@starting-style { .qr-pop:popover-open::backdrop { background: rgb(0 0 0 / 0); } }
+@media (prefers-reduced-motion: reduce) { .qr-pop, .qr-pop::backdrop { transition: none; } }
+
 /* ---- 彩蛋 ---- */
 html.js { touch-action: manipulation; } /* 双击路牌 / 门时不触发浏览器的双击缩放 */
 html.secret-open { overflow: hidden; }
