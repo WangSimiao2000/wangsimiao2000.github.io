@@ -12,10 +12,6 @@ export const topbar = () => html`
       <button type="button" class="theme-btn" data-search-open aria-label="搜索文章（/）" title="搜索（/ 或 Ctrl+K）">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
       </button>
-      <button type="button" class="theme-btn snd-btn" data-sound-toggle hidden aria-pressed="false" aria-label="打开 8-bit 环境音" title="打开 8-bit 环境音">
-        <svg class="i-snd-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h4l5-4v13l-5-4H4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11" /></svg>
-        <svg class="i-snd-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h4l5-4v13l-5-4H4zM17 9.5l5 5M22 9.5l-5 5" /></svg>
-      </button>
       <button type="button" class="theme-btn fs-btn" data-fullscreen-toggle hidden aria-label="全屏浏览，更沉浸（F）" title="全屏浏览，更沉浸（F）">
         <svg class="i-fs-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
         <svg class="i-fs-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" /></svg>

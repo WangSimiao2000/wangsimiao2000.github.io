@@ -23,7 +23,6 @@ import { Eggs, inside } from './eggs.js';
 import { CHAR_H, Hero } from './hero.js';
 import { Fireworks, isBirthday } from './festive.js';
 import { Lanterns } from './lanterns.js';
-import { sound } from '../sound.js';
 import { bindInput } from './input.js';
 import { clamp, easeInOut, mix } from './util.js';
 import type { Frame } from './frame.js';
@@ -31,14 +30,6 @@ import type { Frame } from './frame.js';
 const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
 const NIGHT = 'rgba(14, 20, 38, 0.46)';
 const SECRET_DUR = 0.55; // 进出隐藏页的时长，和浏览器平滑滚动一致
-
-/** 环境音的风有多大：雪原、沙丘风大，其他地方微风；按相机所在的两个群系插值 */
-const WIND: Record<string, number> = { snow: 1, desert: 0.8, autumn: 0.45, cherry: 0.35 };
-function windAt(camX: number) {
-  const [i, j, t] = weights(camX);
-  const w = (k: number) => WIND[BIOMES[k].name] ?? 0.25;
-  return w(i) + (w(j) - w(i)) * t;
-}
 
 export interface WorldOptions {
   canvas: HTMLCanvasElement;
@@ -77,10 +68,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   const birthday = isBirthday();
   hero.hat = birthday;
   const fireworks = birthday ? new Fireworks() : null;
-  if (fireworks) fireworks.onBurst = () => sound.sfx('burst');
   const lanterns = new Lanterns();
-  let fireX: number | null = null; // 画面里营火的世界坐标（烟花从这里升起、营火声按它算远近）
-  let lastStep = 0;
+  let fireX: number | null = null; // 画面里营火的世界坐标（烟花从这里升起）
 
   const fr: Frame = {
     g: canvas.getContext('2d')!, f, a, e, sk, hc,
@@ -251,7 +240,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       const lantern = lanterns.hitAt(lx, ly);
       if (lantern) {
         showTip(lantern, 4000);
-        sound.sfx('lantern');
         return true;
       }
       return eggs.tap(lx, ly, double, Math.round(fr.p) === 0 && !secret);
@@ -355,8 +343,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
         }
       }
     }
-    lanterns.draw(fr);
-    for (const pt of lanterns.glowPoints()) glows.push({ x: pt.x, y: pt.y, kind: 'lamp', wx: pt.x * 7.3 });
     fireX = glows.find((gl) => gl.kind === 'fire')?.wx ?? null;
   }
 
@@ -379,11 +365,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       runTimer = 0.12;
       hero.facing = v > 0 ? 1 : -1;
       hero.stride += Math.min(Math.abs(v), 8);
-      // 跑步一个循环 4 帧、每帧 5 像素：每两帧落一次脚
-      if (Math.floor(hero.stride / 10) !== lastStep) {
-        lastStep = Math.floor(hero.stride / 10);
-        sound.step();
-      }
     } else runTimer -= dt;
     fr.running = runTimer > 0 && !fr.reduced;
 
@@ -410,8 +391,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   function render(dt: number) {
     const { g, W, H, dark } = fr;
     drawSky(fr, stars);
+    lanterns.draw(fr);
     fireworks?.draw(fr, dt, fireX);
-    sound.ambient(fireX === null ? 0 : clamp(1 - Math.abs(fireX - fr.camX) / 140), windAt(fr.camX), reading);
     g.clearRect(0, 0, W, H);
     drawLayer(fr, 'far', 0.18, dark ? 0.55 : 0.62);
     drawLayer(fr, 'mid', 0.42, dark ? 0.32 : 0.36);

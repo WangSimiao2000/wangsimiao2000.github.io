@@ -66,8 +66,6 @@ export class Fireworks {
   private list: Spark[] = [];
   private next = 1.2;
   private flashes: { x: number; y: number; t: number; color: string }[] = [];
-  /** 炸开时回调（放音效） */
-  onBurst: (() => void) | null = null;
 
   /**
    * 推进并画到天空层（不吃世界的自下而上渐隐，在卡片上方也看得见）。
@@ -143,6 +141,5 @@ export class Fireworks {
       this.list.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 85 + Math.random() * 40, color: Math.random() < 0.3 ? pal[1] : pal[0], rocket: false, size: Math.random() < 0.6 ? 2 : 1 });
     }
     this.flashes.push({ x, y, t: 0, color: pal[1] });
-    this.onBurst?.();
   }
 }

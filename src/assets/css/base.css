@@ -110,11 +110,6 @@ a { color: inherit; }
 .fs-btn .i-fs-off, .is-fullscreen .fs-btn .i-fs-on { display: none; }
 .is-fullscreen .fs-btn .i-fs-off { display: block; }
 .fs-btn[aria-pressed='true'] { color: var(--accent); box-shadow: var(--i2); }
-.snd-btn[hidden] { display: none; }
-.snd-btn svg { stroke-linecap: square; stroke-linejoin: miter; stroke-width: 2; }
-.snd-btn .i-snd-on, .snd-btn[aria-pressed='true'] .i-snd-off { display: none; }
-.snd-btn[aria-pressed='true'] .i-snd-on { display: block; }
-.snd-btn[aria-pressed='true'] { color: var(--accent); box-shadow: var(--i2); }
 /* 首次访问的提示气泡：轻拟物小卡片，带一个指向按钮的方块尖角，淡入后自动淡出 */
 .fs-hint {
   position: fixed; z-index: 30; pointer-events: none;
