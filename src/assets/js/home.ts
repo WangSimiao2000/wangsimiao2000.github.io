@@ -5,11 +5,9 @@ import { startSlingshot } from './slingshot.js';
 import './search.js';
 import { paintStatus } from './status.js';
 import { removeLegacyServiceWorker } from './legacy-sw.js';
-import { bindSoundToggle } from './sound.js';
 import { isBirthday } from './pixel/festive.js';
 
 void removeLegacyServiceWorker();
-bindSoundToggle();
 
 // 站长生日（访客本地日期）：起点卡片上加一行小字，世界里放烟花、主角戴帽子（见 world.ts）
 if (isBirthday()) {
