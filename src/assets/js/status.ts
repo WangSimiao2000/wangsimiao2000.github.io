@@ -105,13 +105,16 @@ function drawSpark(svg: SVGSVGElement, history: [string, number][]) {
 document.addEventListener('click', async (e) => {
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
   if (!b) return;
-  const tip = b.querySelector('.qq-copied');
+  // 提示默认在按钮里；data-copy-tip 指向别处的元素时（如 Switch 好友代码浮层）写到那里
+  const far = b.dataset.copyTip ? document.getElementById(b.dataset.copyTip) : null;
+  const tip = far ?? b.querySelector('.qq-copied');
   try {
     await navigator.clipboard.writeText(b.dataset.copy ?? '');
-    if (tip) tip.textContent = '已复制';
+    if (tip) tip.textContent = far ? '已复制到剪贴板' : '已复制';
   } catch {
     if (tip) tip.textContent = '复制失败，请手动记下';
   }
+  if (far) return; // 浮层里的提示常驻，不需要淡出
   tip?.classList.add('on');
   setTimeout(() => tip?.classList.remove('on'), 1600);
 });
