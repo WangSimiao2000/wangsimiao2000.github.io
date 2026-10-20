@@ -3,6 +3,7 @@
  * 把石子往反方向拉，松手后石子沿抛物线飞出去（左右都行），落在哪个板块上就直接冲过去。
  * 拉得越远飞得越远，拉满能从第一格打到最后一格；拉的时候只用一串方块标出发射方向，落在哪要自己掂量。
  */
+import { sound } from './sound.js';
 const GRAVITY = 1700; // px/s²
 const MAX_PULL = 78;
 let POWER = 9.5; // 每拉 1px 给的初速度（px/s）；按快捷栏宽度算，见 place()
@@ -245,6 +246,7 @@ export function startSlingshot({ slots, goTo }: Options) {
     aim.innerHTML = '';
     pull = { x: 0, y: 0 };
     drawBands(); // 皮筋弹回
+    sound.sfx('shoot');
     flying = true;
     const b = box.getBoundingClientRect();
     const fx = sx - (b.left + 24);
@@ -335,6 +337,7 @@ export function startSlingshot({ slots, goTo }: Options) {
     ball.setPointerCapture(e.pointerId);
     grab = { x: e.clientX - pull.x, y: e.clientY - pull.y };
     box.classList.add('ss-drag');
+    sound.sfx('pull');
   });
   ball.addEventListener('pointermove', (e) => {
     if (!dragging) return;

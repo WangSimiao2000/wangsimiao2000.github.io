@@ -11,6 +11,7 @@ import { buildCat, buildGirl } from './npcs.js';
 import { emit } from './lights.js';
 import { clamp } from './util.js';
 import type { Frame } from './frame.js';
+import { sound } from '../sound.js';
 
 export interface Spot {
   kind: 'sign' | 'hay' | 'door' | 'cat';
@@ -129,15 +130,23 @@ export class Eggs {
     const hit = this.spots.find((sp) => inside(sp, lx, ly));
     if (!hit) return false;
     if (hit.kind === 'sign' && double && atStart) this.signOpen = !this.signOpen;
-    if (hit.kind === 'door' && double && this.girl.state === 'none') Object.assign(this.girl, { state: 'out', t: 0, off: 0 });
+    if (hit.kind === 'door' && double && this.girl.state === 'none') {
+      Object.assign(this.girl, { state: 'out', t: 0, off: 0 });
+      setTimeout(() => sound.sfx('hello'), 1100); // 走出来招手时
+    }
     if (hit.kind === 'hay' && this.cat.state === 'hidden') {
       this.hayShake = 0.35;
+      sound.sfx('hay');
       if (++this.hayClicks >= 4) {
         this.hayClicks = 0;
         Object.assign(this.cat, { state: 'jump', t: 0, x: this.hayX });
+        sound.sfx('meow');
       }
     }
-    if (hit.kind === 'cat') this.cat.meow = 1.4;
+    if (hit.kind === 'cat') {
+      this.cat.meow = 1.4;
+      sound.sfx('meow');
+    }
     return true;
   }
 

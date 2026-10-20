@@ -58,6 +58,20 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 .hero-name { margin: 0 0 8px; font-size: 24px; font-weight: 800; letter-spacing: 0.2px; }
 .hero-tag { margin: 0 0 10px; color: var(--muted); font-family: var(--mono); font-size: 14px; }
 .hero-meta { margin: 0; font-size: 13px; color: var(--muted); }
+.bday-note { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .bday-note { animation: bday-in 0.6s ease both 0.4s; } }
+@keyframes bday-in { from { opacity: 0; transform: translateY(4px); } }
+/* 秋林灯笼上的留言：浮在灯笼正上方，指针不挡住画布 */
+.lantern-tip {
+  position: fixed; z-index: 3; transform: translate(-50%, calc(-100% - 8px)); max-width: min(260px, calc(100vw - 32px));
+  padding: 8px 12px; border-radius: var(--r-md); background: var(--surface); color: var(--text); box-shadow: var(--e3);
+  font-size: 13px; line-height: 1.6; pointer-events: none;
+}
+.lantern-tip[hidden] { display: none; }
+.lantern-tip b { margin-right: 8px; }
+.lantern-tip span { font-size: 12px; color: var(--muted); }
+.lantern-tip p { margin: 2px 0 0; }
+@media (prefers-reduced-motion: no-preference) { .lantern-tip:not([hidden]) { animation: bday-in 0.18s ease both; } }
 .hint { grid-column: 1 / -1; margin: 6px 0 0; font-size: 14px; color: var(--muted); }
 .hint span[aria-hidden] { display: inline-block; color: var(--accent); animation: bob 1.4s ease-in-out infinite; }
 .hint-keys { font-size: 12px; opacity: 0.8; }

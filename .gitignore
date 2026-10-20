@@ -14,3 +14,5 @@ dist.old-*/
 
 # 友链检测结果（CI 构建前生成）
 src/data/friends-checked.json
+# 留言灯笼数据（CI 构建前生成）
+src/data/guestbook.json

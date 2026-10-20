@@ -3,6 +3,7 @@
  */
 import { buildCharacter, type Sprite } from './sprites.js';
 import type { Frame } from './frame.js';
+import { drawHat } from './festive.js';
 
 export const CHAR_W = 14;
 export const CHAR_H = 20;
@@ -13,6 +14,8 @@ export class Hero {
   stride = 0;
   /** 脚底的屏幕 y（逻辑像素），平滑地贴着地面 */
   y = 0;
+  /** 戴生日帽（站长生日那天） */
+  hat = false;
   private right = buildCharacter(false);
   private left = buildCharacter(true);
   private nextBlink = 2.5;
@@ -55,5 +58,6 @@ export class Hero {
     hc.fillRect(x + 2, Math.round(this.y), CHAR_W - 4, 1);
     hc.globalAlpha = 1;
     hc.drawImage(sprite, x, y);
+    if (this.hat) drawHat(hc, x, y, CHAR_W);
   }
 }
