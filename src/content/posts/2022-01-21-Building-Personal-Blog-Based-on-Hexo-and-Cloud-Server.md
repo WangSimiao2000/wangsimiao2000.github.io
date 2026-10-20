@@ -19,11 +19,11 @@ hexo与wordpress相比,没有后端用于储存评论及用户信息,缺少后�
 
 [nodejs官网](https://nodejs.org/)
 
-![nodejs官网](/assets/posts/Building-Personal-Blog-Based-on-Hexo-and-Cloud-Server/01.png)
+![nodejs官网](/assets/posts/Building-Personal-Blog-Based-on-Hexo-and-Cloud-Server/01.webp)
 
 win+R输入cmd, 打开命令行, 输入node -v 返回版本号即安装成功, 输入npm -v 返回版本号即安装成功
 
-![nodejs安装成功](/assets/posts/Building-Personal-Blog-Based-on-Hexo-and-Cloud-Server/02.png)
+![nodejs安装成功](/assets/posts/Building-Personal-Blog-Based-on-Hexo-and-Cloud-Server/02.webp)
 
 ### hexo的安装
 

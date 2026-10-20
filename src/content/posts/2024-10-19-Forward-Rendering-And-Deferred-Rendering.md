@@ -54,7 +54,7 @@ $$
 
 ### 4. 如何将一个点渲染到屏幕上
 
-![矩阵变换](/assets/posts/Forward-Rendering-And-Deferred-Rendering/01.png)
+![矩阵变换](/assets/posts/Forward-Rendering-And-Deferred-Rendering/01.webp)
 
 将一个点通过World Matrix变换到世界空间, 再通过View Matrix变换到相机空间, 再通过Projection Matrix变换到裁剪空间, 最后通过Viewport变换到屏幕空间
 

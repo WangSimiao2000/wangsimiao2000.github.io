@@ -282,7 +282,7 @@ export function aboutPage(home) {
   const body = html`
     <article class="post about-page">
       <header class="about-hero">
-        <img class="about-photo" src="/assets/img/photo.jpg" alt="${site.author}" width="132" height="132" loading="lazy">
+        <img class="about-photo" src="/assets/img/photo.webp" alt="${site.author}" width="132" height="132" loading="lazy">
         <div>
           <h1>嗨，我是${site.author} 👋</h1>
           <p class="page-sub">图形渲染开发工程师 @ 小米 · He / Him · 2000.11.06 · 四川成都</p>

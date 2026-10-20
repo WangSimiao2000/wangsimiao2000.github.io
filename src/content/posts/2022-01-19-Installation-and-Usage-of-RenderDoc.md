@@ -17,22 +17,22 @@ RenderDoc是一个截帧工具，通过截取一帧画面，可以深入了解GP
 ### 方法二：通过UE5内置插件直接使用
 - 打开UE5，在上方菜单栏点击`Edit` -> `Plugins`。
    
-![点击Edit-Plugins](/assets/posts/Installation-and-Usage-of-RenderDoc/01.png)
+![点击Edit-Plugins](/assets/posts/Installation-and-Usage-of-RenderDoc/01.webp)
 
 - 搜索`RenderDoc`，点击`Enabled`启用插件。
 
-![RenderDoc按钮](/assets/posts/Installation-and-Usage-of-RenderDoc/02.png)
+![RenderDoc按钮](/assets/posts/Installation-and-Usage-of-RenderDoc/02.webp)
 
 1. 点击右下角的`Restart Now`重启引擎。
 2. 重启后，场景视图右侧会出现RenderDoc按钮。
 
-![RenderDoc按钮](/assets/posts/Installation-and-Usage-of-RenderDoc/03.png)
+![RenderDoc按钮](/assets/posts/Installation-and-Usage-of-RenderDoc/03.webp)
 
 ## RenderDoc的使用及基本介绍
 
 - **截取当前帧**：调整相机位置，点击RenderDoc按钮，即可截取当前帧，查看渲染管线详情。
 
-![开始截取当前帧](/assets/posts/Installation-and-Usage-of-RenderDoc/04.png)
+![开始截取当前帧](/assets/posts/Installation-and-Usage-of-RenderDoc/04.webp)
 
 **Event Browser**：显示每一个渲染Pass的输入输出。主要关注的Pass有：
    - **BasePass**：渲染每个物体的基本信息。
