@@ -3,6 +3,8 @@
  * 把石子往反方向拉，松手后石子沿抛物线飞出去（左右都行），落在哪个板块上就直接冲过去。
  * 拉得越远飞得越远，拉满能从第一格打到最后一格；拉的时候只用一串方块标出发射方向，落在哪要自己掂量。
  */
+import { atlasReady, sprite } from './pixel/atlas.js';
+
 const GRAVITY = 1700; // px/s²
 const MAX_PULL = 78;
 let POWER = 9.5; // 每拉 1px 给的初速度（px/s）；按快捷栏宽度算，见 place()
@@ -24,46 +26,10 @@ const MARKUP = `
 <svg class="ss-aim" aria-hidden="true" shape-rendering="crispEdges"></svg>
 <canvas class="ss-ball" width="4" height="4" role="button" tabindex="-1" aria-label="弹弓石子：拖动后松手发射"></canvas>`;
 
-/** 木叉：两条斜臂汇到中间，再一根立柱；左侧受光、右侧背光，顶端缠着皮绳 */
-function drawFork(c: HTMLCanvasElement) {
-  const g = c.getContext('2d')!;
-  const put = (x: number, y: number, col: string) => {
-    g.fillStyle = col;
-    g.fillRect(x, y, 1, 1);
-  };
-  const light = '#b98a62';
-  const mid = '#8a5f40';
-  const dark = '#5e3d28';
-  for (let y = 1; y <= 10; y++) {
-    const off = Math.round((y - 1) * 0.6);
-    put(1 + off, y, light);
-    put(2 + off, y, mid);
-    put(13 - off, y, mid);
-    put(14 - off, y, dark);
-  }
-  for (let y = 10; y < 20; y++) {
-    put(7, y, light);
-    put(8, y, mid);
-    put(9, y, dark);
-  }
-  // 皮绳缠绕的顶端
-  for (const x of [1, 2, 13, 14]) {
-    put(x, 0, '#6b3b2a');
-    put(x, 2, '#6b3b2a');
-  }
-}
-
-/** 石子：4x4 像素的小灰石，左上高光 */
-function drawStone(c: HTMLCanvasElement) {
-  const g = c.getContext('2d')!;
-  const rows = ['.ab.', 'abbc', 'bbcc', '.cc.'];
-  const pal: Record<string, string> = { a: '#d6d9df', b: '#9aa0ab', c: '#656b78' };
-  rows.forEach((r, y) => [...r].forEach((ch, x) => {
-    if (pal[ch]) {
-      g.fillStyle = pal[ch];
-      g.fillRect(x, y, 1, 1);
-    }
-  }));
+/** 木叉和石子来自图集（slingshot.fork 16x20、slingshot.stone 4x4），图集加载好后画进对应的小 canvas */
+function paintFromAtlas(c: HTMLCanvasElement, name: string) {
+  const sp = sprite(name);
+  void atlasReady().then(() => c.getContext('2d')!.drawImage(sp, 0, 0));
 }
 
 
@@ -75,8 +41,8 @@ export function startSlingshot({ slots, goTo }: Options) {
   box.className = 'slingshot';
   box.hidden = true;
   box.innerHTML = MARKUP;
-  drawFork(box.querySelector<HTMLCanvasElement>('.ss-fork')!);
-  drawStone(box.querySelector<HTMLCanvasElement>('.ss-ball')!);
+  paintFromAtlas(box.querySelector<HTMLCanvasElement>('.ss-fork')!, 'slingshot.fork');
+  paintFromAtlas(box.querySelector<HTMLCanvasElement>('.ss-ball')!, 'slingshot.stone');
   const bandCanvas = box.querySelector<HTMLCanvasElement>('.ss-bands')!;
   bandCanvas.width = Math.round((48 + BAND_PAD * 2) / PX);
   bandCanvas.height = Math.round((60 + BAND_PAD * 2) / PX);

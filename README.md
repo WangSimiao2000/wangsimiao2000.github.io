@@ -41,11 +41,19 @@ src/
 ├── content/posts/ # 文章，文件名 YYYY-MM-DD-slug.md，URL 为 /posts/slug/
 ├── data/          # friends.yml 友链、tools.yml 工具、contact.yml 联系方式
 ├── templates/     # 页面模板（纯 JS 函数）
-├── assets/        # css/ 与 js/（js/pixel/ 是首页像素世界）
+├── assets/        # css/ 与 js/（js/pixel/ 是首页像素世界）、img/atlas.png（像素精灵图集）
 └── site.mjs       # 站点信息
 public/            # 原样复制的静态文件（配图、头像、简历、CNAME）
 tools/             # 旧站的工具页，待迁移
 ```
+
+## 像素素材
+
+首页世界里固定的精灵（主角、女孩、猫、树、房子、路牌、营火、孔明灯、生日帽、弹弓……）都在一张图集
+`src/assets/img/atlas.png` 上，以这张 PNG 为准：用 Aseprite / Piskel 直接改像素即可。
+每个精灵的位置写在 `src/assets/js/pixel/atlas-map.ts`（`[x, y, 宽, 高]`），挪了位置、改了尺寸或新加精灵时改对应一行；
+`名字#glow` 是同尺寸的自发光遮罩（夜里不盖夜色的像素，比如窗户、灯泡）。
+主角、女孩左右各一套（光照永远在左上，不是简单镜像）。地形、天空、粒子、烟花是按坐标实时算的，仍在代码里。
 
 ## 文章写法
 
