@@ -178,8 +178,9 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
   .map-status-block .side-note.muted { display: none; } /* 矮屏左栏放不下时先省掉这一行 */
 }
 
-.about p { margin: 0 0 12px; }
-.about p:not(.hero-name):not(.more) { color: var(--muted); }
+.about > p { margin: 0 0 12px; }
+.about > p:not(.hero-name):not(.more):not(.contact-icons) { color: var(--muted); }
+.about > .contact-icons { margin: 0 0 16px; }
 
 /* ---- 底部板块切换：凸起底座，当前项按下 ---- */
 .hotbar { display: none; }
