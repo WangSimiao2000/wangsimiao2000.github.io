@@ -14,7 +14,8 @@
     "check-friends": "node build/check-friends.mjs",
     "verify": "node build/verify.mjs",
     "test": "node --disable-warning=ExperimentalWarning --import ./tests/register.mjs --test \"tests/unit/*.test.*\"",
-    "test:e2e": "node tests/e2e/flow.mjs"
+    "test:e2e": "node tests/e2e/flow.mjs",
+    "pretest": "node build/atlas.mjs"
   },
   "dependencies": {
     "highlight.js": "11.12.0",

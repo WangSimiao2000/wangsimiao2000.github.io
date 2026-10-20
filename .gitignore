@@ -16,3 +16,6 @@ dist.old-*/
 src/data/friends-checked.json
 # 留言灯笼数据（CI 构建前生成）
 src/data/guestbook.json
+# 像素图集（build/atlas.mjs 从 src/art/ 打包生成）
+src/assets/img/atlas.png
+src/assets/js/pixel/atlas-map.ts
