@@ -4,7 +4,7 @@
  */
 import { heightAt } from './biomes.js';
 import { halo } from './lights.js';
-import { renderRows } from './sprites.js';
+import { sprite } from './atlas.js';
 import type { Frame } from './frame.js';
 
 const BIRTHDAY = '11-06';
@@ -18,24 +18,12 @@ export function todayKey(now = new Date(), search = typeof location === 'undefin
 
 export const isBirthday = (key = todayKey()) => key === BIRTHDAY;
 
-/* ---------- 生日帽：粉黄条纹的小圆锥，顶上一个白绒球，戴在主角头顶 ---------- */
-
-const HAT_ROWS = [
-  '...w...',
-  '...Y...',
-  '..kPk..',
-  '..kYk..',
-  '.kPPPk.',
-  '.kYYYk.',
-  'kPPPPPk',
-];
-const HAT_PALETTE: Record<string, string> = { k: '#2a1f22', P: '#ff6fa5', Y: '#ffd84d', w: '#ffffff' };
-let hatSprite: HTMLCanvasElement | null = null;
+/* ---------- 生日帽：粉黄条纹的小圆锥，顶上一个白绒球，戴在主角头顶（图集里的 hat） ---------- */
 
 /** 帽子画在主角头顶：x 是主角精灵左边缘，y 是精灵顶边（头发最上面一行） */
 export function drawHat(hc: CanvasRenderingContext2D, x: number, y: number, charW: number) {
-  hatSprite ??= renderRows(HAT_ROWS, HAT_PALETTE, false);
-  hc.drawImage(hatSprite, x + Math.floor(charW / 2) - 3, y - HAT_ROWS.length + 2);
+  const hat = sprite('hat');
+  hc.drawImage(hat, x + Math.floor(charW / 2) - Math.floor(hat.width / 2), y - hat.height + 2);
 }
 
 /* ---------- 烟花 ---------- */

@@ -34,6 +34,7 @@ if (mode === 'dump') {
     }, theme);
     const page = await ctx.newPage();
     await page.goto(BASE + '/', { waitUntil: 'load' });
+    await page.waitForTimeout(400); // 图集等图片资源解码完
     await page.evaluate(() => window.__step(30));
     for (let i = 1; i <= 6; i++) {
       await page.keyboard.press(String(i));

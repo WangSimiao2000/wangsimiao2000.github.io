@@ -7,7 +7,8 @@
  */
 import { SECTION, heightAt } from './biomes.js';
 import { halo } from './lights.js';
-import { renderRows, hash } from './sprites.js';
+import { hash } from './sprites.js';
+import { sprite } from './atlas.js';
 import type { Frame } from './frame.js';
 
 export interface Note {
@@ -29,22 +30,8 @@ const SPREAD = 150; // 散布在秋林中心左右这么远（世界像素）
 const RISE = 3; // 上升速度（逻辑像素 / 秒）
 const TREETOP = 44; // 从离地这么高（树梢附近）开始升起，下面被树挡着
 
-// 孔明灯：圆顶纸罩上宽下窄，底口一圈竹框，下面吊着火苗。天空层不吃夜色，夜里单独一套亮着的颜色
-const ROWS = [
-  '..kkkkk..',
-  '.kLLLLLk.',
-  'kLLHHHLLk',
-  'kLHHHHHLk',
-  'kLHHHHHLk',
-  '.kLHHHLk.',
-  '.kLLHLLk.',
-  '..kLLLk..',
-  '..kbbbk..',
-  '....F....',
-  '....f....',
-];
-const DAY = { k: '#a8572c', L: '#f2ae62', H: '#f8cd8c', b: '#7a4a2a', F: '#ff8a3d', f: '#ffcf5a' };
-const NIGHT = { k: '#c46a2f', L: '#ffbd5e', H: '#fff0b8', b: '#8a5a32', F: '#ffb04d', f: '#fff2b0' };
+// 孔明灯（图集里的 lantern.day / lantern.night）：圆顶纸罩上宽下窄，底口一圈竹框，下面吊着火苗。
+// 天空层不吃夜色，夜里单独一套亮着的颜色
 
 /**
  * 第 i 盏（共 n 盏）的水平位置（世界坐标）：左右交替，放在卡片两侧露出的空地上空；
@@ -64,7 +51,6 @@ export class Lanterns {
   notes: Note[] = [];
   hits: LanternHit[] = [];
   private loading = false;
-  private sprites: { day: HTMLCanvasElement; night: HTMLCanvasElement } | null = null;
 
   /** 走近秋林时取一次数据（失败就没有灯，秋林照常） */
   private load() {
@@ -100,8 +86,7 @@ export class Lanterns {
     this.load();
     const n = this.notes.length;
     if (!n) return;
-    this.sprites ??= { day: renderRows(ROWS, DAY, false), night: renderRows(ROWS, NIGHT, false) };
-    const sp = dark ? this.sprites.night : this.sprites.day;
+    const sp = sprite(dark ? 'lantern.night' : 'lantern.day');
     for (let i = 0; i < n; i++) {
       const wx = lanternX(i, n, W);
       const p = this.pose(fr, wx, i);
