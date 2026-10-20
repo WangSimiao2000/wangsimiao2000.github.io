@@ -463,6 +463,18 @@ html.js.reading { overflow: hidden; }
 @media (max-width: 640px) and (max-height: 700px) {
   .panel .post-list li:nth-child(n + 3) { display: none; }
 }
+/* 手机浏览器扣掉地址栏后常只剩 550-740px：再按高度少放几条 */
+@media (max-width: 640px) and (max-height: 820px) {
+  .panel .post-list li:nth-child(n + 4) { display: none; }
+}
+@media (max-width: 640px) and (max-height: 740px) {
+  .panel .post-list li:nth-child(n + 3) { display: none; }
+}
+@media (max-width: 640px) and (max-height: 600px) {
+  .panel .post-list li:nth-child(n + 2) { display: none; }
+  .panel .grid.tools li:nth-child(n + 2) { display: none; }
+  .about > p:not(.hero-name):not(.more):not(.contact-icons) { display: none; }
+}
 .grid.big + .group-title { margin-top: 30px; }
 
 /* ---- 搜索：浮在一切之上的卡片 ---- */
