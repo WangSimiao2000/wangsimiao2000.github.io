@@ -10,6 +10,7 @@
  */
 import { html } from '../../build/html.mjs';
 import { site } from '../site.mjs';
+import { ICONS } from './icons.mjs';
 import { comments, shell, toolLink } from './home.mjs';
 import { categoryUrl, formatDate, slugify, tagUrl } from './util.mjs';
 
@@ -287,6 +288,19 @@ function qrPopover(id, src, alt, hint) {
       </div>`;
 }
 
+/** 图标按钮：只显示图标，名字放在 aria-label 和悬停提示里 */
+function icon(name) {
+  return html`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICONS[name]}"/></svg>`;
+}
+function iconLink(href, name, label) {
+  return html`<a class="icon-btn" href="${href}" target="_blank" rel="noopener" aria-label="${label}" title="${label}">${icon(name)}</a>`;
+}
+function iconBtn(name, label, { pop, copy }) {
+  return copy
+    ? html`<button type="button" class="icon-btn" popovertarget="${pop}" data-copy="${copy}" data-copy-tip="${pop}-tip" aria-label="${label}" title="${label}">${icon(name)}</button>`
+    : html`<button type="button" class="icon-btn" popovertarget="${pop}" aria-label="${label}" title="${label}">${icon(name)}</button>`;
+}
+
 export function aboutPage(home) {
   const body = html`
     <article class="post about-page">
@@ -295,20 +309,24 @@ export function aboutPage(home) {
         <div>
           <h1>嗨，我是${site.author} 👋</h1>
           <p class="page-sub">图形渲染开发工程师 @ 小米 · He / Him · 2000.11.06 · 四川成都</p>
-          <p class="more">
-            <a class="btn" href="${site.links.github}" target="_blank" rel="noopener">GitHub</a>
-            <a class="btn" href="${site.links.bilibili}" target="_blank" rel="noopener">Bilibili · 鄙人米奇喵</a>
-            <a class="btn" href="${site.links.steam}" target="_blank" rel="noopener">Steam</a>
-            <a class="btn" href="/assets/resume/WangSimiao_resume.pdf" target="_blank" rel="noopener">简历 PDF</a>
-          </p>
-          <p class="more">
-            <button type="button" class="btn" popovertarget="qr-wechat">微信</button>
-            <button type="button" class="btn" popovertarget="qr-qq">QQ</button>
+          <p class="contact-icons">
+            ${iconLink(site.links.github, 'github', 'GitHub')}
+            ${iconLink(site.links.bilibili, 'bilibili', 'Bilibili · 鄙人米奇喵')}
+            ${iconLink(site.links.steam, 'steam', 'Steam')}
+            ${iconBtn('wechat', '微信', { pop: 'qr-wechat' })}
+            ${iconBtn('tencentqq', 'QQ', { pop: 'qr-qq' })}
+            ${iconBtn('nintendoswitch', 'Switch 好友代码', { pop: 'sw-code', copy: site.switchCode })}
+            ${iconLink('/assets/resume/WangSimiao_resume.pdf', 'resume', '简历 PDF')}
           </p>
         </div>
       </header>
       ${qrPopover('qr-wechat', '/assets/img/wechat-qr.png', '微信二维码', '微信扫码加好友')}
       ${qrPopover('qr-qq', '/assets/img/qq-qr.png', 'QQ 二维码', 'QQ 扫码加好友')}
+      <div class="qr-pop code-pop" id="sw-code" popover>
+        <p class="muted small">Nintendo Switch 好友代码</p>
+        <p class="sw-code">${site.switchCode}</p>
+        <p class="muted small" id="sw-code-tip" aria-live="polite">正在复制…</p>
+      </div>
       <div class="about-grid">
         <section class="about-card">
           <h2>教育背景</h2>
@@ -324,7 +342,7 @@ export function aboutPage(home) {
           <h2>游戏</h2>
           <p>最喜欢的游戏是 <strong>Minecraft</strong>，也是一个 B 站小 up，主要更新 Minecraft 视频，不过已经很久没更新了 😅</p>
           <p>PC 上近几年觉得好玩的：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井</p>
-          <p>也玩 <strong>Switch</strong>，好友代码 <button type="button" class="qq-chip" data-copy="${site.switchCode}" title="点击复制好友代码">${site.switchCode}<span class="qq-copied" aria-live="polite"></span></button></p>
+          <p>也玩 <strong>Switch</strong> 游戏，好友代码点上面的 Switch 图标就能复制。</p>
           <p class="muted small">社交手游：王者荣耀欧洲第66上官婉儿 · 和平精英多赛季战神 · 金铲铲多赛季大师</p>
         </section>
         <section class="about-card">

@@ -497,6 +497,28 @@ html.searching { overflow: hidden; }
 
 /* ---- 关于页：微信 / QQ 二维码浮层（原生 popover，顶层渲染，点外面或 Esc 关闭） ---- */
 .about-hero .more + .more { margin-top: 0; }
+/* 联系方式：一排图标按钮（凸起、圆角与卡片按钮同级），悬停变主色 */
+.contact-icons { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0 0; }
+.icon-btn {
+  display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; cursor: pointer;
+  border-radius: var(--r-md); color: var(--text); background: var(--surface); box-shadow: var(--e2);
+  transition: box-shadow 0.15s, color 0.15s;
+}
+.icon-btn svg { width: 20px; height: 20px; fill: currentColor; }
+.icon-btn:hover, .icon-btn:focus-visible { color: var(--accent); }
+.icon-btn:active { box-shadow: var(--i2); }
+.qr-pop.code-pop { width: max-content; max-width: calc(100vw - 32px); padding: 20px 28px; }
+.code-pop p, .code-pop p.small { margin: 0; }
+.code-pop .sw-code { margin: 8px 0; font-size: 22px; font-weight: 700; letter-spacing: 0.02em; color: var(--accent); font-variant-numeric: tabular-nums; user-select: all; white-space: nowrap; }
+@media (max-width: 480px) {
+  .contact-icons { gap: 8px; }
+  .icon-btn { width: 38px; height: 38px; }
+}
+@media (max-width: 380px) {
+  .contact-icons { gap: 6px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: var(--r-sm); }
+  .icon-btn svg { width: 18px; height: 18px; }
+}
 .qr-pop {
   margin: auto; border: 0; padding: var(--inset); width: calc(220px + 2 * var(--inset));
   border-radius: var(--radius); background: var(--surface); color: var(--text); box-shadow: var(--e4);
