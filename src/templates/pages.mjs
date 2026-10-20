@@ -10,7 +10,7 @@
  */
 import { html } from '../../build/html.mjs';
 import { site } from '../site.mjs';
-import { ICONS } from './icons.mjs';
+import { contactIcons, contactPopovers } from './contact.mjs';
 import { comments, shell, toolLink } from './home.mjs';
 import { categoryUrl, formatDate, slugify, tagUrl } from './util.mjs';
 
@@ -278,29 +278,6 @@ const TRAVEL = [
   '🇻🇦 梵蒂冈', '🇪🇸 巴塞罗那', '🇪🇸 马德里', '🇵🇹 里斯本', '🇪🇬 开罗', '🇪🇬 卢克索', '🇪🇬 阿斯旺', '🇪🇬 吉萨', '🇪🇬 赫尔格达',
 ];
 
-/** 二维码浮层：用原生 popover，点按钮打开，点外面或按 Esc 关闭，不需要脚本 */
-function qrPopover(id, src, alt, hint) {
-  return html`
-      <div class="qr-pop" id="${id}" popover>
-        <img src="${src}" alt="${alt}" width="220" height="220" loading="lazy">
-        <p>${hint}</p>
-        <p class="muted small">手机上长按图片识别</p>
-      </div>`;
-}
-
-/** 图标按钮：只显示图标，名字放在 aria-label 和悬停提示里 */
-function icon(name) {
-  return html`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICONS[name]}"/></svg>`;
-}
-function iconLink(href, name, label) {
-  return html`<a class="icon-btn" href="${href}" target="_blank" rel="noopener" aria-label="${label}" title="${label}">${icon(name)}</a>`;
-}
-function iconBtn(name, label, { pop, copy }) {
-  return copy
-    ? html`<button type="button" class="icon-btn" popovertarget="${pop}" data-copy="${copy}" data-copy-tip="${pop}-tip" aria-label="${label}" title="${label}">${icon(name)}</button>`
-    : html`<button type="button" class="icon-btn" popovertarget="${pop}" aria-label="${label}" title="${label}">${icon(name)}</button>`;
-}
-
 export function aboutPage(home) {
   const body = html`
     <article class="post about-page">
@@ -309,24 +286,10 @@ export function aboutPage(home) {
         <div>
           <h1>嗨，我是${site.author} 👋</h1>
           <p class="page-sub">图形渲染开发工程师 @ 小米 · He / Him · 2000.11.06 · 四川成都</p>
-          <p class="contact-icons">
-            ${iconLink(site.links.github, 'github', 'GitHub')}
-            ${iconLink(site.links.bilibili, 'bilibili', 'Bilibili · 鄙人米奇喵')}
-            ${iconLink(site.links.steam, 'steam', 'Steam')}
-            ${iconBtn('wechat', '微信', { pop: 'qr-wechat' })}
-            ${iconBtn('tencentqq', 'QQ', { pop: 'qr-qq' })}
-            ${iconBtn('nintendoswitch', 'Switch 好友代码', { pop: 'sw-code', copy: site.switchCode })}
-            ${iconLink('/assets/resume/WangSimiao_resume.pdf', 'resume', '简历 PDF')}
-          </p>
+          ${contactIcons('about')}
         </div>
       </header>
-      ${qrPopover('qr-wechat', '/assets/img/wechat-qr.png', '微信二维码', '微信扫码加好友')}
-      ${qrPopover('qr-qq', '/assets/img/qq-qr.png', 'QQ 二维码', 'QQ 扫码加好友')}
-      <div class="qr-pop code-pop" id="sw-code" popover>
-        <p class="muted small">Nintendo Switch 好友代码</p>
-        <p class="sw-code">${site.switchCode}</p>
-        <p class="muted small" id="sw-code-tip" aria-live="polite">正在复制…</p>
-      </div>
+      ${contactPopovers('about')}
       <div class="about-grid">
         <section class="about-card">
           <h2>教育背景</h2>
