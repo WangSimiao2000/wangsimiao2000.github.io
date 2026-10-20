@@ -141,11 +141,11 @@ Rasterizer output.png normal
 
 注意, 由于Windows的VS项目中的相对路径与Linux的不同, 所以在Windows下运行时, 需要把models文件夹复制(或剪切)到build目录下, 否则会出现以下报错:
 
-![Error](/assets/posts/GAMES101-Assignment3/01.png){:width="700px"}
+![Error](/assets/posts/GAMES101-Assignment3/01.webp){:width="700px"}
 
 会在Debug文件夹下生成output.png文件, 此时的渲染结果如下:
 
-![Normal](/assets/posts/GAMES101-Assignment3/normal.png){:width="400px"}
+![Normal](/assets/posts/GAMES101-Assignment3/normal.webp){:width="400px"}
 
 ## 在片段着色器中实现Blinn-Phong模型
 
@@ -209,4 +209,4 @@ Rasterizer output.png phong
 
 会在Debug文件夹下生成output.png文件, 此时的渲染结果如下:
 
-![Phong](/assets/posts/GAMES101-Assignment3/phong.png){:width="400px"}
+![Phong](/assets/posts/GAMES101-Assignment3/phong.webp){:width="400px"}

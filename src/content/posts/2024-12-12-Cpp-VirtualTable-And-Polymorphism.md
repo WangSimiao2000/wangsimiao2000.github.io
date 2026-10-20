@@ -104,7 +104,7 @@ private:
 
 此时生成了类A对象后, 类A对象在内存中的布局如下:
 
-![类A对象在内存中的布局](/assets/posts/Cpp-VirtualTable-And-Polymorphism/01.png){:width="700px"}
+![类A对象在内存中的布局](/assets/posts/Cpp-VirtualTable-And-Polymorphism/01.webp){:width="700px"}
 
 函数的普通成员函数`func1`和`func2`不会占用类对象的内存空间;
 

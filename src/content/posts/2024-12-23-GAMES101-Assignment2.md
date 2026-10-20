@@ -153,6 +153,6 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
 
 渲染结果是两个三角形的叠加, 一个是浅绿色, 一个是浅蓝色:
 
-![GAMES101-Assignment2](/assets/posts/GAMES101-Assignment2/01.png){:width="500px"}
+![GAMES101-Assignment2](/assets/posts/GAMES101-Assignment2/01.webp){:width="500px"}
 
 当然, 和上次作业也一样, 需要将"opencv world4100d.dll"文件放到项目的Debug目录下, 或者设置它的环境变量, 否则会报错: `将由于找不到 opencv world4100d.dll，无法继续执行代码。重新安装程序可能会解决此问题`

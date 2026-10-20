@@ -43,8 +43,8 @@ export function contactIcons(prefix) {
 export function contactPopovers(prefix) {
   const id = (s) => `${prefix}-${s}`;
   return html`
-  ${qrPopover(id('wechat'), '/assets/img/wechat-qr.png', '微信二维码', '微信扫码加好友')}
-  ${qrPopover(id('qq'), '/assets/img/qq-qr.png', 'QQ 二维码', 'QQ 扫码加好友')}
+  ${qrPopover(id('wechat'), '/assets/img/wechat-qr.webp', '微信二维码', '微信扫码加好友')}
+  ${qrPopover(id('qq'), '/assets/img/qq-qr.webp', 'QQ 二维码', 'QQ 扫码加好友')}
   <div class="qr-pop code-pop" id="${id('switch')}" popover>
     <p class="muted small">Nintendo Switch 好友代码</p>
     <p class="sw-code">${site.switchCode}</p>

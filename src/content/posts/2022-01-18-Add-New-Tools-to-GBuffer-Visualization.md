@@ -12,17 +12,17 @@ tags: [游戏引擎, Unreal Engine, GBuffer]
 1. **搜索Buffer Visualization文件夹**
    - 在Content Browser中，搜索“Buffer Visualization”文件夹。
 
-![搜索Buffer Visualization文件夹](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/01.png)
+![搜索Buffer Visualization文件夹](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/01.webp)
 
 2. **新建材质球**
    - 右键点击，选择“Create Basic Asset”中的“Material”，命名为`Diffuse Color`。
 
-![新建材质球](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/02.png)
+![新建材质球](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/02.webp)
 
 3. **打开材质编辑器**
    - 双击新创建的材质球，打开材质编辑器。
 
-![材质编辑器](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/03.png)
+![材质编辑器](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/03.webp)
 
 4. **实现期望效果**
 
@@ -30,11 +30,11 @@ tags: [游戏引擎, Unreal Engine, GBuffer]
 
    - 在材质编辑器中，将`BaseColor`和`Metallic`蓝图复制到`DiffuseColor`的材质编辑器蓝图中。
 
-![材质编辑器蓝图](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/04.png)
+![材质编辑器蓝图](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/04.webp)
 
    - 使用`Multiply`节点实现乘法，使用`OneMinus`节点实现`1 - x`。
 
-![使用Multiply节点](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/05.png)
+![使用Multiply节点](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/05.webp)
 
    
 1. **保存并退出**
@@ -64,11 +64,11 @@ tags: [游戏引擎, Unreal Engine, GBuffer]
 
    - 在ViewMode中找到`BufferVisualization-DiffuseColor`
 
-![找到相应选项](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/07.png)
+![找到相应选项](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/07.webp)
 
    - 选中后会出现如下效果，表明工具添加成功。
 
-![查看效果](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/08.png)
+![查看效果](/assets/posts/Add-New-Tools-to-GBuffer-Visualization/08.webp)
 
 
 ## 总结

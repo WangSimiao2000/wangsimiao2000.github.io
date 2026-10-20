@@ -66,6 +66,7 @@ ${raw(content.html)}
     description: post.description ?? excerpt,
     path: post.url,
     type: 'article',
+    article: { published: post.date, modified: post.updated, tags: post.tags },
     math: post.math,
     reader: { section: 'posts', body, left, right, toc: toc.length > 0 },
   });

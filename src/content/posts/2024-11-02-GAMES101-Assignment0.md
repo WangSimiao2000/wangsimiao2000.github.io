@@ -20,11 +20,11 @@ Eigen是一个C++模板库, 提供了线性代数的基本功能, 可以在此�
 
 我们选择latest stable release, 下载.zip文件
 
-![Eigen下载](/assets/posts/GAMES101-Assignment0/01.png)
+![Eigen下载](/assets/posts/GAMES101-Assignment0/01.webp)
 
 解压后将文件夹放在合适的位置, 我选择放在和作业0文件夹pa0内
 
-![Eigen解压](/assets/posts/GAMES101-Assignment0/02.png)
+![Eigen解压](/assets/posts/GAMES101-Assignment0/02.webp)
 
 由于老师提供的CMakeLists.txt中配置的路径是适用于Linux的, 所以我们需要修改CMakeLists.txt
 

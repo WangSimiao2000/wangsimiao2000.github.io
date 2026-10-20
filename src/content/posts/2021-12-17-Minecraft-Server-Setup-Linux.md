@@ -25,7 +25,7 @@ tags: [Minecraft, Linux, 服务器]
 
 [Oracle Java Downloads](https://www.oracle.com/java/technologies/downloads/)
 
-![官网下载界面截图](/assets/posts/Minecraft-Server-Setup-Linux/01.png)
+![官网下载界面截图](/assets/posts/Minecraft-Server-Setup-Linux/01.webp)
 
 #### 下载Java安装包
 
@@ -170,7 +170,7 @@ wget https://papermc.io/api/v2/projects/paper/versions/1.17.1/builds/408/downloa
 ```bash
 vi eula.txt
 ```
-![eula.txt修改](/assets/posts/Minecraft-Server-Setup-Linux/04.png)
+![eula.txt修改](/assets/posts/Minecraft-Server-Setup-Linux/04.webp)
 
 再次启动服务器核心：
 

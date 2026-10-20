@@ -192,6 +192,7 @@ export function shell(ctx, page = {}) {
     description: page.description,
     path: page.path ?? '/',
     type: page.type,
+    article: page.article,
     asset: ctx.asset,
     css: ['css/home.css', 'css/post.css'],
     js: ['js/home.js'],

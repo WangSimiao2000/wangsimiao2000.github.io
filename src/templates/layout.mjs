@@ -23,6 +23,33 @@ export const topbar = () => html`
     </nav>
   </header>`;
 
+/** 分享卡片用图：1200×630 JPEG（WebP 有的聊天软件预览不认） */
+const SHARE_IMAGE = '/assets/img/og.jpg';
+
+/** 给搜索引擎的结构化数据：首页是 WebSite，文章是 BlogPosting；`<` 转义，防止正文提前闭合 script */
+function jsonLd(o, fullTitle, desc, canonical, image) {
+  const author = { '@type': 'Person', name: site.author, url: new URL('/about/', site.url).href };
+  const data =
+    o.type === 'article' && o.article
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: o.title,
+          description: desc,
+          url: canonical,
+          mainEntityOfPage: canonical,
+          image,
+          datePublished: o.article.published.toISOString(),
+          dateModified: (o.article.modified ?? o.article.published).toISOString(),
+          keywords: o.article.tags.join(', ') || undefined,
+          inLanguage: 'zh-CN',
+          author,
+          publisher: author,
+        }
+      : { '@context': 'https://schema.org', '@type': 'WebSite', name: site.title, url: site.url, description: desc, inLanguage: 'zh-CN', author };
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
 /**
  * @param {object} o
  * @param {string} o.title       页面标题（首页传站点名）
@@ -36,11 +63,14 @@ export const topbar = () => html`
  * @param {unknown} o.body
  * @param {boolean} [o.reading] 页面带正文：首帧就进入阅读状态，避免先闪一下首页卡片
  * @param {string} [o.extraHead] 开发模式注入等
+ * @param {{ published: Date, modified?: Date | null, tags: string[] }} [o.article] 文章页：发布/更新时间、标签
  */
 export function layout(o) {
   const fullTitle = o.title === site.title ? site.title : `${o.title} | ${site.title}`;
   const desc = o.description ?? site.description;
   const canonical = new URL(o.path, site.url).href;
+  const shareImage = new URL(SHARE_IMAGE, site.url).href;
+  const art = o.type === 'article' ? o.article : null;
   return html`<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -55,13 +85,29 @@ export function layout(o) {
   <link rel="apple-touch-icon" href="/assets/img/favicons/apple-touch-icon.png">
   <link rel="manifest" href="/assets/img/favicons/site.webmanifest">
   <meta name="apple-mobile-web-app-title" content="${site.title}">
-  <meta property="og:image" content="${new URL(site.avatar, site.url).href}">
-  <link rel="alternate" type="application/rss+xml" title="${site.title}" href="/feed.xml">
+  <meta property="og:image" content="${shareImage}">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${site.title} 的像素风博客首页">
+  <link rel="alternate" type="application/atom+xml" title="${site.title}" href="/feed.xml">
   <meta property="og:type" content="${o.type ?? 'website'}">
+  <meta property="og:locale" content="zh_CN">
   <meta property="og:site_name" content="${site.title}">
   <meta property="og:title" content="${fullTitle}">
   <meta property="og:description" content="${desc}">
   <meta property="og:url" content="${canonical}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${fullTitle}">
+  <meta name="twitter:description" content="${desc}">
+  <meta name="twitter:image" content="${shareImage}">
+  ${art
+    ? html`<meta property="article:published_time" content="${art.published.toISOString()}">
+  ${art.modified ? html`<meta property="article:modified_time" content="${art.modified.toISOString()}">` : ''}
+  <meta property="article:author" content="${site.author}">
+  ${art.tags.map((t) => html`<meta property="article:tag" content="${t}">`)}`
+    : ''}
+  <script type="application/ld+json">${raw(jsonLd(o, fullTitle, desc, canonical, shareImage))}</script>
   <meta name="google-site-verification" content="${site.verify.google}">
   <meta name="msvalidate.01" content="${site.verify.bing}">
   <meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">

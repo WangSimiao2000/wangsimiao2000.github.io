@@ -5,7 +5,7 @@ export const site = {
   description: 'MickeyMiao 的个人博客，记录技术学习、图形学笔记和生活感悟。',
   url: 'https://blog.mickeymiao.cn',
   author: '王思淼',
-  avatar: '/assets/img/avatar/avatar.png',
+  avatar: '/assets/img/avatar/avatar.webp',
   qqGroup: '772764843', // Minecraft 服务器玩家群
   switchCode: 'SW-1834-9778-7674', // Switch 好友代码
   links: {
