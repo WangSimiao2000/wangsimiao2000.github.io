@@ -57,9 +57,14 @@ export class Lanterns {
       .catch(() => {});
   }
 
-  /** 绳子上第 i 盏（共 n 盏）的位置：均匀分布，中间垂得最低 */
+  /**
+   * 绳子上第 i 盏（共 n 盏）的位置：均匀分布在绳子两侧，正中间留空（主角就站在秋林正中，
+   * 灯笼挂在他头顶会挡住他），中间垂得最低
+   */
   static slot(i: number, n: number) {
-    const u = n === 1 ? 0.5 : 0.08 + (0.84 * i) / (n - 1);
+    const GAP = 0.2; // 中间留空的比例
+    const v = 0.06 + ((1 - 0.12 - GAP) * (i + 0.5)) / n;
+    const u = v < 0.5 - GAP / 2 ? v : v + GAP;
     const wx = CENTER - SPAN + u * SPAN * 2;
     const sag = Math.sin(u * Math.PI) * SAG;
     return { wx, u, sag };

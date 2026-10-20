@@ -17,12 +17,13 @@ test('?date=MM-DD 可以预览别的日子，格式不对就忽略', () => {
   assert.equal(todayKey(new Date(2026, 9, 20), '?date=<x>'), '10-20');
 });
 
-test('灯笼均匀挂在秋林中间那段绳子上，中间垂得最低', () => {
+test('灯笼均匀挂在秋林那段绳子两侧，正中间（主角头顶）留空', () => {
   const one = Lanterns.slot(0, 1);
-  assert.equal(one.wx, -SECTION);
-  const n = 7;
-  const xs = Array.from({ length: n }, (_, i) => Lanterns.slot(i, n));
-  for (let i = 1; i < n; i++) assert.ok(xs[i].wx > xs[i - 1].wx, '从左到右排');
-  assert.ok(xs.every((s) => Math.abs(s.wx + SECTION) <= 70), '都在秋林那一段');
-  assert.ok(xs[3].sag >= xs[0].sag && xs[3].sag >= xs[6].sag, '中间最低');
+  assert.ok(Math.abs(one.wx + SECTION) >= 10, '只有一盏也不挂在主角头顶');
+  for (const n of [2, 7, 24]) {
+    const xs = Array.from({ length: n }, (_, i) => Lanterns.slot(i, n));
+    for (let i = 1; i < n; i++) assert.ok(xs[i].wx > xs[i - 1].wx, '从左到右排');
+    assert.ok(xs.every((s) => Math.abs(s.wx + SECTION) <= 70), '都在秋林那一段');
+    assert.ok(xs.every((s) => Math.abs(s.wx + SECTION) >= 10), '中间留空');
+  }
 });

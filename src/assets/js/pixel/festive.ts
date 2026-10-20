@@ -49,6 +49,7 @@ interface Spark {
   max: number;
   color: string;
   rocket: boolean;
+  size?: number;
   burstAt?: number; // 火箭：升到这个高度（屏幕 y）就炸开
 }
 
@@ -80,7 +81,7 @@ export class Fireworks {
       this.next = time + 1.1 + Math.random() * 1.8;
       const x = fireX !== null ? fireX + (Math.random() - 0.5) * 50 : camLeft + W * (0.15 + Math.random() * 0.7);
       const pal = COLORS[Math.floor(Math.random() * COLORS.length)];
-      this.list.push({ x, y: H - heightAt(x) - 4, vx: (Math.random() - 0.5) * 0.15, vy: -2.1 - Math.random() * 0.5, life: 0, max: 400, color: pal[0], rocket: true, burstAt: H * (0.1 + Math.random() * 0.14) });
+      this.list.push({ x, y: H - heightAt(x) - 4, vx: (Math.random() - 0.5) * 0.15, vy: -2.1 - Math.random() * 0.5, life: 0, max: 400, color: pal[0], rocket: true, burstAt: H * (0.17 + Math.random() * 0.1) });
     }
     const list = this.list;
     for (let i = list.length - 1; i >= 0; i--) {
@@ -111,10 +112,13 @@ export class Fireworks {
       if (sx < -10 || sx > W + 10) continue;
       sk.globalAlpha = s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7;
       sk.fillStyle = s.color;
-      sk.fillRect(sx, sy, 1, 1);
+      const sz = s.rocket ? 2 : (s.size ?? 1);
+      sk.fillRect(sx, sy, sz, sz);
       if (s.rocket) {
-        sk.globalAlpha = 0.45;
-        sk.fillRect(sx, sy + 1, 1, 2); // 拖尾
+        sk.globalAlpha = 0.5;
+        sk.fillRect(sx, sy + 2, 2, 3); // 拖尾
+        sk.globalAlpha = 0.25;
+        sk.fillRect(sx, sy + 5, 2, 3);
       }
     }
     sk.globalAlpha = 1;
@@ -125,17 +129,18 @@ export class Fireworks {
         this.flashes.splice(i, 1);
         continue;
       }
-      halo(sk, Math.round(fl.x - camLeft), Math.round(fl.y), 12, fl.color, (fr.dark ? 0.3 : 0.14) * (1 - fl.t / 0.35));
+      halo(sk, Math.round(fl.x - camLeft), Math.round(fl.y), 18, fl.color, (fr.dark ? 0.45 : 0.22) * (1 - fl.t / 0.35));
     }
   }
 
   private burst(x: number, y: number) {
     const pal = COLORS[Math.floor(Math.random() * COLORS.length)];
-    const n = 26 + Math.floor(Math.random() * 10);
+    const n = 40 + Math.floor(Math.random() * 16);
+    const speed = 0.9 + Math.random() * 0.5;
     for (let j = 0; j < n; j++) {
-      const a = (j / n) * Math.PI * 2 + Math.random() * 0.2;
-      const v = 0.55 + Math.random() * 0.55;
-      this.list.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 70 + Math.random() * 40, color: Math.random() < 0.3 ? pal[1] : pal[0], rocket: false });
+      const a = (j / n) * Math.PI * 2 + Math.random() * 0.15;
+      const v = speed * (0.75 + Math.random() * 0.25); // 速度相近才炸成一个圆
+      this.list.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 85 + Math.random() * 40, color: Math.random() < 0.3 ? pal[1] : pal[0], rocket: false, size: Math.random() < 0.6 ? 2 : 1 });
     }
     this.flashes.push({ x, y, t: 0, color: pal[1] });
     this.onBurst?.();
