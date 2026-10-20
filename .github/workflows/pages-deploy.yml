@@ -50,6 +50,16 @@ jobs:
         continue-on-error: true
         run: node build/check-friends.mjs
 
+      - name: Fetch latest resume
+        # 从 WangSimiao2000/Resume 取最新的 resume.pdf；下载失败或不是 PDF 就沿用仓库里的副本，不阻塞部署
+        continue-on-error: true
+        run: |
+          curl -fsSL --retry 3 --max-time 60 -o "$RUNNER_TEMP/resume.pdf" \
+            https://raw.githubusercontent.com/WangSimiao2000/Resume/master/resume.pdf
+          head -c 5 "$RUNNER_TEMP/resume.pdf" | grep -q '%PDF-'
+          cp "$RUNNER_TEMP/resume.pdf" public/assets/resume/WangSimiao_resume.pdf
+          cp "$RUNNER_TEMP/resume.pdf" public/assets/resume/WangSimiao_09.pdf
+
       - name: Build
         run: npm run build
 

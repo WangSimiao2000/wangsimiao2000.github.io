@@ -7,6 +7,7 @@ export const site = {
   author: '王思淼',
   avatar: '/assets/img/avatar/avatar.png',
   qqGroup: '772764843', // Minecraft 服务器玩家群
+  switchCode: 'SW-1834-9778-7674', // Switch 好友代码
   links: {
     github: 'https://github.com/WangSimiao2000',
     bilibili: 'https://space.bilibili.com/36913332',

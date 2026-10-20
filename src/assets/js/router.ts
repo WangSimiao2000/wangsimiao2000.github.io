@@ -509,6 +509,12 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) {
+      // 二维码浮层开着时，Esc 交给浏览器关浮层，不退回上一级
+      try {
+        if (document.querySelector(':popover-open')) return;
+      } catch {
+        /* 不支持 popover 的浏览器 */
+      }
       e.preventDefault();
       goBack();
     }

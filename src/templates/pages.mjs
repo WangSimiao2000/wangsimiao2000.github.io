@@ -277,6 +277,16 @@ const TRAVEL = [
   '🇻🇦 梵蒂冈', '🇪🇸 巴塞罗那', '🇪🇸 马德里', '🇵🇹 里斯本', '🇪🇬 开罗', '🇪🇬 卢克索', '🇪🇬 阿斯旺', '🇪🇬 吉萨', '🇪🇬 赫尔格达',
 ];
 
+/** 二维码浮层：用原生 popover，点按钮打开，点外面或按 Esc 关闭，不需要脚本 */
+function qrPopover(id, src, alt, hint) {
+  return html`
+      <div class="qr-pop" id="${id}" popover>
+        <img src="${src}" alt="${alt}" width="220" height="220" loading="lazy">
+        <p>${hint}</p>
+        <p class="muted small">手机上长按图片识别</p>
+      </div>`;
+}
+
 export function aboutPage(home) {
   const body = html`
     <article class="post about-page">
@@ -289,10 +299,16 @@ export function aboutPage(home) {
             <a class="btn" href="${site.links.github}" target="_blank" rel="noopener">GitHub</a>
             <a class="btn" href="${site.links.bilibili}" target="_blank" rel="noopener">Bilibili · 鄙人米奇喵</a>
             <a class="btn" href="${site.links.steam}" target="_blank" rel="noopener">Steam</a>
-            <a class="btn" href="/assets/resume/WangSimiao_09.pdf" target="_blank" rel="noopener">简历 PDF</a>
+            <a class="btn" href="/assets/resume/WangSimiao_resume.pdf" target="_blank" rel="noopener">简历 PDF</a>
+          </p>
+          <p class="more">
+            <button type="button" class="btn" popovertarget="qr-wechat">微信</button>
+            <button type="button" class="btn" popovertarget="qr-qq">QQ</button>
           </p>
         </div>
       </header>
+      ${qrPopover('qr-wechat', '/assets/img/wechat-qr.png', '微信二维码', '微信扫码加好友')}
+      ${qrPopover('qr-qq', '/assets/img/qq-qr.png', 'QQ 二维码', 'QQ 扫码加好友')}
       <div class="about-grid">
         <section class="about-card">
           <h2>教育背景</h2>
@@ -307,7 +323,8 @@ export function aboutPage(home) {
         <section class="about-card">
           <h2>游戏</h2>
           <p>最喜欢的游戏是 <strong>Minecraft</strong>，也是一个 B 站小 up，主要更新 Minecraft 视频，不过已经很久没更新了 😅</p>
-          <p>PC 上最近在玩<strong>天国拯救2</strong>。近几年觉得好玩的：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井</p>
+          <p>PC 上近几年觉得好玩的：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井</p>
+          <p>也玩 <strong>Switch</strong>，好友代码 <button type="button" class="qq-chip" data-copy="${site.switchCode}" title="点击复制好友代码">${site.switchCode}<span class="qq-copied" aria-live="polite"></span></button></p>
           <p class="muted small">社交手游：王者荣耀欧洲第66上官婉儿 · 和平精英多赛季战神 · 金铲铲多赛季大师</p>
         </section>
         <section class="about-card">

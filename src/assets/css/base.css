@@ -153,6 +153,7 @@ a { color: inherit; }
   transition: box-shadow 0.15s, color 0.15s;
 }
 .btn:hover { color: var(--accent); }
+button.btn { border: 0; font: inherit; font-size: 14px; line-height: inherit; cursor: pointer; }
 .btn:active { box-shadow: var(--i2); }
 
 
