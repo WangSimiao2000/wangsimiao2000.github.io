@@ -47,7 +47,9 @@ export function drawSky(fr: Frame, stars: Star[]) {
   sk.clearRect(0, 0, W, H);
   const drift = fr.camX * 0.012; // 极慢的视差：天上的东西几乎不动
   const cx = Math.round(W * 0.87 - drift);
-  const cy = Math.round(Math.max(12, H * 0.15));
+  // 画布贴底、可能比视口高（手机地址栏展开时顶上一截在屏幕外），日月按屏幕上实际看得到的部分定位
+  const vis = Math.min(H, Math.ceil(window.innerHeight / fr.S));
+  const cy = H - vis + Math.round(Math.max(12, vis * 0.15));
   if (!fr.dark) {
     skyHalo(sk, cx, cy, 7, '#ffd58a', 0.6);
     sk.globalAlpha = 0.5;

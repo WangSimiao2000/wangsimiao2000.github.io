@@ -78,15 +78,36 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   };
   let stars = makeStars(1, 1);
 
+  /*
+   * 手机地址栏随滚动收起、展开，视口高度会变几十像素。这时不重算像素大小和卡片缩放（否则 S 可能 3<->4 跳一下，
+   * 整个世界缩放、卡片重排），画布按这个宽度下见过的最大高度分配，并贴着屏幕底边（见 home.css）：
+   * 地址栏展开时画布顶上一截在屏幕外，收起时露出来，不用重建画布。只有宽度变了或高度变化超过 BAR（转屏、弹出键盘）才整体重算。
+   */
+  const coarse = window.matchMedia('(pointer: coarse)');
+  const BAR = 160;
+  let layoutW = -1;
+  let layoutH = 0;
+  let tallH = 0;
   function resize() {
     const vw = root.clientWidth;
-    const vh = window.innerHeight;
+    const ih = window.innerHeight;
+    const barOnly = coarse.matches && vw === layoutW && Math.abs(ih - layoutH) <= BAR;
+    if (barOnly) {
+      if (ih <= tallH) return;
+      tallH = ih;
+    } else {
+      layoutW = vw;
+      layoutH = ih;
+      // 触屏上预留一截地址栏的高度，第一次收起地址栏时也不用重建画布
+      tallH = ih + (coarse.matches ? 120 : 0);
+    }
+    const vh = layoutH;
     let S = Math.max(2, Math.round(vh / 190));
     if (vw / S < 96) S = Math.max(2, Math.floor(vw / 96));
     fr.S = S;
     fr.HALF = Math.ceil(vw / S) / 2;
     fr.W = Math.ceil(vw / S) + 1; // 比视口多 1 列，亚像素平移时右边缘不露底
-    fr.H = Math.ceil(vh / S);
+    fr.H = Math.ceil(tallH / S);
     for (const c of all) {
       c.width = fr.W;
       c.height = fr.H;
@@ -228,7 +249,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     goTo(Math.round(fr.p) + dir);
   }
 
-  const toLogical = (x: number, y: number) => [x / fr.S + fr.frac, y / fr.S] as const;
+  // 画布贴底、可能比视口高（见 resize），屏幕坐标先减去画布顶边
+  const canvasTop = () => window.innerHeight - fr.H * fr.S;
+  const toLogical = (x: number, y: number) => [x / fr.S + fr.frac, (y - canvasTop()) / fr.S] as const;
   bindInput({
     step,
     goTo,
@@ -274,7 +297,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       tip.append(who, when, text);
     }
     tip.style.left = `${((h.x0 + h.x1) / 2 - fr.frac) * fr.S}px`;
-    tip.style.top = `${h.y0 * fr.S}px`;
+    tip.style.top = `${h.y0 * fr.S + canvasTop()}px`;
     tip.hidden = false;
     clearTimeout(tipHold);
     tipHold = holdMs ? window.setTimeout(() => ((tipHold = 0), hideTip()), holdMs) : 0;
