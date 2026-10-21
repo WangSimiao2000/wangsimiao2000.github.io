@@ -29,14 +29,22 @@
   transition: filter 0.3s;
 }
 .js #world, .js #hero { display: block; }
+/* 画布贴底：可能比视口高（手机地址栏收起时露出顶上一截），地面始终贴着屏幕底边。见 world.ts resize() */
+.js #sky, .js #world, .js #hero { top: auto; bottom: 0; }
 #hero { pointer-events: none; }
 .js #world, .js #hero { will-change: transform, translate; }
 html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-behavior-x: none; }
 @media (prefers-reduced-motion: reduce) { html.js { scroll-behavior: auto; } body, #world, #hero { transition: none; } }
 
 /* ---- 每屏 ---- */
-.stage { min-height: 100vh; min-height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always; padding: 72px 16px 24px; }
-.js .stage { height: 100vh; height: 100dvh; padding: 0; }
+/*
+ * 每屏高度用 svh（地址栏展开时的小视口），不用 dvh：dvh 随地址栏收起、展开实时变，
+ * 6 屏的位置会一起挪，强制吸附就把页面拉回去又弹过来，看起来就是上下抽搐。
+ * 最后一屏用 lvh，地址栏收起后也能滚到它的起点吸住。
+ */
+.stage { min-height: 100vh; min-height: 100svh; scroll-snap-align: start; scroll-snap-stop: always; padding: 72px 16px 24px; }
+.js .stage { height: 100vh; height: 100svh; padding: 0; }
+.js .stage:last-of-type { height: 100vh; height: 100lvh; }
 
 .panel { max-width: 760px; margin: 0 auto 28px; }
 .js .panel {
