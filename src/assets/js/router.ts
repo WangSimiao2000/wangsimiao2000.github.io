@@ -73,6 +73,8 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   const versionOf = (root: ParentNode) =>
     root.querySelector<HTMLLinkElement>('link[rel="stylesheet"][href^="/_s/"]')?.getAttribute('href')?.match(/^\/_s\/[^/]+\//)?.[0] ?? null;
   const VERSION = versionOf(document);
+  /** 当前页面的构建时间（<meta name="build">）。老页面没有，就只比哈希 */
+  const BUILT = Number(document.querySelector<HTMLMetaElement>('meta[name="build"]')?.content) || 0;
   /** 已经知道线上有新版：之后取页面一律绕过浏览器的 HTTP 缓存（GitHub Pages 固定让 HTML 缓存 10 分钟） */
   let stale = false;
 
@@ -95,14 +97,20 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   async function checkVersion() {
     if (!VERSION || stale) return;
     let live: string | undefined;
+    let liveBuilt = 0;
     try {
       const r = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
       if (!r.ok) return;
-      live = ((await r.json()) as { assets?: string }).assets;
+      const v = (await r.json()) as { assets?: string; built?: number };
+      live = v.assets;
+      liveBuilt = Number(v.built) || 0;
     } catch {
       return;
     }
     if (!live || live === VERSION) return;
+    // GitHub Pages 的 CDN 不认查询参数、各节点各缓存 10 分钟：刚部署完可能拿到新页面配旧 version.json。
+    // 线上那份不比自己新（更早的构建，或者是还没有 built 字段的老版本）就当没更新，不然会被刷回旧版
+    if (BUILT && liveBuilt <= BUILT) return;
     stale = true;
     cache.clear();
     const mark = `reloaded:${live}`;

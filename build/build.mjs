@@ -28,6 +28,7 @@ import {
   taxonomy,
   toolsPage,
 } from '../src/templates/pages.mjs';
+import { BUILT } from '../src/templates/layout.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'dist');
@@ -119,7 +120,8 @@ export async function build() {
   await emit('/robots.txt', robots());
 
   // 网站版本：资源目录 /_s/<哈希>/。前端据此发现「线上已更新」，部署时据此保留上一版资源
-  await emit('/version.json', JSON.stringify({ assets: asset('') }));
+  // built：构建时间，前端只在线上比自己新时才刷新（CDN 节点缓存不一致时不会被旧版本刷回去）
+  await emit('/version.json', JSON.stringify({ assets: asset(''), built: BUILT }));
 
   // 留言灯笼（build/fetch-guestbook.mjs 生成）：没有就输出空的，秋林照常
   const guestbook = await readFile(path.join(ROOT, 'src/data/guestbook.json'), 'utf8').catch(() => '{"total":0,"notes":[]}');

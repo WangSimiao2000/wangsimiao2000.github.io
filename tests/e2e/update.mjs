@@ -13,11 +13,25 @@ const FAKE = '/_s/0000000000/';
   const page = await browser.newPage();
   let loads = 0;
   page.on('load', () => loads++);
-  await page.route('**/version.json*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ assets: FAKE }) }));
+  await page.route('**/version.json*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ assets: FAKE, built: Date.now() + 86400e3 }) }));
   await page.goto(BASE + '/');
   await page.waitForTimeout(5000);
   t.ok(loads === 2, `发现新版后首页自动刷新一次（load ${loads} 次）`);
   await page.close();
+}
+
+{
+  // 1b. CDN 节点缓存不一致：页面是新的、version.json 是旧的（更早的构建或没有 built 字段）——不刷新，不会被刷回旧版
+  for (const old of [{ assets: FAKE, built: 1 }, { assets: FAKE }]) {
+    const page = await browser.newPage();
+    let loads = 0;
+    page.on('load', () => loads++);
+    await page.route('**/version.json*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(old) }));
+    await page.goto(BASE + '/');
+    await page.waitForTimeout(5000);
+    t.ok(loads === 1, `线上 version.json 比页面旧（${JSON.stringify(old)}）时不刷新（load ${loads} 次）`);
+    await page.close();
+  }
 }
 
 {
