@@ -2,7 +2,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateSync } from 'node:zlib';
 import { decodePNG, encodePNG } from '../../build/png.mjs';
-import { check, nameOf, pack } from '../../build/atlas.mjs';
+import { check, flipX, mirrorMissing, nameOf, pack } from '../../build/atlas.mjs';
+
+test('主角、女孩缺的朝向由另一边翻转补上，手画的优先，别的精灵不动', () => {
+  const px = (...v) => new Uint8Array(v.flatMap((c) => [c, c, c, 255]));
+  const a = { width: 3, height: 1, data: px(1, 2, 3) };
+  assert.deepEqual([...flipX(a).data], [...px(3, 2, 1)]);
+  const hand = { width: 3, height: 1, data: px(9, 9, 9) };
+  const imgs = mirrorMissing({ 'hero.r.run.0': a, 'girl.r.idle': a, 'hero.r.idle.0': a, 'hero.l.idle.0': hand, 'cat.l.blink': a });
+  assert.deepEqual([...imgs['hero.l.run.0'].data], [...px(3, 2, 1)]);
+  assert.ok(imgs['girl.l.idle']);
+  assert.equal(imgs['hero.l.idle.0'], hand);
+  assert.equal(imgs['cat.r.blink'], undefined);
+});
 
 test('PNG 编码后能原样解码回来（RGBA）', () => {
   const data = new Uint8Array(3 * 2 * 4).map((_, i) => (i * 37) & 0xff);
@@ -62,7 +74,7 @@ test('检查：缺精灵、遮罩尺寸不对、角色帧尺寸不一致都会�
     'ghost#glow': [3, 3],
   });
   assert.ok(errs.some((e) => e.includes('缺少精灵 scenery.cottage')));
-  assert.ok(errs.some((e) => e.includes('hero.r.run 下各帧尺寸不一致')));
+  assert.ok(errs.some((e) => e.includes('hero.r 下各帧尺寸不一致')));
   assert.ok(errs.some((e) => e.includes('scenery.lamp#glow')));
   assert.ok(errs.some((e) => e.includes('ghost#glow') && e.includes('没有对应的本体')));
 });

@@ -6,7 +6,17 @@ import type { Frame } from './frame.js';
 import { drawHat } from './festive.js';
 
 export const CHAR_W = 14;
-export const CHAR_H = 20;
+export const CHAR_H = 22;
+
+/**
+ * 生日帽左上角相对朝右精灵左上角的位置，按画师原稿里帽子图层的位置量出来的
+ * （跑步帧里身体有起伏，帽子跟着走）。朝左时水平镜像。
+ */
+const HAT = {
+  idle: [[4, -5], [4, -5]],
+  run: [[5, -4], [5, -5], [5, -4], [5, -5]],
+  sit: [[4, -2], [4, -2], [4, -2]],
+} as const;
 
 export class Hero {
   facing: 1 | -1 = 1;
@@ -36,28 +46,33 @@ export class Hero {
     const frames = this.facing > 0 ? this.right : this.left;
     const { time, hc, W, H } = fr;
     let sprite: Sprite;
-    let bob = 0;
+    let hat: readonly [number, number];
     if (sitting) {
       // 看书：偶尔眨眼，隔几秒翻一页
       const blinking = this.blink(time);
       const turning = !fr.reduced && time > this.nextTurn && time < this.nextTurn + 0.35;
       if (time > this.nextTurn + 0.35) this.nextTurn = time + 5 + Math.random() * 4;
-      sprite = frames.sit[turning ? 2 : blinking ? 1 : 0];
+      const i = turning ? 2 : blinking ? 1 : 0;
+      sprite = frames.sit[i];
+      hat = HAT.sit[i];
     } else if (running) {
-      const f = Math.floor(this.stride / 5) % 4;
-      sprite = frames.run[f];
-      bob = f % 2 === 1 ? -1 : 0;
+      // 跑步的上下起伏画在帧里了，这里不再额外颠动
+      const i = Math.floor(this.stride / 5) % 4;
+      sprite = frames.run[i];
+      hat = HAT.run[i];
     } else {
-      sprite = frames.idle[this.blink(time) ? 1 : 0];
+      const i = this.blink(time) ? 1 : 0;
+      sprite = frames.idle[i];
+      hat = HAT.idle[i];
     }
     const x = Math.round(fr.HALF - CHAR_W / 2);
-    const y = Math.round(this.y - sprite.height + bob);
+    const y = Math.round(this.y - sprite.height);
     hc.clearRect(0, 0, W, H);
     hc.globalAlpha = 0.22;
     hc.fillStyle = '#000';
     hc.fillRect(x + 2, Math.round(this.y), CHAR_W - 4, 1);
     hc.globalAlpha = 1;
     hc.drawImage(sprite, x, y);
-    if (this.hat) drawHat(hc, x, y, CHAR_W);
+    if (this.hat) drawHat(hc, x, y, hat, this.facing < 0 ? sprite.width : 0);
   }
 }
