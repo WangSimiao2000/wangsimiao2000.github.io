@@ -422,9 +422,10 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 .about-hero h1 { margin: 0 0 8px; font-size: 28px; }
 .about-hero .more { margin-top: 16px; }
 .about-photo { width: 132px; height: 132px; object-fit: cover; border-radius: 50%; padding: 6px; background: var(--surface); box-shadow: var(--e3); }
-.about-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+/* 瀑布流：两列按内容高度排，不再按行对齐留空白。通栏卡片（.wide）放在网格外面 */
+.about-grid { columns: 2; column-gap: 20px; }
+.about-grid > .about-card { break-inside: avoid; margin-bottom: 20px; }
 .about-card { padding: 20px; border-radius: var(--r-lg); box-shadow: var(--i2); font-size: 15px; line-height: 1.75; }
-.about-card.wide { grid-column: 1 / -1; }
 .about-card h2 { margin: 0 0 12px; font-size: 16px; }
 .about-card p { margin: 0 0 10px; }
 .about-card p:last-child { margin-bottom: 0; }
@@ -448,7 +449,7 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
   .post-list.rows { margin: 0 -10px 8px; }
   .about-hero { grid-template-columns: 1fr; justify-items: start; gap: 16px; }
   .about-photo { width: 96px; height: 96px; }
-  .about-grid { grid-template-columns: 1fr; }
+  .about-grid { columns: 1; }
 }
 /* 内容短的页面（工具、分类）面板按内容收高，不撑满 */
 .js .reader-card { height: auto; max-height: 100%; }
