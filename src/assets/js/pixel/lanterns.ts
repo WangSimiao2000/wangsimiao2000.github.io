@@ -93,7 +93,7 @@ export class Lanterns {
       const x = Math.round(p.x - camLeft - sp.width / 2);
       const y = Math.round(p.y);
       if (x > W || x + sp.width < 0 || p.alpha <= 0) continue;
-      if (dark) halo(sk, x + 4, y + 4, 12, '#ffc96a', 0.32 * p.alpha);
+      if (dark) halo(sk, x + 4, y + 7, 12, '#ffc96a', 0.32 * p.alpha);
       sk.globalAlpha = p.alpha;
       sk.drawImage(sp, x, y);
       // 刚从树后冒头时还被树挡着，露出来以后才能点

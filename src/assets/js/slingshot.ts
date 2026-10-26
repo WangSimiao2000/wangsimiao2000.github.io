@@ -16,17 +16,18 @@ interface Options {
 }
 
 const PX = 3; // 像素风：1 个逻辑像素 = 3 个 CSS 像素，和世界一样粗的像素颗粒
-// 弹弓盒子 48x60（16x20 个逻辑像素）。皮筋层向四周多留 90px，拉远了也画得下
+// 弹弓盒子 48x69（16x23 个逻辑像素）。皮筋层向四周多留 90px，拉远了也画得下
+const FORK_HEIGHT = 69;
 const BAND_PAD = 90;
 const snap = (v: number) => Math.round(v / PX) * PX; // 石子按像素格移动
 
 const MARKUP = `
-<canvas class="ss-fork" width="16" height="20" aria-hidden="true"></canvas>
+<canvas class="ss-fork" width="16" height="23" aria-hidden="true"></canvas>
 <canvas class="ss-bands" aria-hidden="true"></canvas>
 <svg class="ss-aim" aria-hidden="true" shape-rendering="crispEdges"></svg>
 <canvas class="ss-ball" width="4" height="4" role="button" tabindex="-1" aria-label="弹弓石子：拖动后松手发射"></canvas>`;
 
-/** 木叉和石子来自图集（slingshot.fork 16x20、slingshot.stone 4x4），图集加载好后画进对应的小 canvas */
+/** 木叉和石子来自图集（slingshot.fork 16x23、slingshot.stone 4x4），图集加载好后画进对应的小 canvas */
 function paintFromAtlas(c: HTMLCanvasElement, name: string) {
   const sp = sprite(name);
   void atlasReady().then(() => c.getContext('2d')!.drawImage(sp, 0, 0));
@@ -45,7 +46,7 @@ export function startSlingshot({ slots, goTo }: Options) {
   paintFromAtlas(box.querySelector<HTMLCanvasElement>('.ss-ball')!, 'slingshot.stone');
   const bandCanvas = box.querySelector<HTMLCanvasElement>('.ss-bands')!;
   bandCanvas.width = Math.round((48 + BAND_PAD * 2) / PX);
-  bandCanvas.height = Math.round((60 + BAND_PAD * 2) / PX);
+  bandCanvas.height = Math.round((FORK_HEIGHT + BAND_PAD * 2) / PX);
   const bg = bandCanvas.getContext('2d')!;
   document.body.append(box);
   const ball = box.querySelector<HTMLElement>('.ss-ball')!;
@@ -67,7 +68,7 @@ export function startSlingshot({ slots, goTo }: Options) {
     const barTop = bar?.top ?? r.top;
     // 射程：45° 拉满时水平射程 ≈ v²/g，取快捷栏宽的 1.05 倍，从最左一格拉满打得到最右一格（反过来也一样）
     if (bar) POWER = Math.sqrt(GRAVITY * bar.width * 1.05) / MAX_PULL;
-    box.style.top = `${barTop - 58}px`; // 叉子底端正好立在快捷栏的上沿
+    box.style.top = `${barTop - 67}px`; // 叉子底端正好立在快捷栏的上沿
     const b = box.getBoundingClientRect();
     return { x: b.left + 24, y: b.top + 22 };
   }

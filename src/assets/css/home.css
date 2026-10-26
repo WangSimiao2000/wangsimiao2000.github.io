@@ -610,16 +610,16 @@ html.world-hover body { cursor: pointer; }
 
 /* ---- 弹弓（悬停 / 长按快捷栏的「起点」） ---- */
 .slingshot[hidden] { display: none; }
-.slingshot { position: fixed; z-index: 6; width: 48px; height: 60px; pointer-events: none; }
+.slingshot { position: fixed; z-index: 6; width: 48px; height: 69px; pointer-events: none; }
 .slingshot > * { pointer-events: none; }
 .slingshot.ss-in { animation: ss-pop-in 0.22s cubic-bezier(0.3, 1.6, 0.5, 1) both; transform-origin: 50% 100%; }
 .slingshot.ss-out { animation: ss-pop-out 0.2s ease-in both; transform-origin: 50% 100%; }
 @keyframes ss-pop-in { from { transform: scale(0.2) translateY(20px); opacity: 0; } }
 @keyframes ss-pop-out { to { transform: scale(0.4) translateY(16px); opacity: 0; } }
 .slingshot canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
-.ss-fork { position: absolute; inset: 0; width: 48px; height: 60px; filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.15)); }
-.ss-bands { position: absolute; left: -90px; top: -90px; width: 228px; height: 240px; }
-.ss-aim { position: absolute; left: 0; top: 0; width: 48px; height: 60px; overflow: visible; }
+.ss-fork { position: absolute; inset: 0; width: 48px; height: 69px; filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.15)); }
+.ss-bands { position: absolute; left: -90px; top: -90px; width: 228px; height: 249px; }
+.ss-aim { position: absolute; left: 0; top: 0; width: 48px; height: 69px; overflow: visible; }
 .ss-aim rect { fill: var(--accent); opacity: 0.85; }
 .ss-ball {
   position: absolute; left: 18px; top: 16px; width: 12px; height: 12px; pointer-events: auto; cursor: grab; touch-action: none;

@@ -20,7 +20,7 @@ export const COTTAGE = {
   doorCenter: 29.5,
 } as const;
 /** 路灯灯泡、营火火焰的中心（相对精灵左上角） */
-export const LAMP_BULB = [3, 4] as const;
+export const LAMP_BULB = [4, 5] as const;
 export const CAMPFIRE_FLAME = [7, 2] as const;
 
 export interface Scenery {
