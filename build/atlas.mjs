@@ -6,6 +6,8 @@
  *   src/art/scenery/cottage.png    -> 精灵 scenery.cottage
  *   src/art/scenery/cottage.glow.png -> 它的自发光遮罩 scenery.cottage#glow（尺寸必须和本体一样）
  *
+ * 主角和女孩只画朝右（r）一套，朝左（l）在这里水平翻转生成（见 MIRROR）。
+ *
  * 输出（生成文件，不进 git）：src/assets/img/atlas.png 和 src/assets/js/pixel/atlas-map.ts。
  * 内容没变就不写，避免开发服务器的文件监听来回触发。
  *
@@ -35,13 +37,37 @@ const WIDTH = 256;
 const REQUIRED = [
   ...['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush'].map((k) => `scenery.${k}.*`),
   ...['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay'].map((k) => `scenery.${k}`),
-  ...['r', 'l'].flatMap((s) => [`hero.${s}.idle.0`, `hero.${s}.idle.1`, `hero.${s}.run.*`, `hero.${s}.sit.*`]),
-  ...['r', 'l'].flatMap((s) => [`girl.${s}.idle`, `girl.${s}.walk.0`, `girl.${s}.walk.1`, `girl.${s}.wave.0`, `girl.${s}.wave.1`]),
-  'cat.l.sit', 'cat.l.tail', 'cat.l.blink', 'cat.l.jump',
+  ...['r', 'l'].flatMap((s) => [`hero.${s}.idle.0`, `hero.${s}.idle.1`, `hero.${s}.run.*`, `hero.${s}.sit.0`, `hero.${s}.sit.1`, `hero.${s}.sit.2`]),
+  ...['r', 'l'].flatMap((s) => [`girl.${s}.idle`, `girl.${s}.walk.*`, `girl.${s}.wave.0`]),
+  'cat.l.idle.*', 'cat.l.blink', 'cat.l.jump',
   'hat', 'lantern.day', 'lantern.night', 'slingshot.fork', 'slingshot.stone',
 ];
-/** 这些前缀下的所有帧必须同样大（站立、跑步帧尺寸不同会让脚底和头顶上下跳） */
-const SAME_SIZE = ['hero.r.idle', 'hero.l.idle', 'hero.r.run', 'hero.l.run', 'hero.r.sit', 'hero.l.sit', 'girl.r', 'girl.l'];
+/** 这些前缀下的所有帧必须同样大（同一个角色的帧尺寸不同，切帧时脚底和头顶会上下跳） */
+const SAME_SIZE = ['hero.r', 'hero.l', 'girl.r', 'girl.l', 'cat.l'];
+/**
+ * 这些角色只画一个朝向就行：hero/r/... 和 hero/l/... 缺了哪一边，就把另一边水平翻转补上。
+ * 两边都画了就用手画的（比如翻过去别扭的那一帧单独画一张）。
+ */
+const MIRROR = ['hero', 'girl'];
+
+/** 水平翻转一张 RGBA 图 */
+export function flipX({ width, height, data }) {
+  const out = new Uint8Array(data.length);
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) out.set(data.subarray((y * width + x) * 4, (y * width + x) * 4 + 4), (y * width + (width - 1 - x)) * 4);
+  return { width, height, data: out };
+}
+
+/** 给 MIRROR 里的角色补上缺的那个朝向（就地修改 imgs） */
+export function mirrorMissing(imgs) {
+  for (const n of Object.keys(imgs)) {
+    const parts = n.split('.');
+    if (!MIRROR.includes(parts[0]) || (parts[1] !== 'r' && parts[1] !== 'l')) continue;
+    const other = [parts[0], parts[1] === 'r' ? 'l' : 'r', ...parts.slice(2)].join('.');
+    if (!imgs[other]) imgs[other] = flipX(imgs[n]);
+  }
+  return imgs;
+}
 
 async function walk(dir) {
   const out = [];
@@ -120,6 +146,7 @@ export async function buildAtlas() {
     const rel = path.relative(ART, f);
     imgs[nameOf(rel)] = decodePNG(await readFile(f), `src/art/${rel}`);
   }
+  mirrorMissing(imgs);
   const sizes = Object.fromEntries(Object.entries(imgs).map(([n, im]) => [n, [im.width, im.height]]));
   const errors = check(sizes);
   if (errors.length) throw new Error(`像素图集检查没通过：\n  - ${errors.join('\n  - ')}`);

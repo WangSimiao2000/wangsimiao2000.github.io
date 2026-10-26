@@ -18,12 +18,23 @@ export function todayKey(now = new Date(), search = typeof location === 'undefin
 
 export const isBirthday = (key = todayKey()) => key === BIRTHDAY;
 
-/* ---------- 生日帽：粉黄条纹的小圆锥，顶上一个白绒球，戴在主角头顶（图集里的 hat） ---------- */
+/* ---------- 生日帽：戴在主角头顶（图集里的 hat） ---------- */
 
-/** 帽子画在主角头顶：x 是主角精灵左边缘，y 是精灵顶边（头发最上面一行） */
-export function drawHat(hc: CanvasRenderingContext2D, x: number, y: number, charW: number) {
+/**
+ * 帽子画在主角头顶。x、y 是主角精灵的左上角，at 是帽子相对朝右精灵左上角的位置；
+ * mirrorW > 0 表示主角朝左（精灵宽 mirrorW），帽子位置和图案都水平镜像
+ */
+export function drawHat(hc: CanvasRenderingContext2D, x: number, y: number, at: readonly [number, number], mirrorW = 0) {
   const hat = sprite('hat');
-  hc.drawImage(hat, x + Math.floor(charW / 2) - Math.floor(hat.width / 2), y - hat.height + 2);
+  if (!mirrorW) {
+    hc.drawImage(hat, x + at[0], y + at[1]);
+    return;
+  }
+  hc.save();
+  hc.translate(x + mirrorW - at[0], y + at[1]);
+  hc.scale(-1, 1);
+  hc.drawImage(hat, 0, 0);
+  hc.restore();
 }
 
 /* ---------- 烟花 ---------- */

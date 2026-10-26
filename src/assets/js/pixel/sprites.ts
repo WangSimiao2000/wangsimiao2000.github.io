@@ -1,6 +1,6 @@
 /**
  * 主角的精灵帧（来自图集 atlas.png，见 atlas.ts）和通用的确定性哈希。
- * 左右两套是分开画的：光照永远在左上，朝左的那套不是朝右的简单镜像。
+ * 源图只画了朝右的一套，朝左的由打包脚本水平翻转生成。
  */
 import { sprite, sprites, type Sprite } from './atlas.js';
 

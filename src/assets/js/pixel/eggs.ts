@@ -52,6 +52,9 @@ function bubble(g: CanvasRenderingContext2D, cx: number, bottom: number, text: s
 
 export const inside = (sp: Spot, lx: number, ly: number) => lx >= sp.x0 && lx <= sp.x1 && ly >= sp.y0 && ly <= sp.y1;
 
+/** 女孩身体中线离朝右精灵左边的距离（像素） */
+const GIRL_CX = 7;
+
 export class Eggs {
   spots: Spot[] = [];
   /** 路牌翻转动画 0..1；signOpen = 已翻过来，可以往回走进隐藏页 */
@@ -59,7 +62,7 @@ export class Eggs {
   signOpen = false;
   private girlR = buildGirl(false);
   private girlL = buildGirl(true);
-  private catL = buildCat(true);
+  private catL = buildCat();
   private cottageWx = 0;
   private girl = { state: 'none' as 'none' | 'out' | 'wave' | 'in', t: 0, off: 0 };
   private hayShake = 0;
@@ -166,9 +169,10 @@ export class Eggs {
       const wx = doorX + girl.off;
       const fr2 = girl.state !== 'in' ? this.girlL : this.girlR;
       const walking = (girl.state === 'out' && girl.t > 0.35) || (girl.state === 'in' && girl.off < 0);
-      const sp = girl.state === 'wave' ? fr2.wave[0] : walking ? fr2.walk[Math.floor(girl.t * 6) % 2] : fr2.idle; // 打招呼：举着手不晃
+      const sp = girl.state === 'wave' ? fr2.wave : walking ? fr2.walk[Math.floor(girl.t * 6.67) % fr2.walk.length] : fr2.idle; // 打招呼：举着手不晃
       const gy = H - Math.round(heightAt(wx));
-      const x = Math.round(wx - 7 - camLeft);
+      // 身体中线在朝右精灵里离左边 GIRL_CX 格（招手那帧手伸出去了，画布比身体宽），朝左时镜像
+      const x = Math.round(wx - (fr2 === this.girlL ? sp.width - GIRL_CX : GIRL_CX) - camLeft);
       // 人比门框高，不能「从门里探出来」（会被门框截掉半个头）：门先打开，人在门口
       // 淡入后走出来；回去时走到门口淡出，门再关上
       let alpha = 1;
@@ -185,7 +189,7 @@ export class Eggs {
     if (cat.state !== 'hidden') {
       cat.t += dt;
       const frames = this.catL;
-      let sp = frames.sit;
+      let sp = frames.idle[0];
       let cx = this.hayX - 18;
       let cy = H - Math.round(heightAt(cx));
       if (cat.state === 'jump') {
@@ -195,8 +199,9 @@ export class Eggs {
         sp = frames.jump;
         if (u >= 1) Object.assign(cat, { state: 'sit', t: 0 });
       } else {
+        // 坐着甩尾巴（每帧 0.15 秒），每 4 秒眨一次眼
         const ph = cat.t % 4;
-        sp = ph > 3.2 ? frames.tail : ph > 1.5 && ph < 1.65 ? frames.blink : frames.sit;
+        sp = ph > 1.5 && ph < 1.65 ? frames.blink : frames.idle[Math.floor(cat.t / 0.15) % frames.idle.length];
       }
       cat.x = cx;
       const x = Math.round(cx - sp.width / 2 - camLeft);
@@ -211,7 +216,7 @@ export class Eggs {
     const girl = this.girl;
     if (girl.state === 'wave' && girl.t > 0.2) {
       const wx = this.cottageWx + COTTAGE.doorCenter + girl.off;
-      bubble(g, wx - camLeft, H - Math.round(heightAt(wx)) - 21, 'Hi!', '#d0603a');
+      bubble(g, wx - camLeft, H - Math.round(heightAt(wx)) - 22, 'Hi!', '#d0603a');
     }
     if (this.cat.meow > 0) {
       this.cat.meow -= dt;
