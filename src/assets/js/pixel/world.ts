@@ -30,6 +30,7 @@ import type { Frame } from './frame.js';
 const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
 const NIGHT = 'rgba(14, 20, 38, 0.46)';
 const SECRET_DUR = 0.55; // 进出隐藏页的时长，和浏览器平滑滚动一致
+const MIN_RUN = 15; // 相机速度（逻辑像素/秒）低于这个就算停下
 
 export interface WorldOptions {
   canvas: HTMLCanvasElement;
@@ -384,10 +385,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
     const v = fr.camX - lastCam;
     lastCam = fr.camX;
-    if (Math.abs(v) > 0.04) {
+    // 相机是指数缓动，快到站时速度会拖很久的小尾巴。按跑过的距离推进跑步帧的话，这段尾巴里
+    // 一帧要停零点几秒，看着像慢动作抬脚又放下。所以：速度低于 MIN_RUN 就算停下（换回站立），
+    // 跑步帧按速度推进、但每秒至少 6 帧、至多 14 帧（画师原稿是每帧 0.125 秒）
+    const speed = dt > 0 ? Math.abs(v) / dt : 0;
+    if (speed > MIN_RUN) {
       runTimer = 0.12;
       hero.facing = v > 0 ? 1 : -1;
-      hero.stride += Math.min(Math.abs(v), 8);
+      hero.stride += dt * clamp(speed / 5, 6, 14) * 5;
     } else runTimer -= dt;
     fr.running = runTimer > 0 && !fr.reduced;
 
