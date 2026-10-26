@@ -1,6 +1,13 @@
 import { html, raw } from '../../build/html.mjs';
 import { site } from '../site.mjs';
 
+/**
+ * 这次构建的时间（毫秒）。写进每个页面的 <meta name="build"> 和 version.json，
+ * 前端只在线上版本比当前页面「更新」时才自动刷新：GitHub Pages 的 CDN 各节点各缓存 10 分钟，
+ * 刚部署完时可能拿到新页面、旧 version.json，只比哈希会被旧版本刷回去
+ */
+export const BUILT = Date.now();
+
 /** 首帧前确定主题，避免亮 -> 暗闪一下 */
 const THEME_INIT = `(()=>{const d=document.documentElement;d.classList.add('js');let t=null;try{t=localStorage.getItem('theme')}catch{}if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.dataset.theme=t})();`;
 
@@ -110,6 +117,7 @@ export function layout(o) {
   <script type="application/ld+json">${raw(jsonLd(o, fullTitle, desc, canonical, shareImage))}</script>
   <meta name="google-site-verification" content="${site.verify.google}">
   <meta name="msvalidate.01" content="${site.verify.bing}">
+  <meta name="build" content="${BUILT}">
   <meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#15181d" media="(prefers-color-scheme: dark)">
   <script>${raw(THEME_INIT)}${o.reading ? raw("document.documentElement.classList.add('reading');") : ''}</script>

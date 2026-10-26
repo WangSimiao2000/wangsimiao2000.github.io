@@ -37,6 +37,9 @@ for (const [w, h, cols] of [[1440, 900, 2], [1280, 720, 2], [390, 844, 1]]) {
   }
   check(Math.abs(r.wide.w - r.g.w) <= 1 && r.wide.x === r.g.x, `${w}x${h}: 旅行卡片占满宽度（${r.wide.w}/${r.g.w}）`);
   check(r.wide.y >= r.g.b, `${w}x${h}: 旅行卡片在两列下面`);
+  const lowest = Math.max(...r.cards.map((c) => c.b));
+  const below = r.wide.y - lowest;
+  check(below >= 16 && below <= 24, `${w}x${h}: 旅行卡片和上面最低那张卡片间距 ${below}px`);
   check(errors.length === 0, `${w}x${h}: 没有 JS 报错 ${errors.join('; ')}`);
   console.log('     ', r.cards.map((c) => `${c.n}@(${c.x},${c.y})`).join('  '));
   if (process.env.SHOT) await page.screenshot({ path: `${process.env.SHOT}/about-${w}.png`, fullPage: false });
