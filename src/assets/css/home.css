@@ -310,6 +310,14 @@ html.js.reading { overflow: hidden; }
 .reading #world, .reading #hero { transform: translateY(var(--sink)); }
 .stages, .hotbar { transition: opacity 0.25s; }
 
+/*
+ * 刚打开页面、脚本还没跑起来的那一小会儿，板块卡片都叠在屏幕正中（左右位置是脚本按相机算的）。
+ * 所以卡片先藏着，世界把它们摆好后（html.world-on）再淡入。脚本万一没加载出来，3 秒后照样显示。
+ */
+html.js:not(.world-on) .stages { opacity: 0; }
+html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s forwards; }
+@keyframes stages-fallback { to { opacity: 1; } }
+
 @media (prefers-reduced-motion: reduce) {
   .js #world, .js #hero, .stages, .hotbar { transition: none; }
 }
