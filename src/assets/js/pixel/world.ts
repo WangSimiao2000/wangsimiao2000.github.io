@@ -486,6 +486,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   }
   requestAnimationFrame(frame);
   updatePanels();
+  // 卡片摆好位置了，可以淡入（home.css 在这之前把它们藏着，免得叠在一起）
+  root.classList.add('world-on');
 
   return {
     goTo,
