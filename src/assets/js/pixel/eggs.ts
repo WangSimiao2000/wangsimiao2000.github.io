@@ -112,7 +112,11 @@ export class Eggs {
         const [dx, dy, dw, dh] = COTTAGE.door;
         const [lx, ly, lw, lh] = COTTAGE.doorLight;
         f.fillStyle = '#3b2a22';
-        f.fillRect(x + dx, y + dy, dw, dh);
+        // 门洞按门的拱形画：顶上几行左右内收，不盖住门框
+        for (let r = 0; r < dh; r++) {
+          const inset = COTTAGE.doorArch[r] ?? 0;
+          f.fillRect(x + dx + inset, y + dy + r, dw - inset * 2, 1);
+        }
         for (const ctx of [f, fr.e]) {
           ctx.fillStyle = '#ffd77e';
           ctx.globalAlpha = 0.35;
