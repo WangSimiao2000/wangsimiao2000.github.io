@@ -13,8 +13,9 @@ export const COTTAGE = {
   window: [13, 30],
   lantern: [37, 31],
   chimney: [31, 0],
-  /** 门洞（x, y, w, h）、门里透出的暖光、门的点击区域（x0, y0, x1, y1）、门口中心的 x */
-  door: [24, 29, 9, 11],
+  /** 门洞（x, y, w, h）、门洞顶上几行的拱形内收（每行左右各缩几格）、门里透出的暖光、门的点击区域（x0, y0, x1, y1）、门口中心的 x */
+  door: [24, 28, 9, 12],
+  doorArch: [2, 1],
   doorLight: [25, 31, 7, 8],
   doorHit: [21, 25, 36, 41],
   doorCenter: 28.5,
