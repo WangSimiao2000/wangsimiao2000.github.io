@@ -10,14 +10,14 @@ export type { Sprite };
 
 /** 小屋上会发光 / 冒烟 / 可交互的位置（相对精灵左上角），world.ts 和 eggs.ts 用来画光晕、开门和判定点击 */
 export const COTTAGE = {
-  window: [14, 28],
-  lantern: [36, 29],
-  chimney: [29, 1],
+  window: [13, 30],
+  lantern: [37, 31],
+  chimney: [31, 0],
   /** 门洞（x, y, w, h）、门里透出的暖光、门的点击区域（x0, y0, x1, y1）、门口中心的 x */
-  door: [27, 27, 6, 10],
-  doorLight: [28, 30, 4, 7],
-  doorHit: [25, 24, 35, 38],
-  doorCenter: 29.5,
+  door: [24, 29, 9, 11],
+  doorLight: [25, 31, 7, 8],
+  doorHit: [21, 25, 36, 41],
+  doorCenter: 28.5,
 } as const;
 /** 路灯灯泡、营火火焰的中心（相对精灵左上角） */
 export const LAMP_BULB = [4, 5] as const;
