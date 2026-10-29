@@ -49,6 +49,7 @@ export function drawLayer(fr: Frame, which: Layer, factor: number, haze: number)
 }
 
 let heights = new Float32Array(0);
+let tops = new Int32Array(0); // 每列地面最高的像素（含草尖），用来算描边
 
 /**
  * 远景三层画完后整体自下而上淡出（只作用于这时主画布上已有的远景），树梢、小屋这些前景之后才画，不受影响。
@@ -70,11 +71,29 @@ export function fadeFar(g: CanvasRenderingContext2D, W: number, H: number) {
   g.globalCompositeOperation = 'source-over';
 }
 
-/** 前景地面：表层、三道土层、石子、草尖，逐列绘制 */
+/** 这一列冒出的草尖高度（0~2 像素） */
+function bladeAt(wx: number): number {
+  if (onPath(wx)) return 0;
+  const br = hash(wx * 1.31 + 2);
+  if (br >= 0.42 * biomeNum(wx, (b) => (b.blades ? 1 : 0))) return 0;
+  return br < 0.06 ? 2 : 1;
+}
+
+/**
+ * 前景地面：表层、三道土层、石子、草尖，逐列绘制。
+ * 地表轮廓（含草尖和坡面的竖边）描一圈内描边，和素材的描边一样：最外一圈像素换成深色，轮廓不变，
+ * 受光线挪到描边下面一格。
+ */
 export function drawGround(fr: Frame) {
   const { f, W, H, camLeft } = fr;
-  if (heights.length < W + 2) heights = new Float32Array(W + 2);
-  for (let x = -1; x <= W; x++) heights[x + 1] = Math.round(heightAt(camLeft + x));
+  if (heights.length < W + 2) {
+    heights = new Float32Array(W + 2);
+    tops = new Int32Array(W + 2);
+  }
+  for (let x = -1; x <= W; x++) {
+    heights[x + 1] = Math.round(heightAt(camLeft + x));
+    tops[x + 1] = H - heights[x + 1] - bladeAt(camLeft + x);
+  }
   for (let x = 0; x < W; x++) {
     const wx = camLeft + x;
     const pal = paletteAt(wx);
@@ -93,8 +112,6 @@ export function drawGround(fr: Frame) {
     f.fillStyle = shade;
     f.fillRect(x, sy + band - 1, 1, 1);
     if (hash(wx * 0.53 + 1) < 0.3) f.fillRect(x, sy + band, 1, 1);
-    f.fillStyle = rim;
-    f.fillRect(x, sy, 1, 1);
 
     // 土层：三道地层，交界随噪声起伏，边上零星散几个像素
     const d1 = sy + band + 1;
@@ -119,18 +136,22 @@ export function drawGround(fr: Frame) {
         f.fillRect(x, py + 1, 2, 1);
       }
     }
-    // 草尖：地表冒出的零星像素，轮廓不再是一条硬线；雪地上换成零星亮点
-    if (!path) {
-      const br = hash(wx * 1.31 + 2);
-      const bladeOK = biomeNum(wx, (b) => (b.blades ? 1 : 0));
-      if (br < 0.42 * bladeOK) {
-        f.fillStyle = br < 0.14 ? pal.rim : pal.top;
-        f.fillRect(x, sy - 1, 1, 1);
-        if (br < 0.06) f.fillRect(x, sy - 2, 1, 1);
-      } else if (BIOMES[weights(wx)[0]].sparkle && br < 0.12) {
-        f.fillStyle = pal.rim;
-        f.fillRect(x, sy - 1, 1, 1);
-      }
+
+    // 描边：这一列最上面的像素，加上比左右邻居高出来的那段竖边（四邻接里挨着空气的像素）
+    const t = tops[x + 1];
+    const lineEnd = Math.max(t, tops[x] - 1, tops[x + 2] - 1);
+    f.fillStyle = path ? pal.path[3] : pal.line;
+    f.fillRect(x, t, 1, lineEnd - t + 1);
+    // 受光线：描边下面那一格（草尖整根都是描边，受光线还在地表那一行的下面）
+    const rimY = Math.max(lineEnd + 1, sy);
+    if (rimY < sy + band - 1) {
+      f.fillStyle = rim;
+      f.fillRect(x, rimY, 1, 1);
+    }
+    // 雪地上零星的亮点，压在描边上
+    if (!path && t === sy && BIOMES[weights(wx)[0]].sparkle && hash(wx * 1.31 + 2) < 0.12) {
+      f.fillStyle = pal.rim;
+      f.fillRect(x, sy - 1, 1, 1);
     }
   }
 }

@@ -41,6 +41,7 @@ export interface Biome {
   near: string; // 近景树线
   treeline: number; // 中/近景轮廓上的树冠起伏，0 = 光秃
   spiky: boolean; // 树线是尖的（针叶林）
+  line: string; // 地表轮廓的描边（和素材的描边同色系）
   rim: string; // 地表最上沿的受光线
   top: string; // 表层（草 / 沙 / 雪）
   shade: string; // 表层底部
@@ -72,12 +73,12 @@ const SOIL: [string, string, string] = ['#a8805b', '#8a6548', '#6c4f3c'];
 export const BIOMES: Biome[] = [
   {
     name: 'autumn', tint: '#ffe0bf', far: '#d9c3b4', mid: '#d9a77a', near: '#c98a5a', treeline: 0.9, spiky: false,
-    rim: '#f3dc8e', top: '#d6b45c', shade: '#b48d43', soil: SOIL, amp: 9, blades: true,
+    line: '#6a360d', rim: '#f3dc8e', top: '#d6b45c', shade: '#b48d43', soil: SOIL, amp: 9, blades: true,
     flora: [{ until: 0.34, kind: 'autumn', z: 0 }, { until: 0.46, kind: 'autumnBush', z: 2 }, { until: 0.62, kind: 'dryTuft', z: 3 }],
   },
   {
     name: 'plains', tint: '#cdebff', far: '#a9c3da', mid: '#a3c99a', near: '#82b76e', treeline: 0.35, spiky: false,
-    rim: '#d2ee95', top: '#8cc762', shade: '#68a44d', soil: SOIL, amp: 9, blades: true,
+    line: '#1e462b', rim: '#d2ee95', top: '#8cc762', shade: '#68a44d', soil: SOIL, amp: 9, blades: true,
     flora: [
       { until: 0.1, kind: 'oak', z: 0 }, { until: 0.2, kind: 'bush', z: 2 }, { until: 0.26, kind: 'rock', z: 2 },
       { until: 0.55, kind: 'tuft', z: 3 }, { until: 0.75, kind: 'flowers', z: 3 },
@@ -85,7 +86,7 @@ export const BIOMES: Biome[] = [
   },
   {
     name: 'forest', tint: '#bfe4ff', far: '#93b1c9', mid: '#76a57b', near: '#548a5c', treeline: 1, spiky: false,
-    rim: '#b4de80', top: '#64a854', shade: '#468345', soil: ['#8e6c4e', '#6f533f', '#534034'], amp: 13, blades: true,
+    line: '#1e462b', rim: '#b4de80', top: '#64a854', shade: '#468345', soil: ['#8e6c4e', '#6f533f', '#534034'], amp: 13, blades: true,
     flora: [
       { until: 0.3, kind: 'forest', z: 0 }, { until: 0.48, kind: 'oak', z: 0 },
       { until: 0.62, kind: 'bush', z: 2 }, { until: 0.85, kind: 'tuft', z: 3 },
@@ -97,12 +98,12 @@ export const BIOMES: Biome[] = [
   },
   {
     name: 'desert', tint: '#ffe6b8', far: '#e9d2b3', mid: '#e6c595', near: '#dcb07d', treeline: 0, spiky: false,
-    rim: '#fdebc6', top: '#f2d6a3', shade: '#e2bb86', soil: ['#d7ad78', '#c39667', '#a97e58'], amp: 15, blades: false,
+    line: '#9a6f42', rim: '#fdebc6', top: '#f2d6a3', shade: '#e2bb86', soil: ['#d7ad78', '#c39667', '#a97e58'], amp: 15, blades: false,
     flora: [{ until: 0.1, kind: 'cactus', z: 1 }, { until: 0.2, kind: 'sandRock', z: 2 }, { until: 0.36, kind: 'dryTuft', z: 3 }],
   },
   {
     name: 'village', tint: '#ffd9ae', far: '#bcbad6', mid: '#a7c792', near: '#87b56c', treeline: 0.45, spiky: false,
-    rim: '#d6ec94', top: '#90c664', shade: '#6aa24e', soil: SOIL, amp: 7, blades: true,
+    line: '#1e462b', rim: '#d6ec94', top: '#90c664', shade: '#6aa24e', soil: SOIL, amp: 7, blades: true,
     flora: [
       { until: 0.08, kind: 'oak', z: 0 }, { until: 0.2, kind: 'bush', z: 2 },
       { until: 0.48, kind: 'tuft', z: 3 }, { until: 0.68, kind: 'flowers', z: 3 },
@@ -118,7 +119,7 @@ export const BIOMES: Biome[] = [
   },
   {
     name: 'cherry', tint: '#ffd0d6', far: '#d8bdd3', mid: '#dcadc6', near: '#c08cab', treeline: 0.9, spiky: false,
-    rim: '#dcf0a2', top: '#9bcd6c', shade: '#73aa57', soil: ['#a07b63', '#816150', '#644c42'], amp: 11, blades: true,
+    line: '#1e462b', rim: '#dcf0a2', top: '#9bcd6c', shade: '#73aa57', soil: ['#a07b63', '#816150', '#644c42'], amp: 11, blades: true,
     flora: [
       { until: 0.32, kind: 'blossom', z: 0 }, { until: 0.44, kind: 'blossomBush', z: 2 },
       { until: 0.66, kind: 'tuft', z: 3 }, { until: 0.78, kind: 'flowers', z: 3 },
@@ -127,7 +128,7 @@ export const BIOMES: Biome[] = [
   },
   {
     name: 'snow', tint: '#bccbea', far: '#b6c3dc', mid: '#9fafcd', near: '#8396bb', treeline: 0.85, spiky: true,
-    rim: '#ffffff', top: '#eef3fb', shade: '#cfd9ea', soil: ['#908c9c', '#716d80', '#565368'], amp: 15, blades: false, sparkle: true,
+    line: '#5e6b8a', rim: '#ffffff', top: '#eef3fb', shade: '#cfd9ea', soil: ['#908c9c', '#716d80', '#565368'], amp: 15, blades: false, sparkle: true,
     flora: [{ until: 0.38, kind: 'pine', z: 0 }, { until: 0.5, kind: 'snowRock', z: 2 }],
     pieces: [{ kind: 'campfire', dx: 24, z: 2, glow: 'fire' }],
     clear: [[10, 40]], // 篝火
@@ -154,13 +155,14 @@ export function weights(wx: number): [number, number, number] {
 
 export const STEPS = 24; // 颜色插值量化，便于缓存
 export interface Palette {
+  line: string;
   rim: string;
   top: string;
   shade: string;
   soil: [string, string, string];
-  path: string[]; // 村庄小路
+  path: string[]; // 村庄小路：受光线、表层、表层底部、描边
 }
-const PATH = ['#d8bb8c', '#c4a274', '#a9875d'];
+const PATH = ['#d8bb8c', '#c4a274', '#a9875d', '#5c3d24'];
 const paletteCache = new Map<number, Palette>();
 export function paletteAt(wx: number): Palette {
   const [i, j, t] = weights(wx);
@@ -172,6 +174,7 @@ export function paletteAt(wx: number): Palette {
     const b = BIOMES[j];
     const k = q / STEPS;
     pal = {
+      line: mix(a.line, b.line, k),
       rim: mix(a.rim, b.rim, k),
       top: mix(a.top, b.top, k),
       shade: mix(a.shade, b.shade, k),
