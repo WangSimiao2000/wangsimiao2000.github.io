@@ -1,7 +1,6 @@
 /** 整站入口：像素世界 + 站内路由（阅读面板）+ MC 状态 */
 import { startWorld } from './pixel/world.js';
 import { startRouter } from './router.js';
-import { startSlingshot } from './slingshot.js';
 import './search.js';
 import './scenic.js';
 import './readerbar.js';
@@ -48,7 +47,6 @@ const world = startWorld({
 });
 if (initial === 'secret') world.enterSecret();
 startRouter({ world, sections, reader });
-startSlingshot({ slots: [...document.querySelectorAll<HTMLElement>('.hb-slot')], goTo: world.goTo });
 
 // MC 状态（首页服务器板块、地图页侧栏）
 paintStatus();
