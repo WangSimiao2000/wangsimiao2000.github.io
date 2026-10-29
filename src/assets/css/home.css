@@ -311,6 +311,16 @@ html.js.reading { overflow: hidden; }
 .stages, .hotbar { transition: opacity 0.25s; }
 
 /*
+ * 只看风景（右上角按钮 / H）：板块卡片、隐藏页卡片和快捷栏淡出，世界照常可以翻页、点彩蛋。
+ * 外层 .panel 的透明度和可见性由 world.ts 每帧写内联样式，所以藏的是里面的 .card
+ */
+.js .stages .card, .js .secret-panel .card { transition: opacity 0.25s, visibility 0.25s; }
+.scenic .stages .card, .scenic .secret-panel .card { opacity: 0; visibility: hidden; }
+.scenic .hotbar { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s, visibility 0.25s; }
+.scenic .slingshot { display: none; }
+@media (prefers-reduced-motion: reduce) { .js .stages .card, .js .secret-panel .card, .scenic .hotbar { transition: none; } }
+
+/*
  * 刚打开页面、脚本还没跑起来的那一小会儿，板块卡片都叠在屏幕正中（左右位置是脚本按相机算的）。
  * 所以卡片先藏着，世界把它们摆好后（html.world-on）再淡入。脚本万一没加载出来，3 秒后照样显示。
  */
