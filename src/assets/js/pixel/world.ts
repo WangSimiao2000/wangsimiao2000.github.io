@@ -15,7 +15,7 @@
  */
 import { BIOMES, GROUND, OFF, SECTION, SLOT, heightAt, paletteAt, setPieces, slotItem, weights, type Item } from './biomes.js';
 import { buildScenery, CAMPFIRE_FLAME, COTTAGE, LAMP_BULB } from './scenery.js';
-import { drawGround, drawLayer } from './terrain.js';
+import { drawGround, drawLayer, fadeFar } from './terrain.js';
 import { drawSky, makeStars } from './sky.js';
 import { Particles } from './particles.js';
 import { drawGlows, emit, type Glow } from './lights.js';
@@ -425,6 +425,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawLayer(fr, 'far', 0.18, dark ? 0.55 : 0.62);
     drawLayer(fr, 'mid', 0.42, dark ? 0.32 : 0.36);
     drawLayer(fr, 'near', 0.7, 0.14);
+    fadeFar(g, W, H);
 
     f.clearRect(0, 0, W, H);
     e.clearRect(0, 0, W, H);

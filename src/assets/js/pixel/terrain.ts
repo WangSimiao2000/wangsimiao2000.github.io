@@ -4,7 +4,7 @@
  */
 import { hash } from './sprites.js';
 import { BIOMES, GROUND, biomeNum, heightAt, layerColor, onPath, paletteAt, weights, type Layer } from './biomes.js';
-import { noise1 } from './util.js';
+import { noise1, FADE_STOPS } from './util.js';
 import type { Frame } from './frame.js';
 
 function treelineAt(lx: number, wx: number, freq: number, size: number): number {
@@ -49,6 +49,26 @@ export function drawLayer(fr: Frame, which: Layer, factor: number, haze: number)
 }
 
 let heights = new Float32Array(0);
+
+/**
+ * 远景三层画完后整体自下而上淡出（只作用于这时主画布上已有的远景），树梢、小屋这些前景之后才画，不受影响。
+ * 渐变按逻辑像素算，放大后每行一档，和像素风一致。
+ */
+let fadeGrad: CanvasGradient | null = null;
+let fadeH = 0;
+let fadeCtx: CanvasRenderingContext2D | null = null;
+export function fadeFar(g: CanvasRenderingContext2D, W: number, H: number) {
+  if (!fadeGrad || fadeH !== H || fadeCtx !== g) {
+    fadeGrad = g.createLinearGradient(0, 0, 0, H);
+    for (const [t, a] of FADE_STOPS) fadeGrad.addColorStop(t, `rgba(0,0,0,${a})`);
+    fadeH = H;
+    fadeCtx = g;
+  }
+  g.globalCompositeOperation = 'destination-in';
+  g.fillStyle = fadeGrad;
+  g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'source-over';
+}
 
 /** 前景地面：表层、三道土层、石子、草尖，逐列绘制 */
 export function drawGround(fr: Frame) {
