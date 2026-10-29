@@ -3,7 +3,7 @@
  * 粒子用世界坐标，画到主画布上（不吃夜色）。
  */
 import { BIOMES, OFF, heightAt, GROUND, type WeatherKind } from './biomes.js';
-import { clamp } from './util.js';
+import { clamp, fadeAt } from './util.js';
 import type { Frame } from './frame.js';
 
 export type ParticleKind = WeatherKind | 'firefly' | 'dust' | 'spark' | 'smoke';
@@ -77,9 +77,11 @@ export class Particles {
         list.splice(i, 1);
         continue;
       }
-      let a = Math.min(1, pt.life / 30); // 从半空淡入，衔接上方的渐隐遮罩
+      let a = Math.min(1, pt.life / 30); // 从半空淡入
       if (pt.kind === 'dust' || pt.kind === 'smoke' || pt.kind === 'spark') a = 1 - pt.life / pt.max;
       if (pt.kind === 'firefly') a = (0.5 + 0.5 * Math.sin(pt.life * 0.08)) * Math.min(1, (pt.max - pt.life) / 40);
+      // 雪、花瓣、落叶这些飘在半空的粒子和远景一起往上淡出，不满屏乱飞；地面附近的灰、烟、火星照常
+      if (pt.kind === 'snow' || pt.kind === 'petal' || pt.kind === 'leaf' || pt.kind === 'firefly') a *= fadeAt(pt.y / H);
       g.globalAlpha = clamp(a) * (pt.kind === 'smoke' ? 0.45 : 1);
       g.fillStyle = pt.color;
       g.fillRect(sx, Math.round(pt.y), pt.size, pt.size);

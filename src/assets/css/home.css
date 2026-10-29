@@ -22,9 +22,7 @@
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   display: none;
-  /* 像素世界自下而上淡出 */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 38%, rgb(0 0 0 / 0.12) 52%, rgb(0 0 0 / 0.55) 66%, #000 82%);
-  mask-image: linear-gradient(to bottom, transparent 38%, rgb(0 0 0 / 0.12) 52%, rgb(0 0 0 / 0.55) 66%, #000 82%);
+  /* 远景自下而上的淡出在画布里做（terrain.ts 的 fadeFar），前景树梢、屋顶、角色不受影响 */
   filter: var(--world-filter);
   transition: filter 0.3s;
 }

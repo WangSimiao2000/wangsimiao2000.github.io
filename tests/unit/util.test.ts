@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { clamp, easeInOut, mix, noise1, parseColor, smooth } from '../../src/assets/js/pixel/util.ts';
+import { clamp, easeInOut, fadeAt, mix, noise1, parseColor, smooth } from '../../src/assets/js/pixel/util.ts';
 
 test('clamp / smooth / easeInOut 的边界', () => {
   assert.equal(clamp(-1), 0);
@@ -35,5 +35,20 @@ test('noise1 确定、连续、落在 [-1,1]', () => {
     assert.ok(v >= -1 && v <= 1, `noise1(${x}) = ${v}`);
     assert.equal(noise1(x), v);
     assert.ok(Math.abs(noise1(x + 0.001) - v) < 0.01, '相邻点不该跳变');
+  }
+});
+
+test('fadeAt：远景淡出，上面全透明、下面不透明、中间单调变大', () => {
+  assert.equal(fadeAt(0), 0);
+  assert.equal(fadeAt(0.38), 0);
+  assert.equal(fadeAt(0.52), 0.12);
+  assert.equal(fadeAt(0.66), 0.55);
+  assert.equal(fadeAt(0.82), 1);
+  assert.equal(fadeAt(1), 1);
+  let prev = 0;
+  for (let t = 0; t <= 1; t += 0.01) {
+    const a = fadeAt(t);
+    assert.ok(a >= prev - 1e-9 && a >= 0 && a <= 1);
+    prev = a;
   }
 });
