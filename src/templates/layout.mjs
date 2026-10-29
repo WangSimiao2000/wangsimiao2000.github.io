@@ -19,6 +19,9 @@ export const topbar = () => html`
       <button type="button" class="theme-btn" data-search-open aria-label="搜索文章（/）" title="搜索（/ 或 Ctrl+K）">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
       </button>
+      <button type="button" class="theme-btn scenic-btn" data-scenic-toggle hidden aria-label="隐藏卡片，只看风景（H）" title="隐藏卡片，只看风景（H）">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 16l5-5 4 4 2.5-2.5L20 17" /><path d="M15.5 8.5h1v1h-1z" /></svg>
+      </button>
       <button type="button" class="theme-btn fs-btn" data-fullscreen-toggle hidden aria-label="全屏浏览，更沉浸（F）" title="全屏浏览，更沉浸（F）">
         <svg class="i-fs-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
         <svg class="i-fs-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" /></svg>
