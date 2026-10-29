@@ -15,7 +15,6 @@ export const topbar = () => html`
   <header class="topbar">
     <a class="brand" href="/" aria-label="${site.title} 首页"><span class="brand-dot" aria-hidden="true"></span>${site.title}</a>
     <nav class="toplinks" aria-label="站点">
-      <a href="/feed.xml">RSS</a>
       <button type="button" class="theme-btn" data-search-open aria-label="搜索文章（/）" title="搜索（/ 或 Ctrl+K）">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
       </button>

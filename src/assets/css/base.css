@@ -109,8 +109,8 @@ a { color: inherit; }
 .scenic-btn svg { stroke-linecap: square; stroke-linejoin: miter; stroke-width: 2; }
 .scenic-btn[aria-pressed='true'] { color: var(--accent); box-shadow: var(--i2); }
 .reading .scenic-btn { display: none; }
-/* 320 这种很窄的屏：顶栏放不下五个，RSS 让位（<head> 里有订阅源声明，阅读器照样能发现） */
-@media (max-width: 359px) { html:not(.reading) .toplinks:has(.scenic-btn:not([hidden])) > a[href='/feed.xml'] { display: none; } }
+/* 手机上看文章：全屏用处不大（容易误触退出），按钮让位 */
+@media (max-width: 640px) { .reading .fs-btn { display: none; } }
 .fs-btn svg { stroke-linecap: square; stroke-linejoin: miter; stroke-width: 2.2; }
 .fs-btn .i-fs-off, .is-fullscreen .fs-btn .i-fs-on { display: none; }
 .is-fullscreen .fs-btn .i-fs-off { display: block; }

@@ -89,7 +89,7 @@ export function archivesPage(home) {
   const years = [...new Set(posts.map((p) => year(p.date)))];
   const body = html`
     <article class="post">
-      ${pageHead('归档', `共 ${posts.length} 篇，按发布时间`)}
+      ${pageHead('归档', html`共 ${posts.length} 篇，按发布时间 · <a class="feed-link" href="/feed.xml" type="application/atom+xml">订阅 RSS</a>`)}
       ${years.map(
         (y) => html`
       <section class="year-block">

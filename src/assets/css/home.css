@@ -335,6 +335,14 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 @media (max-width: 640px) {
   .js .reader { top: 60px; width: calc(100vw - 16px); }
   .reader-back [data-back-label] { max-width: 9em; }
+  /* 看文章往下读时顶栏收起（readerbar.ts），面板顶到上沿 */
+  .js .topbar { transition: transform 0.25s ease, opacity 0.25s ease, visibility 0.25s; }
+  .js .reader { transition: top 0.25s ease; }
+  .bar-hidden .topbar { transform: translateY(-100%); opacity: 0; visibility: hidden; }
+  .js.bar-hidden .reader { top: 8px; }
+}
+@media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+  .js .topbar, .js .reader { transition: none; }
 }
 /* 正文滚到面板上沿时淡出，不和返回按钮硬切 */
 .js .reader-scroll { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px); mask-image: linear-gradient(to bottom, transparent 0, #000 18px); }
@@ -407,6 +415,8 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 
 /* ---- 列表类页面：归档、分类、标签、工具、友链、关于 ---- */
 .page-sub { margin: 0; color: var(--muted); font-size: 14px; }
+.page-sub .feed-link { color: var(--accent); text-decoration: none; }
+.page-sub .feed-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .page-note { margin: 22px 0 0; color: var(--muted); font-size: 14px; }
 .post-list.rows { margin: 0 -14px 8px; }
 .year-block + .year-block { margin-top: 32px; }
