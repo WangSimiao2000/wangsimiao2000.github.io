@@ -40,7 +40,7 @@ const REQUIRED = [
   ...['r', 'l'].flatMap((s) => [`hero.${s}.idle.0`, `hero.${s}.idle.1`, `hero.${s}.run.*`, `hero.${s}.sit.0`, `hero.${s}.sit.1`, `hero.${s}.sit.2`]),
   ...['r', 'l'].flatMap((s) => [`girl.${s}.idle`, `girl.${s}.walk.*`, `girl.${s}.wave.0`]),
   'cat.l.idle.*', 'cat.l.blink', 'cat.l.jump',
-  'hat', 'lantern.day', 'lantern.night', 'slingshot.fork', 'slingshot.stone',
+  'hat', 'lantern.day', 'lantern.night',
 ];
 /** 这些前缀下的所有帧必须同样大（同一个角色的帧尺寸不同，切帧时脚底和头顶会上下跳） */
 const SAME_SIZE = ['hero.r', 'hero.l', 'girl.r', 'girl.l', 'cat.l'];
