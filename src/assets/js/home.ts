@@ -4,6 +4,7 @@ import { startRouter } from './router.js';
 import { startSlingshot } from './slingshot.js';
 import './search.js';
 import './scenic.js';
+import './readerbar.js';
 import { paintStatus } from './status.js';
 import { removeLegacyServiceWorker } from './legacy-sw.js';
 import { isBirthday } from './pixel/festive.js';
