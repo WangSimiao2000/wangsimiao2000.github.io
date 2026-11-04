@@ -54,6 +54,8 @@ export const inside = (sp: Spot, lx: number, ly: number) => lx >= sp.x0 && lx <=
 
 /** 女孩身体中线离朝右精灵左边的距离（像素） */
 const GIRL_CX = 7;
+/** 女孩出门走多远停下招手（像素）。走路每帧约 3 像素，2 帧一步 */
+const GIRL_WALK = 24;
 
 export class Eggs {
   spots: Spot[] = [];
@@ -163,11 +165,11 @@ export class Eggs {
       girl.t += dt;
       const doorX = this.cottageWx + COTTAGE.doorCenter;
       if (girl.state === 'out') {
-        girl.off = Math.max(-18, -Math.max(0, girl.t - 0.35) * 20);
-        if (girl.off <= -18) Object.assign(girl, { state: 'wave', t: 0 });
+        girl.off = Math.max(-GIRL_WALK, -Math.max(0, girl.t - 0.35) * 20);
+        if (girl.off <= -GIRL_WALK) Object.assign(girl, { state: 'wave', t: 0 });
       } else if (girl.state === 'wave' && girl.t > 2.4) Object.assign(girl, { state: 'in', t: 0 });
       else if (girl.state === 'in') {
-        girl.off = Math.min(0, -18 + girl.t * 20);
+        girl.off = Math.min(0, -GIRL_WALK + girl.t * 20);
         if (girl.off >= 0 && girl.t > 1.2) Object.assign(girl, { state: 'none', t: 0, off: 0 });
       }
       const wx = doorX + girl.off;
