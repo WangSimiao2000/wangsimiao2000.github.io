@@ -31,6 +31,8 @@ export interface Piece {
   z: number;
   glow?: GlowKind;
   egg?: EggKind;
+  /** 在默认落地位置基础上整体上移几个像素 */
+  lift?: number;
 }
 
 export interface Biome {
@@ -130,7 +132,7 @@ export const BIOMES: Biome[] = [
     name: 'snow', tint: '#bccbea', far: '#b6c3dc', mid: '#9fafcd', near: '#8396bb', treeline: 0.85, spiky: true,
     line: '#5e6b8a', rim: '#ffffff', top: '#eef3fb', shade: '#cfd9ea', soil: ['#908c9c', '#716d80', '#565368'], amp: 15, blades: false, sparkle: true,
     flora: [{ until: 0.38, kind: 'pine', z: 0 }, { until: 0.5, kind: 'snowRock', z: 2 }],
-    pieces: [{ kind: 'campfire', dx: 24, z: 2, glow: 'fire' }],
+    pieces: [{ kind: 'campfire', dx: 24, z: 2, glow: 'fire', lift: 1 }],
     clear: [[10, 40]], // 篝火
     weather: { kind: 'snow', rate: 0.8 },
   },
@@ -237,6 +239,7 @@ export interface Item {
   z: number; // 绘制顺序：小的在前
   glow?: GlowKind;
   egg?: EggKind;
+  lift?: number;
 }
 
 /** 第 s 个植被槽位长什么（或者什么都不长）。同一个槽位永远返回同一个结果 */
@@ -261,6 +264,6 @@ export function slotItem(s: number, sc: Scenery): Item | null {
 export function setPieces(sec: number, sc: Scenery): Item[] {
   const c = sec * SECTION;
   const items: Item[] = [{ sprite: sc.sign, wx: c - 32, z: 1, egg: sec === 0 ? 'sign' : undefined }];
-  for (const pc of biomeOf(sec)?.pieces ?? []) items.push({ sprite: sc[pc.kind], wx: c + pc.dx, z: pc.z, glow: pc.glow, egg: pc.egg });
+  for (const pc of biomeOf(sec)?.pieces ?? []) items.push({ sprite: sc[pc.kind], wx: c + pc.dx, z: pc.z, glow: pc.glow, egg: pc.egg, lift: pc.lift });
   return items;
 }
