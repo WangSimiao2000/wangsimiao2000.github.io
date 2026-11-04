@@ -349,7 +349,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       if (x > W || x + sp.width < 0) continue;
       // 底边陷进地面 1-2 像素，坡上取两端较低处，避免悬空
       const ground = Math.max(heightAt(it.wx - sp.width * 0.25), heightAt(it.wx + sp.width * 0.25));
-      const base = H - Math.round(Math.min(ground, heightAt(it.wx))) + (it.z === 0 ? 2 : 1);
+      const base = H - Math.round(Math.min(ground, heightAt(it.wx))) + (it.z === 0 ? 2 : 1) - (it.lift ?? 0);
       const y = base - sp.height;
       if (!it.egg || !eggs.drawItem(fr, it, x, y, base)) {
         f.drawImage(sp, x, y);
