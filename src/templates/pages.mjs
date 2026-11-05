@@ -350,7 +350,7 @@ export function mapPage(home) {
       <figure class="spark-box" hidden><svg data-spark preserveAspectRatio="none" aria-hidden="true"></svg><figcaption>最近 24 小时在线人数</figcaption></figure>
       <p class="side-title">加入</p>
       <p class="side-note">白名单制，加 QQ 群申请：<br><button type="button" class="qq-chip" data-copy="${site.qqGroup}" title="点击复制群号">${site.qqGroup}<span class="qq-copied" aria-live="polite"></span></button></p>
-      <p class="side-note muted" data-k="updated">每 10 分钟更新一次</p>
+      <p class="side-note muted" data-k="updated">状态有变化即时更新</p>
     </div>`;
   const inline = html`
     <p class="map-inline" data-mc-status>
