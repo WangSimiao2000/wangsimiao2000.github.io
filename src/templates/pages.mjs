@@ -11,7 +11,8 @@
 import { html } from '../../build/html.mjs';
 import { site } from '../site.mjs';
 import { contactIcons, contactPopovers } from './contact.mjs';
-import { comments, shell, toolLink } from './home.mjs';
+import { comments, gameCover, gameRow, shell, toolLink } from './home.mjs';
+import { playtime } from '../../build/steam-data.mjs';
 import { categoryUrl, formatDate, slugify, tagUrl } from './util.mjs';
 
 /* ---------- 共用小件 ---------- */
@@ -304,7 +305,7 @@ export function aboutPage(home) {
         <section class="about-card">
           <h2>游戏</h2>
           <p>最喜欢的游戏是 <strong>Minecraft</strong>，也是一个 B 站小 up，主要更新 Minecraft 视频，不过已经很久没更新了 😅</p>
-          <p>PC 上近几年觉得好玩的：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井</p>
+          <p>PC 上近几年觉得好玩的：Stacklands、潜水员戴夫、博德之门3、绝地潜兵2、动物井${home.steam?.games.length ? html`。最近在玩什么、各玩了多久，见 <a href="/games/">Steam 游戏库</a>` : ''}</p>
           <p>也玩 <strong>Switch</strong> 游戏，好友代码点上面的 Switch 图标就能复制。</p>
           <p class="muted small">社交手游：王者荣耀欧洲第66上官婉儿 · 和平精英多赛季战神 · 金铲铲多赛季大师</p>
         </section>
@@ -331,6 +332,71 @@ export function guestbookPage(home) {
     </article>
     ${comments()}`;
   return shell(home, { title: '留言板', path: '/guestbook/', reader: { section: 'secret', body } });
+}
+
+/* ---------- 游戏：Steam 游戏库 ---------- */
+
+export function gamesPage(home) {
+  const steam = home.steam;
+  const desc = 'MickeyMiao 的 Steam 游戏库：最近在玩的游戏和游玩时长，每天更新。';
+  if (!steam?.games.length) {
+    const body = html`
+    <article class="post">
+      ${pageHead('游戏', '暂时读不到 Steam 游戏库，过一阵再来看看。')}
+      <p class="more"><a class="btn btn-open" href="/server/map/">去看 MC 服务器的世界地图<span class="open-icon" aria-hidden="true"></span></a></p>
+    </article>`;
+    return shell(home, { title: '游戏', description: desc, path: '/games/', reader: { section: 'games', body } });
+  }
+  const byId = new Map(steam.games.map((g) => [g.id, g]));
+  const recent = steam.recent.map((id) => byId.get(id)).filter(Boolean);
+  const played = steam.games.filter((g) => g.all > 0);
+  const withCover = played.filter((g) => steam.covers.includes(g.id));
+  const rest = played.filter((g) => !steam.covers.includes(g.id));
+  const unplayed = steam.games.length - played.length;
+  const updated = steam.updated ? formatDate(new Date(steam.updated)) : null;
+  const body = html`
+    <article class="post games-page">
+      ${pageHead('游戏', html`Steam 上的 ${steam.total} 款游戏，按游玩时长排序${updated ? ` · 更新于 ${updated}` : ''} · <a href="${site.links.steam}" target="_blank" rel="noopener">Steam 主页</a>`)}
+      ${recent.length
+        ? html`
+      <h2 id="recent" class="group-title">最近两周</h2>
+      <ul class="game-cards">
+        ${recent.map(
+          (g) => html`
+        <li><a href="https://store.steampowered.com/app/${g.id}/" target="_blank" rel="noopener">
+          ${gameCover(steam, g, 'game-cover big')}
+          <span class="game-name">${g.n}</span>
+          <span class="game-time">近两周 ${playtime(g.two)} · 共 ${playtime(g.all)}</span>
+        </a></li>`,
+        )}
+      </ul>`
+        : ''}
+      <h2 id="library" class="group-title">游戏库</h2>
+      <ol class="game-list full">${withCover.map((g) => gameRow(steam, g))}</ol>
+      ${rest.length
+        ? html`
+      <ol class="game-names">
+        ${rest.map((g) => html`<li><a href="https://store.steampowered.com/app/${g.id}/" target="_blank" rel="noopener">${g.n}</a><span>${playtime(g.all)}</span></li>`)}
+      </ol>`
+        : ''}
+      ${unplayed ? html`<p class="page-sub">另有 ${unplayed} 款还没玩过。</p>` : ''}
+    </article>`;
+  return shell(home, {
+    title: '游戏',
+    description: desc,
+    path: '/games/',
+    reader: {
+      section: 'games',
+      body,
+      left: jumpSide('跳到', [...(recent.length ? [{ id: 'recent', text: '最近两周' }] : []), { id: 'library', text: '游戏库' }]),
+      right: statsSide([
+        ['游戏', `${steam.total} 款`],
+        ['玩过', `${played.length} 款`],
+        ['时长', playtime(steam.minutes)],
+      ]),
+      toc: true,
+    },
+  });
 }
 
 /* ---------- 服务器地图 ---------- */
@@ -380,7 +446,7 @@ export function mapPage(home) {
     title: '世界地图',
     description: 'Minecraft 生存服主世界的等轴测像素地图，每天更新。',
     path: '/server/map/',
-    reader: { section: 'server', body, wide: true },
+    reader: { section: 'games', body, wide: true },
   });
 }
 

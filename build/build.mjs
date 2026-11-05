@@ -20,6 +20,7 @@ import {
   browsePage,
   categoryPage,
   friendsPage,
+  gamesPage,
   guestbookPage,
   mapPage,
   notFoundPage,
@@ -68,7 +69,12 @@ export async function build() {
   const dead = new Set(checked?.dead ?? []);
   const alive = friends.filter((f) => !dead.has(f.url));
   const graveyard = friends.filter((f) => dead.has(f.url));
-  const home = { posts, friends: alive, graveyard, friendsCheckedAt: checked?.checkedAt ?? null, tools, asset, extraHead };
+  // Steam 游戏库（build/fetch-steam.mjs 生成）：没有就是 null，「游戏」板块只显示 MC 服务器
+  const steam = await readFile(path.join(ROOT, 'src/data/steam.json'), 'utf8')
+    .then((t) => JSON.parse(t))
+    .catch(() => null);
+  if (steam) await cp(path.join(ROOT, 'src/data/steam-covers'), path.join(OUT, 'games/covers'), { recursive: true }).catch(() => {});
+  const home = { posts, friends: alive, graveyard, friendsCheckedAt: checked?.checkedAt ?? null, tools, steam, asset, extraHead };
   await emit('/', homePage(home));
 
   // 上一篇 / 下一篇按发布时间，不受置顶影响
@@ -95,6 +101,7 @@ export async function build() {
     ['/about/', aboutPage(home)],
     ['/guestbook/', guestbookPage(home)],
     ['/server/map/', mapPage(home)],
+    ['/games/', gamesPage(home)],
     ...[...tax.cats.values()].map((c) => [`/browse/categories/${c.slug}/`, categoryPage(home, c, tax)]),
     ...[...tax.tags.values()].map((t) => [`/browse/tags/${t.slug}/`, tagPage(home, t)]),
     // 迁走的工具：旧地址跳到仓库自己的 Pages
@@ -126,6 +133,8 @@ export async function build() {
   // 留言灯笼（build/fetch-guestbook.mjs 生成）：没有就输出空的，秋林照常
   const guestbook = await readFile(path.join(ROOT, 'src/data/guestbook.json'), 'utf8').catch(() => '{"total":0,"notes":[]}');
   await emit('/guestbook.json', guestbook);
+  // 下次构建拉取失败时，fetch-steam.mjs 从这里取上一版
+  if (steam) await emit('/games.json', JSON.stringify(steam));
 
   // 站内搜索索引：全部文章的纯文本，浏览器里做子串匹配（中文不依赖分词，搜得全）
   await emit(

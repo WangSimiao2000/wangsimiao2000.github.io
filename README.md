@@ -65,6 +65,19 @@ tools/             # 旧站的工具页，待迁移
 生日帽戴在哪儿写在 `src/assets/js/pixel/hero.ts` 的 `HAT` 里（每帧一个偏移），改了主角的头部位置要跟着改。
 地形、天空、粒子、烟花是按坐标实时算的，仍在代码里。
 
+## 游戏板块（Steam 游戏库）
+
+首页「游戏」板块分「最近在玩」和「MC 服务器」两页，完整游戏库在 `/games/`。数据由 `build/fetch-steam.mjs` 在 CI 里
+每次构建前拉取（每天凌晨的定时构建会刷新），封面一起下载下来，访客页面不请求 Steam：
+
+- 需要仓库 Secret `STEAM_API_KEY`（在 [Steam 开发者页面](https://steamcommunity.com/dev/apikey) 申请）。Steam ID 从
+  `src/site.mjs` 的 `links.steam` 自定义地址解析，也可以用环境变量 `STEAM_ID` 直接给。
+- Steam 隐私设置里「游戏详情」要公开，否则拿不到游戏库。
+- 不想展示的游戏，把 appid 写进 `src/data/games-hide.yaml`（一个数字列表）。
+- 拉取失败时沿用线上上一版的 `/games.json` 和封面；线上也没有时，板块只显示 MC 服务器，`/games/` 显示「暂时读不到」。
+
+旧锚点 `/#server` 会跳到 `/#games`。
+
 ## 文章写法
 
 front matter 与旧站相同：`title`、`date`、`categories`、`tags`、`description`、`math`、`pin`。`math: true` 时启用 `$...$` / `$$...$$` 公式；图片可以用 `![](src){:width="700px"}` 指定宽度。

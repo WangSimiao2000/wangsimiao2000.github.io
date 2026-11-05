@@ -58,6 +58,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node build/fetch-guestbook.mjs
 
+      - name: Fetch Steam library
+        # Steam 游戏库 -> 首页「游戏」板块和 /games/；拉不到就用线上上一版，失败不阻塞部署
+        continue-on-error: true
+        env:
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+        run: node build/fetch-steam.mjs
+
       - name: Fetch latest resume
         # 从 WangSimiao2000/Resume 取最新的 resume.pdf；下载失败或不是 PDF 就沿用仓库里的副本，不阻塞部署
         continue-on-error: true
