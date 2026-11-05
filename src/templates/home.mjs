@@ -8,12 +8,13 @@ import { site } from '../site.mjs';
 import { contactIcons, contactPopovers } from './contact.mjs';
 import { layout, topbar } from './layout.mjs';
 import { formatDate } from './util.mjs';
+import { featured, playtime } from '../../build/steam-data.mjs';
 
 const SECTIONS = [
   { id: 'home', label: '起点', biome: '草甸' },
   { id: 'posts', label: '博文', title: '最新博文', biome: '森林' },
   { id: 'tools', label: '工具', biome: '沙丘' },
-  { id: 'server', label: '服务器', biome: '小镇' },
+  { id: 'games', label: '游戏', biome: '小镇' },
   { id: 'friends', label: '友链', biome: '花林' },
   { id: 'about', label: '关于', biome: '雪松林' },
 ];
@@ -58,7 +59,28 @@ const toolGrid = ({ tools }) => html`
   </ul>
   <p class="more"><a class="btn btn-open" href="/tools/">查看全部 ${tools.length} 个工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
-const server = () => html`
+/** 游戏封面：构建时下载的 Steam 小横图（231x87），没有就用游戏名首字的占位块 */
+export const gameCover = (steam, g, cls = 'game-cover') =>
+  steam.covers.includes(g.id)
+    ? html`<img class="${cls}" src="/games/covers/${g.id}.jpg" alt="" width="231" height="87" loading="lazy" decoding="async">`
+    : html`<span class="${cls} noicon" aria-hidden="true">${[...g.n][0]}</span>`;
+
+/** 游戏行：封面 + 名字 + 时长 */
+export const gameRow = (steam, g) => html`
+  <li><a class="game-row" href="https://store.steampowered.com/app/${g.id}/" target="_blank" rel="noopener">
+    ${gameCover(steam, g)}
+    <span class="game-text"><span class="game-name">${g.n}</span><span class="game-time">${g.two ? `近两周 ${playtime(g.two)} · ` : ''}共 ${playtime(g.all)}</span></span>
+  </a></li>`;
+
+const steamPane = (steam) => {
+  const f = featured(steam);
+  return html`
+    <p class="pane-sub">${f.kind === 'recent' ? '最近两周在 Steam 上玩的' : '最近两周没玩，这些是玩得最多的'}</p>
+    <ol class="game-list">${f.games.map((g) => gameRow(steam, g))}</ol>
+    <p class="server-foot"><span>Steam · 数据每天更新</span><a class="btn btn-open" href="/games/">完整游戏库<span class="open-icon" aria-hidden="true"></span></a></p>`;
+};
+
+const mcPane = () => html`
   <div class="server" data-mc-status>
     <p class="server-desc">家里小主机上的 Minecraft 生存服，白名单制。<span class="qq-line">加入：QQ 群 <button type="button" class="qq-chip" data-copy="${site.qqGroup}" title="点击复制群号">${site.qqGroup}<span class="qq-copied" aria-live="polite"></span></button></span></p>
     <dl class="stats">
@@ -70,6 +92,28 @@ const server = () => html`
     <figure class="spark-box" hidden><svg data-spark preserveAspectRatio="none" aria-hidden="true"></svg><figcaption>最近 24 小时在线人数</figcaption></figure>
     <p class="server-foot"><span data-k="updated">状态有变化即时更新</span><a class="btn btn-open map-open" href="/server/map/">世界地图<span class="open-icon" aria-hidden="true"></span></a></p>
   </div>`;
+
+/**
+ * 游戏板块：「最近在玩 | MC 服务器」两页，两页叠在同一格里（卡片高度取较高的一页，切换不跳）。
+ * 切换由 assets/js/play-tabs.ts 处理；没有 Steam 数据时只有 MC 服务器，和以前一样。
+ */
+const games = ({ steam }) => {
+  if (!steam?.games.length) return mcPane();
+  return html`
+  <div class="play-panes">
+    <div class="play-pane" id="pane-steam" role="tabpanel" aria-labelledby="tab-steam" data-pane="steam">${steamPane(steam)}</div>
+    <div class="play-pane" id="pane-mc" role="tabpanel" aria-labelledby="tab-mc" data-pane="mc" data-off>${mcPane()}</div>
+  </div>`;
+};
+
+/** 游戏板块标题右边的切换按钮（没有 Steam 数据就不要） */
+const gamesTabs = ({ steam }) =>
+  steam?.games.length
+    ? html`<div class="play-tabs" role="tablist" aria-label="切换内容">
+            <button type="button" role="tab" id="tab-steam" aria-controls="pane-steam" aria-selected="true" data-tab="steam">最近在玩</button>
+            <button type="button" role="tab" id="tab-mc" aria-controls="pane-mc" aria-selected="false" tabindex="-1" data-tab="mc">MC 服务器</button>
+          </div>`
+    : '';
 
 const friendGrid = ({ friends, graveyard }) => html`
   <ul class="grid friends">
@@ -106,7 +150,10 @@ export const comments = () => html`
       <noscript><p class="comments-off">评论需要启用 JavaScript。</p></noscript>
     </section>`;
 
-const CONTENT = { home: hero, posts: postList, tools: toolGrid, server, friends: friendGrid, about };
+/** 板块标题那一行右边的额外控件 */
+const HEAD_EXTRA = { games: gamesTabs };
+
+const CONTENT = { home: hero, posts: postList, tools: toolGrid, games, friends: friendGrid, about };
 
 /** 板块 id -> 序号与名称，路由和阅读面板用 */
 export const sectionOf = (id) => {
@@ -145,7 +192,11 @@ export function shell(ctx, page = {}) {
     <section id="${s.id}" class="stage" aria-labelledby="${s.id}-title">
       <div class="panel" data-panel="${i}">
         <div class="card">
-          <h2 class="card-title" id="${s.id}-title"><span class="title-dot" aria-hidden="true"></span><span>${s.title ?? s.label}</span><span class="biome-chip">${s.biome}</span></h2>
+          ${(() => {
+            const title = html`<h2 class="card-title" id="${s.id}-title"><span class="title-dot" aria-hidden="true"></span><span>${s.title ?? s.label}</span><span class="biome-chip">${s.biome}</span></h2>`;
+            const extra = HEAD_EXTRA[s.id]?.(ctx);
+            return extra ? html`<div class="card-head">${title}${extra}</div>` : title;
+          })()}
           ${CONTENT[s.id](ctx)}
         </div>
       </div>

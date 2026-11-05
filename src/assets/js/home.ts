@@ -5,6 +5,7 @@ import './search.js';
 import './scenic.js';
 import './readerbar.js';
 import { paintStatus } from './status.js';
+import { startPlayTabs } from './play-tabs.js';
 import { removeLegacyServiceWorker } from './legacy-sw.js';
 import { isBirthday } from './pixel/festive.js';
 
@@ -30,6 +31,8 @@ history.scrollRestoration = 'manual';
 // 直接打开文章等页面：世界一开始就停在对应板块，不从起点跑过去；
 // 首页带着 #posts 这类锚点打开或刷新时，也停在那个板块（地址栏和画面保持一致）
 const initial = reader.querySelector<HTMLElement>('.reader-card')?.dataset.section;
+// 「服务器」板块改名「游戏」：以前分享出去的 /#server 照样能打开
+if (location.hash === '#server') history.replaceState(history.state, '', location.pathname + location.search + '#games');
 const hashId = decodeURIComponent(location.hash.slice(1));
 const start = initial ?? (sections.some((s) => s.id === hashId) ? hashId : undefined);
 if (!initial && location.hash && !start) history.replaceState(history.state, '', location.pathname + location.search); // 不认识的锚点去掉
@@ -48,5 +51,6 @@ const world = startWorld({
 if (initial === 'secret') world.enterSecret();
 startRouter({ world, sections, reader });
 
-// MC 状态（首页服务器板块、地图页侧栏）
+// MC 状态（首页游戏板块的 MC 服务器页、地图页侧栏）
 paintStatus();
+startPlayTabs();

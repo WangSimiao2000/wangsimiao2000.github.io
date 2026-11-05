@@ -167,7 +167,7 @@ await page.mouse.move(cx, cy);
 await wait(200);
 t.ok(await page.evaluate(() => document.documentElement.classList.contains('world-hover')), '草堆点 4 下跳出猫');
 
-// 从服务器卡片进地图：面板换成宽版，地图离卡片边 16px，画布不被拉伸（以前要刷新才正常）
+// 从游戏板块的 MC 服务器页进地图：面板换成宽版，地图离卡片边 16px，画布不被拉伸（以前要刷新才正常）
 const mapGeom = () =>
   page.evaluate(() => {
     const c = document.querySelector('.mcmap canvas');
@@ -180,8 +180,9 @@ const mapGeom = () =>
       sharp: Math.abs(c.width - Math.round(c.clientWidth * devicePixelRatio)) <= 1 && Math.abs(c.height - Math.round(c.clientHeight * devicePixelRatio)) <= 1,
     };
   });
-await page.goto(BASE + '/#server', { waitUntil: 'load' });
+await page.goto(BASE + '/#games', { waitUntil: 'load' });
 await wait(1500);
+if (await page.$('[data-tab="mc"]')) await page.click('[data-tab="mc"]');
 await page.click('.map-open');
 await wait(1800);
 const g1 = await mapGeom();

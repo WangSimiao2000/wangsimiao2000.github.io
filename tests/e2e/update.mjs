@@ -55,7 +55,7 @@ const FAKE = '/_s/0000000000/';
 }
 
 {
-  // 3. 地图：首页空闲时只预热 manifest；停到服务器板块再取清晰瓦片；点开时很快有画面
+  // 3. 地图：首页空闲时只预热 manifest；停到游戏板块再取清晰瓦片；点开时很快有画面
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const reqs = [];
   page.on('request', (r) => {
@@ -68,10 +68,10 @@ const FAKE = '/_s/0000000000/';
   const idle = levels();
   t.ok(reqs.some((p) => p.endsWith('manifest.json')) && idle.length === 0, `首页空闲时只预热 manifest，不取瓦片（${idle.length} 张）`);
 
-  await page.goto(BASE + '/#server');
+  await page.goto(BASE + '/#games');
   await page.waitForTimeout(4000);
   const atServer = levels().slice(idle.length);
-  t.ok(atServer.includes(1), `停到服务器板块后预取预览级和清晰瓦片（${atServer.join(',')}）`);
+  t.ok(atServer.includes(1), `停到游戏板块后预取预览级和清晰瓦片（${atServer.join(',')}）`);
   reqs.length = 0;
 
   const t0 = Date.now();

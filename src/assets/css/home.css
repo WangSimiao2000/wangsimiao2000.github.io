@@ -143,6 +143,68 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
   .server-foot { justify-content: flex-end; }
 }
 
+/* ---- 游戏板块：两页切换（最近在玩 | MC 服务器） ---- */
+.play-tabs { display: inline-flex; gap: 4px; padding: 4px; margin: 0 0 14px; border-radius: var(--r-md); box-shadow: var(--i2); }
+.play-tabs button {
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); background: transparent; border: 0; cursor: pointer;
+  padding: 5px 14px; border-radius: var(--r-sm); transition: color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.play-tabs button:hover { color: var(--text); }
+.play-tabs button[aria-selected='true'] { color: var(--accent); background: var(--surface); box-shadow: var(--e1); }
+/* 切换按钮放在标题那一行的右边，不多占一行高度（矮屏手机上卡片才放得下）；没有 JS 时按钮没用，不显示 */
+.card-head { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; }
+.card-head .card-title { flex: 1; min-width: 0; margin: 0; }
+.card-head .play-tabs { flex: none; margin: 0; }
+html:not(.js) .play-tabs { display: none; }
+/* 两页叠在同一格：卡片高度取较高的一页，切换时不跳；没有 JS 时两页上下排 */
+.js .play-panes { display: grid; }
+.js .play-pane { grid-area: 1 / 1; min-width: 0; transition: opacity 0.2s, visibility 0.2s; }
+.js .play-pane[data-off] { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .js .play-pane { transition: none; } }
+.pane-sub { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.game-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 4px; }
+.game-row { display: flex; align-items: center; gap: 12px; padding: 6px 10px 6px 6px; border-radius: var(--r-md); text-decoration: none; transition: box-shadow 0.15s; }
+.game-row:hover, .game-row:focus-visible { box-shadow: var(--i2); }
+.game-row:hover .game-name { color: var(--accent); }
+.game-cover { display: block; flex: none; width: 92px; height: 35px; border-radius: var(--r-sm); object-fit: cover; background: var(--surface-lo); }
+.game-cover.noicon { display: grid; place-items: center; font-weight: 700; color: var(--accent); }
+.game-text { min-width: 0; display: flex; flex-direction: column; }
+.game-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color 0.15s; }
+.game-time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 首页卡片不滚动：按屏幕高度少放几条（规则同博文） */
+@media (max-height: 740px) { .panel .game-list li:nth-child(n + 3) { display: none; } }
+@media (max-height: 640px) { .panel .game-list li:nth-child(n + 2) { display: none; } .panel .pane-sub { display: none; } }
+@media (max-width: 640px) {
+  .card-head { margin-bottom: 16px; gap: 8px; }
+  .card-head .card-title { white-space: nowrap; }
+  .play-tabs { padding: 3px; }
+  .play-tabs button { padding: 4px 10px; font-size: 12px; }
+  .game-cover { width: 74px; height: 28px; }
+}
+/* 最窄的屏上标题行放不下群系标签，先让给切换按钮 */
+@media (max-width: 360px) { .card-head .biome-chip { display: none; } }
+/* /games/ 面板页 */
+.game-cards { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.game-cards a {
+  display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 8px 8px 10px; border-radius: var(--r-lg); text-decoration: none;
+  background: var(--surface); box-shadow: var(--e2); transition: box-shadow 0.15s;
+}
+.game-cards a:hover { box-shadow: var(--e1); }
+.game-cards a:hover .game-name { color: var(--accent); }
+.game-cards .game-cover.big { width: 100%; height: auto; aspect-ratio: 231 / 87; margin-bottom: 4px; }
+.game-cards .game-name, .game-cards .game-time { padding: 0 4px; }
+.game-list.full { gap: 2px; }
+.game-names { list-style: none; margin: 8px 0 16px; padding: 0; columns: 2 220px; column-gap: 24px; font-size: 14px; }
+.game-names li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 4px; break-inside: avoid; }
+.game-names a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.game-names a:hover { color: var(--accent); }
+.game-names span { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .game-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .game-cards a { padding: 6px 6px 8px; font-size: 13px; }
+  .game-cards .game-name { white-space: normal; }
+}
+
 /* ---- 世界地图（/server/map/）：宽面板，地图填满正文区 ---- */
 .js .reader.reader-wide { width: min(calc(1280px * var(--ui, 1)), calc(100vw - 32px)); }
 .mini-stats { margin: 0 0 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
