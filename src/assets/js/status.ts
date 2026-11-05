@@ -1,5 +1,6 @@
 /**
- * MC 状态：mc-ops 每 10 分钟推到 mc-status 仓库的 Pages（同域 /mc-status/status.json）。
+ * MC 状态：mc-ops 每 10 分钟检查一次，状态有变化才推到 mc-status 仓库的 Pages（同域 /mc-status/status.json），
+ * 没变化时每 heartbeat_s（1 小时）保底推一次。
  * 页面上可以有多处状态卡片（首页服务器板块、地图页侧栏），都标 [data-mc-status]；
  * 数据只取一份，阅读面板换了内容后调用 paintStatus() 把最新数据画到新卡片上。
  */
@@ -12,6 +13,8 @@ interface Status {
   uptime_s: number | null;
   since: string | null;
   updated_at: string | null;
+  /** 没变化时最久多少秒推一次；旧版 mc-ops 没有这一项，按 10 分钟一次 */
+  heartbeat_s?: number | null;
   history?: [string, number][];
 }
 
@@ -33,21 +36,28 @@ function apply(box: HTMLElement) {
     return;
   }
   const s = last;
-  const min = Math.round((Date.now() - new Date(s.updated_at!).getTime()) / 60000);
-  const stale = min > 30; // 正常 10 分钟推一次，超过半小时说明小主机或网络断了
+  const ageS = Math.max(0, (Date.now() - new Date(s.updated_at!).getTime()) / 1000);
+  const min = Math.round(ageS / 60);
+  const beat = Number(s.heartbeat_s) || 0;
+  // 保底推送间隔再加 20 分钟（检查间隔 + Pages 部署偶尔卡住）还没新数据，才算小主机或网络断了
+  const stale = min > (beat ? beat / 60 + 20 : 30);
   set('state', stale ? '失联' : s.online ? '在线' : '离线');
   box.dataset.online = !stale && s.online ? '1' : '0';
   set('players', s.online && !stale ? `${s.players_online ?? 0} / ${s.players_max ?? '?'}` : '-');
+  // 运行时长是推送那一刻的值；没变化时最久一小时才推一次，所以加上数据推送后过去的时间
+  const uptime = s.uptime_s ? Number(s.uptime_s) + (beat ? ageS : 0) : 0;
   set('version', s.version ?? '-');
   // 「已开服」从开服日期算起，重启不清零；本次连续运行时长放在悬停提示里
   if (s.since) {
     const days = Math.floor((Date.now() - new Date(`${s.since}T00:00:00+08:00`).getTime()) / 86400e3) + 1;
     set('uptime', `${days} 天`);
     box.querySelectorAll<HTMLElement>('[data-k="uptime"]').forEach((el) => {
-      el.title = `${s.since} 开服${s.online && !stale && s.uptime_s ? `，本次已连续运行 ${hours(Number(s.uptime_s))}` : ''}`;
+      el.title = `${s.since} 开服${s.online && !stale && uptime ? `，本次已连续运行 ${hours(uptime)}` : ''}`;
     });
-  } else set('uptime', s.online && !stale && s.uptime_s ? hours(Number(s.uptime_s)) : '-');
-  set('updated', stale ? `数据已 ${min} 分钟未更新，小主机可能离线` : `${Math.max(0, min)} 分钟前更新 · 每 10 分钟一次`);
+  } else set('uptime', s.online && !stale && uptime ? hours(uptime) : '-');
+  // 没变化时只是隔一会儿保底推一次，所以说「确认」：这段时间状态一直是这样
+  const foot = beat ? `${min} 分钟前确认 · 有变化即时更新` : `${min} 分钟前更新 · 每 10 分钟一次`;
+  set('updated', stale ? `数据已 ${min} 分钟未更新，小主机可能离线` : foot);
   box.querySelectorAll<SVGSVGElement>('[data-spark]').forEach((svg) => drawSpark(svg, s.history ?? []));
 }
 
