@@ -303,40 +303,30 @@ function heatmap(gh, weeksShown, titles) {
   return html`<svg class="heatmap" viewBox="0 0 ${w} ${h}" role="img" aria-label="最近 ${weeksShown} 周的 GitHub 贡献">${cells}</svg>`;
 }
 
-/** 关于页通栏卡片：B 站三个数 + GitHub 格子；两边都没有数据就整张不出 */
-function creatorCard(creator) {
-  const b = creator?.bili;
-  const gh = creator?.gh;
-  if (!b && !gh) return '';
+/** B 站卡片：粉丝、视频、总播放三个数 */
+function biliCard(b) {
+  if (!b) return '';
   return html`
-      <section class="about-card wide creator">
-        <h2>创作与开源</h2>
-        <div class="creator-cols">
-          ${b
-            ? html`
-          <div class="creator-bili">
-            <p class="creator-head"><a href="${site.links.bilibili}" target="_blank" rel="noopener">B 站 · 鄙人米奇喵</a></p>
-            <dl class="creator-stats">
-              <div><dt>粉丝</dt><dd>${compact(b.followers)}</dd></div>
-              <div><dt>视频</dt><dd>${b.videos}</dd></div>
-              <div><dt>总播放</dt><dd>${compact(b.plays)}</dd></div>
-            </dl>
-          </div>`
-            : ''}
-          ${gh
-            ? html`
-          <div class="creator-gh">
-            <p class="creator-head"><a href="${site.links.github}" target="_blank" rel="noopener">GitHub · ${gh.login}</a></p>
-            <div class="heatmap-box">
-              <span class="hm-full">${heatmap(gh, gh.weeks.length, true)}</span>
-              <span class="hm-half">${heatmap(gh, 26, false)}</span>
-            </div>
-            <p class="muted small">过去一年 ${gh.total.toLocaleString('en-US')} 次贡献 · ${gh.activeDays} 天有提交 · 最长连续 ${gh.longest} 天</p>
-          </div>`
-            : ''}
-        </div>
-        <p class="muted small">数据每天更新</p>
-      </section>`;
+        <section class="about-card">
+          <h2>B 站 · <a href="${site.links.bilibili}" target="_blank" rel="noopener">鄙人米奇喵</a></h2>
+          <dl class="creator-stats">
+            <div><dt>粉丝</dt><dd>${compact(b.followers)}</dd></div>
+            <div><dt>视频</dt><dd>${b.videos}</dd></div>
+            <div><dt>总播放</dt><dd>${compact(b.plays)}</dd></div>
+          </dl>
+          <p class="muted small">主要更新 Minecraft 视频 · 数据每天更新</p>
+        </section>`;
+}
+
+/** GitHub 卡片：最近半年的贡献格子（半栏放一年的话格子太小），下面是一年的统计 */
+function githubCard(gh) {
+  if (!gh) return '';
+  return html`
+        <section class="about-card">
+          <h2>GitHub · <a href="${site.links.github}" target="_blank" rel="noopener">${gh.login}</a></h2>
+          <div class="heatmap-box">${heatmap(gh, 26, true)}</div>
+          <p class="muted small">过去一年 ${gh.total.toLocaleString('en-US')} 次贡献 · ${gh.activeDays} 天有提交 · 最长连续 ${gh.longest} 天</p>
+        </section>`;
 }
 
 export function aboutPage(home) {
@@ -373,13 +363,14 @@ export function aboutPage(home) {
           <h2>猫猫</h2>
           <p>养了两只流浪猫猫，叫<strong>转转</strong>和<strong>圈圈</strong>。不过小狸花圈圈老在我床上尿尿，所以只能送回流浪基地了 😿</p>
         </section>
+        ${biliCard(home.creator?.bili)}
+        ${githubCard(home.creator?.gh)}
+        <section class="about-card">
+          <h2>旅行 · 8 个国家 18 个城市</h2>
+          <p>感谢父母给的机会，让我在学生时期有机会走过这些地方：</p>
+          <p class="tags">${TRAVEL.map((t) => html`<span class="tag">${t}</span>`)}</p>
+        </section>
       </div>
-      ${creatorCard(home.creator)}
-      <section class="about-card wide">
-        <h2>旅行 · 8 个国家 18 个城市</h2>
-        <p>感谢父母给的机会，让我在学生时期有机会走过这些地方：</p>
-        <p class="tags">${TRAVEL.map((t) => html`<span class="tag">${t}</span>`)}</p>
-      </section>
     </article>`;
   return shell(home, { title: '关于', path: '/about/', reader: { section: 'about', body } });
 }
