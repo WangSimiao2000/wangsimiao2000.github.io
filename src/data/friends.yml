@@ -35,3 +35,8 @@
   url: "https://s5n.xyz"
   icon: "https://s5n.xyz/logo.png"
   description: "索元的博客"
+
+- name: "风舞流年"
+  url: "https://wangyukun.net"
+  # icon: (无图标，显示默认)
+  description: "YK 的诗词集"
