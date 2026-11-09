@@ -10,6 +10,35 @@ import { COTTAGE } from './scenery.js';
 import { buildCat, buildGirl } from './npcs.js';
 import { emit } from './lights.js';
 import { clamp } from './util.js';
+
+/** 路牌素材里立柱占第 5-7 列（转轴在 6.5），牌子占第 2-8 行 */
+const SIGN_POLE = [5, 8];
+const SIGN_PIVOT = (SIGN_POLE[0] + SIGN_POLE[1]) / 2;
+const SIGN_BOARD = [2, 9];
+
+/**
+ * 把路牌拆成立柱和牌子两张图。牌子挡住的那段立柱素材里没画，
+ * 用牌子正下方那一行立柱补上，牌子转到侧面时露出来
+ */
+let signCache: { src: HTMLCanvasElement; pole: HTMLCanvasElement; board: HTMLCanvasElement } | null = null;
+function signParts(sp: HTMLCanvasElement) {
+  if (signCache?.src === sp) return signCache;
+  const [p0, p1] = SIGN_POLE;
+  const [b0, b1] = SIGN_BOARD;
+  const pole = document.createElement('canvas');
+  pole.width = sp.width;
+  pole.height = sp.height;
+  const pc = pole.getContext('2d')!;
+  pc.drawImage(sp, p0, 0, p1 - p0, b0, p0, 0, p1 - p0, b0);
+  pc.drawImage(sp, p0, b1, p1 - p0, sp.height - b1, p0, b1, p1 - p0, sp.height - b1);
+  for (let r = b0; r < b1; r++) pc.drawImage(sp, p0, b1, p1 - p0, 1, p0, r, p1 - p0, 1);
+  const board = document.createElement('canvas');
+  board.width = sp.width;
+  board.height = b1 - b0;
+  board.getContext('2d')!.drawImage(sp, 0, b0, sp.width, b1 - b0, 0, 0, sp.width, b1 - b0);
+  signCache = { src: sp, pole, board };
+  return signCache;
+}
 import type { Frame } from './frame.js';
 
 export interface Spot {
@@ -59,7 +88,7 @@ const GIRL_WALK = 24;
 
 export class Eggs {
   spots: Spot[] = [];
-  /** 路牌翻转动画 0..1；signOpen = 已翻过来，可以往回走进隐藏页 */
+  /** 路牌转角 0..2（单位 π，只增不减）：1 = 翻过来；signOpen = 已翻过来，可以往回走进隐藏页 */
   signFlip = 0;
   signOpen = false;
   private girlR = buildGirl(false);
@@ -86,14 +115,32 @@ export class Eggs {
     const sp = it.sprite;
     const { f } = fr;
     if (it.egg === 'sign') {
-      // 起点的路牌：绕立柱水平翻转
-      const k = Math.cos(this.signFlip * Math.PI);
-      f.save();
-      f.translate(x + sp.width / 2, 0);
-      f.scale(Math.abs(k) < 0.08 ? 0.08 * Math.sign(k || 1) : k, 1);
-      f.drawImage(sp, -sp.width / 2, y);
-      f.restore();
-      this.spots.push({ kind: 'sign', x0: x - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height });
+      // 起点的路牌：立柱不动，牌子绕立柱顺时针转（从上往下看），转到侧面时近大远小
+      const { pole, board } = signParts(sp);
+      const th = this.signFlip * Math.PI;
+      const c = Math.cos(th);
+      const s = Math.sin(th);
+      const by = y + SIGN_BOARD[0];
+      const bh = SIGN_BOARD[1] - SIGN_BOARD[0];
+      // 每一列按深度排好：远的先画，立柱夹在中间，近的后画
+      const cols: { i: number; z: number }[] = [];
+      for (let i = 0; i < board.width; i++) cols.push({ i, z: (i + 0.5 - SIGN_PIVOT) * s });
+      cols.sort((p, q) => p.z - q.z);
+      let poleDrawn = false;
+      for (const { i, z } of cols) {
+        if (!poleDrawn && z > 0) {
+          f.drawImage(pole, x, y);
+          poleDrawn = true;
+        }
+        const cx = x + SIGN_PIVOT + (i + 0.5 - SIGN_PIVOT) * c;
+        const w = Math.max(1, Math.abs(c));
+        const h = Math.round(bh * (1 + z * 0.03));
+        f.drawImage(board, i, 0, 1, bh, Math.round(cx - w / 2), Math.round(by + (bh - h) / 2), Math.round(w), h);
+      }
+      if (!poleDrawn) f.drawImage(pole, x, y);
+      // 翻过来以后牌子伸到立柱左边，点击区域两边都留够
+      const reach = sp.width - SIGN_PIVOT;
+      this.spots.push({ kind: 'sign', x0: x + SIGN_PIVOT - reach - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height });
       return true;
     }
     if (it.egg === 'hay') {
@@ -153,10 +200,12 @@ export class Eggs {
   /** 推进彩蛋动画；女孩和猫画到角色层（夜色会盖上去，经过窗前会挡光） */
   drawActors(fr: Frame, dt: number) {
     const { a, H, camLeft } = fr;
-    const target = this.signOpen ? 1 : 0;
-    if (this.signFlip !== target) {
-      const dir = target > this.signFlip ? 1 : -1;
-      this.signFlip = clamp(this.signFlip + dir * dt * (fr.reduced ? 100 : 2.2), 0, 1);
+    // 路牌只往一个方向转：0 -> 1 翻过去，1 -> 2（即 0）转回来，都是顺时针
+    const goal = this.signOpen ? 1 : 0;
+    if (this.signFlip !== goal) {
+      const end = goal > this.signFlip ? goal : goal + 2;
+      const a = Math.min(end, this.signFlip + dt * (fr.reduced ? 100 : 2.2));
+      this.signFlip = a >= 2 ? a - 2 : a;
     }
     this.hayShake = Math.max(0, this.hayShake - dt);
     // 女孩：开门 -> 走出来 -> 招手 -> 走回去 -> 关门
