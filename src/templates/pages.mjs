@@ -13,6 +13,7 @@ import { site } from '../site.mjs';
 import { contactIcons, contactPopovers } from './contact.mjs';
 import { comments, gameTile, shell, toolLink } from './home.mjs';
 import { hasArt, playtime } from '../../build/steam-data.mjs';
+import { compact } from '../../build/creator-data.mjs';
 import { categoryUrl, formatDate, slugify, tagUrl } from './util.mjs';
 
 /* ---------- 共用小件 ---------- */
@@ -279,6 +280,65 @@ const TRAVEL = [
   '🇻🇦 梵蒂冈', '🇪🇸 巴塞罗那', '🇪🇸 马德里', '🇵🇹 里斯本', '🇪🇬 开罗', '🇪🇬 卢克索', '🇪🇬 阿斯旺', '🇪🇬 吉萨', '🇪🇬 赫尔格达',
 ];
 
+/* ---------- 关于：创作与开源 ---------- */
+
+/** GitHub 贡献格子：每周一列、每天一格，构建时画成 SVG；weeksShown 只画最后几周（手机上用） */
+function heatmap(gh, weeksShown, titles) {
+  const C = 10;
+  const G = 3;
+  const weeks = gh.weeks.slice(-weeksShown);
+  const skip = gh.weeks.length - weeks.length;
+  const start = Date.parse(`${gh.start}T00:00:00Z`) - gh.firstDow * 864e5;
+  const cells = weeks.flatMap((w, i) =>
+    w.map(([lv, n], j) => {
+      // 第一周可能不是从周日开始：按 firstDow 往下挪
+      const row = skip + i === 0 ? j + gh.firstDow : j;
+      const day = new Date(start + ((skip + i) * 7 + row) * 864e5).toISOString().slice(0, 10);
+      const t = titles ? html`<title>${day} · ${n} 次贡献</title>` : '';
+      return html`<rect class="l${lv}" x="${i * (C + G)}" y="${row * (C + G)}" width="${C}" height="${C}">${t}</rect>`;
+    }),
+  );
+  const w = weeks.length * (C + G) - G;
+  const h = 7 * (C + G) - G;
+  return html`<svg class="heatmap" viewBox="0 0 ${w} ${h}" role="img" aria-label="最近 ${weeksShown} 周的 GitHub 贡献">${cells}</svg>`;
+}
+
+/** 关于页通栏卡片：B 站三个数 + GitHub 格子；两边都没有数据就整张不出 */
+function creatorCard(creator) {
+  const b = creator?.bili;
+  const gh = creator?.gh;
+  if (!b && !gh) return '';
+  return html`
+      <section class="about-card wide creator">
+        <h2>创作与开源</h2>
+        <div class="creator-cols">
+          ${b
+            ? html`
+          <div class="creator-bili">
+            <p class="creator-head"><a href="${site.links.bilibili}" target="_blank" rel="noopener">B 站 · 鄙人米奇喵</a></p>
+            <dl class="creator-stats">
+              <div><dt>粉丝</dt><dd>${compact(b.followers)}</dd></div>
+              <div><dt>视频</dt><dd>${b.videos}</dd></div>
+              <div><dt>总播放</dt><dd>${compact(b.plays)}</dd></div>
+            </dl>
+          </div>`
+            : ''}
+          ${gh
+            ? html`
+          <div class="creator-gh">
+            <p class="creator-head"><a href="${site.links.github}" target="_blank" rel="noopener">GitHub · ${gh.login}</a></p>
+            <div class="heatmap-box">
+              <span class="hm-full">${heatmap(gh, gh.weeks.length, true)}</span>
+              <span class="hm-half">${heatmap(gh, 26, false)}</span>
+            </div>
+            <p class="muted small">过去一年 ${gh.total.toLocaleString('en-US')} 次贡献 · ${gh.activeDays} 天有提交 · 最长连续 ${gh.longest} 天</p>
+          </div>`
+            : ''}
+        </div>
+        <p class="muted small">数据每天更新</p>
+      </section>`;
+}
+
 export function aboutPage(home) {
   const body = html`
     <article class="post about-page">
@@ -314,6 +374,7 @@ export function aboutPage(home) {
           <p>养了两只流浪猫猫，叫<strong>转转</strong>和<strong>圈圈</strong>。不过小狸花圈圈老在我床上尿尿，所以只能送回流浪基地了 😿</p>
         </section>
       </div>
+      ${creatorCard(home.creator)}
       <section class="about-card wide">
         <h2>旅行 · 8 个国家 18 个城市</h2>
         <p>感谢父母给的机会，让我在学生时期有机会走过这些地方：</p>

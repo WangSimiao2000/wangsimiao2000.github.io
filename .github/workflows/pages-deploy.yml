@@ -58,6 +58,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node build/fetch-guestbook.mjs
 
+      - name: Fetch creator stats
+        # B 站粉丝/视频/播放 + GitHub 贡献格子 -> 关于页；拉不到就用线上上一版，失败不阻塞部署
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node build/fetch-creator.mjs
+
       - name: Fetch Steam library
         # Steam 游戏库 -> 首页「游戏」板块和 /games/；拉不到就用线上上一版，失败不阻塞部署
         continue-on-error: true
