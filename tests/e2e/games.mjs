@@ -51,7 +51,7 @@ if (!hasSteam) {
   await page.click('#games a[href="/games/"]');
   await wait(1500, page);
   t.ok(new URL(page.url()).pathname === '/games/', '「完整游戏库」打开 /games/');
-  t.ok((await page.$$('.games-page .game-list li')).length > 0, '面板里有游戏库列表');
+  t.ok((await page.$$('.games-page .game-wall li')).length > 0, '面板里有瀑布流');
   await page.click('.reader-close');
   await wait(1200, page);
   await page.click('[data-tab="mc"]');

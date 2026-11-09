@@ -8,7 +8,7 @@ import { site } from '../site.mjs';
 import { contactIcons, contactPopovers } from './contact.mjs';
 import { layout, topbar } from './layout.mjs';
 import { formatDate } from './util.mjs';
-import { featured, playtime } from '../../build/steam-data.mjs';
+import { featured, hasArt, playedOn, playtime } from '../../build/steam-data.mjs';
 
 const SECTIONS = [
   { id: 'home', label: '起点', biome: '草甸' },
@@ -59,23 +59,44 @@ const toolGrid = ({ tools }) => html`
   </ul>
   <p class="more"><a class="btn btn-open" href="/tools/">查看全部 ${tools.length} 个工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
 
-/** 游戏封面：构建时下载的 Steam 小横图（231x87），没有就用游戏名首字的占位块 */
-export const gameCover = (steam, g, cls = 'game-cover') =>
-  steam.covers.includes(g.id)
-    ? html`<img class="${cls}" src="/games/covers/${g.id}.jpg" alt="" width="231" height="87" loading="lazy" decoding="async">`
-    : html`<span class="${cls} noicon" aria-hidden="true">${[...g.n][0]}</span>`;
+const storeUrl = (g) => `https://store.steampowered.com/app/${g.id}/`;
+/** 游戏行的第二行：近两周玩过就写近两周时长，否则写上次玩的日期 */
+const rowMeta = (g) => (g.two ? `近两周 ${playtime(g.two)} · 共 ${playtime(g.all)}` : `共 ${playtime(g.all)}${g.last ? ` · ${playedOn(g.last)} 玩过` : ''}`);
 
-/** 游戏行：封面 + 名字 + 时长 */
+/** 首页游戏行：231x87 小横图 + 名字 + 时长；没有封面用游戏名首字的占位块 */
 export const gameRow = (steam, g) => html`
-  <li><a class="game-row" href="https://store.steampowered.com/app/${g.id}/" target="_blank" rel="noopener">
-    ${gameCover(steam, g)}
-    <span class="game-text"><span class="game-name">${g.n}</span><span class="game-time">${g.two ? `近两周 ${playtime(g.two)} · ` : ''}共 ${playtime(g.all)}</span></span>
+  <li><a class="game-row" href="${storeUrl(g)}" target="_blank" rel="noopener">
+    ${hasArt(steam, g.id, 's')
+      ? html`<img class="game-cover" src="/games/covers/${g.id}.s.jpg" alt="" width="231" height="87" loading="lazy" decoding="async">`
+      : html`<span class="game-cover noicon" aria-hidden="true">${[...g.n][0]}</span>`}
+    <span class="game-text"><span class="game-name">${g.n}</span><span class="game-time">${rowMeta(g)}</span></span>
   </a></li>`;
+
+/**
+ * /games/ 瀑布流卡片：时长前几名用 300x450 竖图，其余用 460x215 横图，高矮错落；
+ * 写明宽高，图片没加载出来时卡片也占好位置，布局不跳
+ */
+export const gameTile = (steam, g) => {
+  const p = hasArt(steam, g.id, 'p');
+  const h = !p && hasArt(steam, g.id, 'h');
+  const img = p
+    ? html`<img class="tile-cover" src="/games/covers/${g.id}.p.jpg" alt="" width="300" height="450" loading="lazy" decoding="async">`
+    : h
+      ? html`<img class="tile-cover" src="/games/covers/${g.id}.h.jpg" alt="" width="460" height="215" loading="lazy" decoding="async">`
+      : html`<span class="tile-cover noicon" aria-hidden="true">${[...g.n][0]}</span>`;
+  return html`
+  <li class="game-tile${p ? ' tall' : ''}"><a href="${storeUrl(g)}" target="_blank" rel="noopener">
+    ${img}
+    <span class="game-name">${g.n}</span>
+    <span class="game-time">${rowMeta(g)}</span>
+  </a></li>`;
+};
 
 const steamPane = (steam) => {
   const f = featured(steam);
+  const sub = { recent: '最近在 Steam 上玩的', lately: '最近在 Steam 上玩过的', top: '在 Steam 上玩得最多的' }[f.kind];
   return html`
-    <p class="pane-sub">${f.kind === 'recent' ? '最近两周在 Steam 上玩的' : '最近两周没玩，这些是玩得最多的'}</p>
+    <p class="pane-sub">${sub} · 共 ${steam.total} 款，${playtime(steam.minutes)}</p>
     <ol class="game-list">${f.games.map((g) => gameRow(steam, g))}</ol>
     <p class="server-foot"><span>Steam · 数据每天更新</span><a class="btn btn-open" href="/games/">完整游戏库<span class="open-icon" aria-hidden="true"></span></a></p>`;
 };
