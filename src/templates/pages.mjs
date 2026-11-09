@@ -221,9 +221,9 @@ export function toolsPage(home) {
   const repos = home.tools.filter((t) => t.kind !== 'web');
   const body = html`
     <article class="post">
-      ${pageHead('工具', '自己写的一些小东西，都开源在 GitHub')}
-      ${web.length ? html`<h2 class="group-title">在线使用</h2><ul class="grid big">${web.map((t) => html`<li>${toolLink(t)}</li>`)}</ul>` : ''}
+      ${pageHead('工具', '自己写的引擎、渲染和 Minecraft 相关项目，都开源在 GitHub')}
       ${repos.length ? html`<h2 class="group-title">开源项目</h2><ul class="grid big">${repos.map((t) => html`<li>${toolLink(t)}</li>`)}</ul>` : ''}
+      ${web.length ? html`<h2 class="group-title">在线小工具</h2><ul class="grid big">${web.map((t) => html`<li>${toolLink(t)}</li>`)}</ul>` : ''}
     </article>`;
   return shell(home, { title: '工具', path: '/tools/', reader: { section: 'tools', body } });
 }
