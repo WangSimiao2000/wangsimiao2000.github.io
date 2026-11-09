@@ -501,9 +501,9 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 .about-hero h1 { margin: 0 0 8px; font-size: 28px; }
 .about-hero .more { margin-top: 16px; }
 .about-photo { width: 132px; height: 132px; object-fit: cover; border-radius: 50%; padding: 6px; background: var(--surface); box-shadow: var(--e3); }
-/* 瀑布流：两列按内容高度排，不再按行对齐留空白。通栏卡片（.wide）放在网格外面 */
+/* 瀑布流：两列按内容高度排，不再按行对齐留空白 */
 .about-grid { columns: 2; column-gap: 20px; }
-/* inline-block：下边距算进行盒里，不会在分栏底部被截掉，所以每列末尾到通栏卡片的间距也是 20px */
+/* inline-block：下边距算进行盒里，不会在分栏底部被截掉 */
 .about-grid > .about-card { display: inline-block; width: 100%; vertical-align: top; margin-bottom: 20px; }
 .about-card { padding: 20px; border-radius: var(--r-lg); box-shadow: var(--i2); font-size: 15px; line-height: 1.75; }
 .about-card h2 { margin: 0 0 12px; font-size: 16px; }
@@ -511,18 +511,14 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 .about-card p:last-child { margin-bottom: 0; }
 .about-card .tags { margin: 0; gap: 8px; }
 .about-card .tag { font-size: 13px; }
-/* 创作与开源：左边 B 站三个数，右边 GitHub 贡献格子 */
-.creator { margin-bottom: 20px; }
-.creator-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 24px; margin-bottom: 8px; }
-.creator-cols > :only-child { grid-column: 1 / -1; }
-.creator-head { font-size: 13px; font-weight: 600; }
-.creator-head a { color: var(--muted); text-decoration: none; }
-.creator-head a:hover { color: var(--accent); }
-.creator-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
-.creator-stats div { padding: 10px 8px; border-radius: var(--r-md); box-shadow: var(--i2); text-align: center; }
+/* B 站三个数、GitHub 贡献格子 */
+.about-card h2 a { color: inherit; text-decoration: none; }
+.about-card h2 a:hover { color: var(--accent); }
+.creator-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+.creator-stats div { padding: 10px 6px; border-radius: var(--r-md); box-shadow: var(--i2); text-align: center; }
 .creator-stats dt { font-size: 12px; color: var(--muted); }
 .creator-stats dd { margin: 2px 0 0; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.heatmap-box { margin: 0 0 8px; }
+.heatmap-box { margin: 0 0 10px; }
 .heatmap { display: block; width: 100%; height: auto; }
 .heatmap rect { shape-rendering: crispEdges; }
 .heatmap .l0 { fill: var(--surface-lo); }
@@ -530,12 +526,6 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 .heatmap .l2 { fill: color-mix(in srgb, var(--accent) 55%, var(--surface-lo)); }
 .heatmap .l3 { fill: color-mix(in srgb, var(--accent) 78%, var(--surface-lo)); }
 .heatmap .l4 { fill: var(--accent); }
-.hm-half { display: none; }
-@media (max-width: 760px) {
-  .creator-cols { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .hm-full { display: none; }
-  .hm-half { display: block; }
-}
 .flag { margin-right: 8px; }
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
