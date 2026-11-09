@@ -74,7 +74,11 @@ export async function build() {
     .then((t) => JSON.parse(t))
     .catch(() => null);
   if (steam) await cp(path.join(ROOT, 'src/data/steam-covers'), path.join(OUT, 'games/covers'), { recursive: true }).catch(() => {});
-  const home = { posts, friends: alive, graveyard, friendsCheckedAt: checked?.checkedAt ?? null, tools, steam, asset, extraHead };
+  // 关于页「创作与开源」（build/fetch-creator.mjs 生成）：没有就不显示那张卡片
+  const creator = await readFile(path.join(ROOT, 'src/data/creator.json'), 'utf8')
+    .then((t) => JSON.parse(t))
+    .catch(() => null);
+  const home = { posts, friends: alive, graveyard, friendsCheckedAt: checked?.checkedAt ?? null, tools, steam, creator, asset, extraHead };
   await emit('/', homePage(home));
 
   // 上一篇 / 下一篇按发布时间，不受置顶影响
@@ -135,6 +139,7 @@ export async function build() {
   await emit('/guestbook.json', guestbook);
   // 下次构建拉取失败时，fetch-steam.mjs 从这里取上一版
   if (steam) await emit('/games.json', JSON.stringify(steam));
+  if (creator) await emit('/creator.json', JSON.stringify(creator));
 
   // 站内搜索索引：全部文章的纯文本，浏览器里做子串匹配（中文不依赖分词，搜得全）
   await emit(
