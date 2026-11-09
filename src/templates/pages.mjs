@@ -11,8 +11,8 @@
 import { html } from '../../build/html.mjs';
 import { site } from '../site.mjs';
 import { contactIcons, contactPopovers } from './contact.mjs';
-import { comments, gameCover, gameRow, shell, toolLink } from './home.mjs';
-import { playtime } from '../../build/steam-data.mjs';
+import { comments, gameTile, shell, toolLink } from './home.mjs';
+import { hasArt, playtime } from '../../build/steam-data.mjs';
 import { categoryUrl, formatDate, slugify, tagUrl } from './util.mjs';
 
 /* ---------- 共用小件 ---------- */
@@ -348,33 +348,28 @@ export function gamesPage(home) {
     return shell(home, { title: '游戏', description: desc, path: '/games/', reader: { section: 'games', body } });
   }
   const byId = new Map(steam.games.map((g) => [g.id, g]));
-  const recent = steam.recent.map((id) => byId.get(id)).filter(Boolean);
+  const lately = (steam.lately ?? steam.recent).map((id) => byId.get(id)).filter(Boolean);
   const played = steam.games.filter((g) => g.all > 0);
-  const withCover = played.filter((g) => steam.covers.includes(g.id));
-  const rest = played.filter((g) => !steam.covers.includes(g.id));
+  const shown = new Set(lately.map((g) => g.id));
+  // 游戏库：时长靠前、有封面的进瀑布流（最近玩过里已经出现的不再重复），其余只列名字
+  const wall = played.filter((g) => !shown.has(g.id) && (hasArt(steam, g.id, 'p') || hasArt(steam, g.id, 'h')));
+  const wallIds = new Set(wall.map((g) => g.id));
+  const rest = played.filter((g) => !shown.has(g.id) && !wallIds.has(g.id));
   const unplayed = steam.games.length - played.length;
   const updated = steam.updated ? formatDate(new Date(steam.updated)) : null;
   const body = html`
     <article class="post games-page">
-      ${pageHead('游戏', html`Steam 上的 ${steam.total} 款游戏，按游玩时长排序${updated ? ` · 更新于 ${updated}` : ''} · <a href="${site.links.steam}" target="_blank" rel="noopener">Steam 主页</a>`)}
-      ${recent.length
+      ${pageHead('游戏', html`Steam 上的 ${steam.total} 款游戏，一共玩了 ${playtime(steam.minutes)}${updated ? ` · 更新于 ${updated}` : ''} · <a href="${site.links.steam}" target="_blank" rel="noopener">Steam 主页</a>`)}
+      ${lately.length
         ? html`
-      <h2 id="recent" class="group-title">最近两周</h2>
-      <ul class="game-cards">
-        ${recent.map(
-          (g) => html`
-        <li><a href="https://store.steampowered.com/app/${g.id}/" target="_blank" rel="noopener">
-          ${gameCover(steam, g, 'game-cover big')}
-          <span class="game-name">${g.n}</span>
-          <span class="game-time">近两周 ${playtime(g.two)} · 共 ${playtime(g.all)}</span>
-        </a></li>`,
-        )}
-      </ul>`
+      <h2 id="lately" class="group-title">最近玩过</h2>
+      <ul class="game-wall">${lately.map((g) => gameTile(steam, g))}</ul>`
         : ''}
-      <h2 id="library" class="group-title">游戏库</h2>
-      <ol class="game-list full">${withCover.map((g) => gameRow(steam, g))}</ol>
+      <h2 id="library" class="group-title">玩得最多</h2>
+      <ul class="game-wall">${wall.map((g) => gameTile(steam, g))}</ul>
       ${rest.length
         ? html`
+      <h2 id="others" class="group-title">其他玩过的</h2>
       <ol class="game-names">
         ${rest.map((g) => html`<li><a href="https://store.steampowered.com/app/${g.id}/" target="_blank" rel="noopener">${g.n}</a><span>${playtime(g.all)}</span></li>`)}
       </ol>`
@@ -388,7 +383,11 @@ export function gamesPage(home) {
     reader: {
       section: 'games',
       body,
-      left: jumpSide('跳到', [...(recent.length ? [{ id: 'recent', text: '最近两周' }] : []), { id: 'library', text: '游戏库' }]),
+      left: jumpSide('跳到', [
+        ...(lately.length ? [{ id: 'lately', text: '最近玩过' }] : []),
+        { id: 'library', text: '玩得最多' },
+        ...(rest.length ? [{ id: 'others', text: '其他玩过的' }] : []),
+      ]),
       right: statsSide([
         ['游戏', `${steam.total} 款`],
         ['玩过', `${played.length} 款`],

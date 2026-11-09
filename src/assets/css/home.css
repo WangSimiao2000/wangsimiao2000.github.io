@@ -184,26 +184,26 @@ html:not(.js) .play-tabs { display: none; }
 /* 最窄的屏上标题行放不下群系标签，先让给切换按钮 */
 @media (max-width: 360px) { .card-head .biome-chip { display: none; } }
 /* /games/ 面板页 */
-.game-cards { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
-.game-cards a {
-  display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 8px 8px 10px; border-radius: var(--r-lg); text-decoration: none;
+/* 瀑布流：CSS 多列，竖图卡片高、横图卡片矮，排出来错落；卡片不拆到两列 */
+.game-wall { list-style: none; margin: 0 0 8px; padding: 0; columns: 3 200px; column-gap: 16px; }
+.game-tile { display: inline-block; width: 100%; margin: 0 0 16px; break-inside: avoid; vertical-align: top; }
+.game-tile a {
+  display: flex; flex-direction: column; gap: 3px; padding: 6px 6px 9px; border-radius: var(--r-lg); text-decoration: none;
   background: var(--surface); box-shadow: var(--e2); transition: box-shadow 0.15s;
 }
-.game-cards a:hover { box-shadow: var(--e1); }
-.game-cards a:hover .game-name { color: var(--accent); }
-.game-cards .game-cover.big { width: 100%; height: auto; aspect-ratio: 231 / 87; margin-bottom: 4px; }
-.game-cards .game-name, .game-cards .game-time { padding: 0 4px; }
-.game-list.full { gap: 2px; }
+.game-tile a:hover { box-shadow: var(--e1); }
+.game-tile a:hover .game-name { color: var(--accent); }
+.tile-cover { display: block; width: 100%; height: auto; aspect-ratio: 460 / 215; margin-bottom: 4px; border-radius: calc(var(--r-lg) - 6px); object-fit: cover; background: var(--surface-lo); }
+.game-tile.tall .tile-cover { aspect-ratio: 2 / 3; }
+.tile-cover.noicon { display: grid; place-items: center; font-size: 28px; font-weight: 700; color: var(--accent); }
+.game-tile .game-name, .game-tile .game-time { padding: 0 4px; }
+.game-tile .game-name { white-space: normal; line-height: 1.35; }
 .game-names { list-style: none; margin: 8px 0 16px; padding: 0; columns: 2 220px; column-gap: 24px; font-size: 14px; }
 .game-names li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 4px; break-inside: avoid; }
 .game-names a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
 .game-names a:hover { color: var(--accent); }
 .game-names span { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-@media (max-width: 640px) {
-  .game-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .game-cards a { padding: 6px 6px 8px; font-size: 13px; }
-  .game-cards .game-name { white-space: normal; }
-}
+@media (max-width: 640px) { .game-wall { columns: 2; column-gap: 10px; } .game-tile { margin-bottom: 10px; } .game-tile a { font-size: 13px; } }
 
 /* ---- 世界地图（/server/map/）：宽面板，地图填满正文区 ---- */
 .js .reader.reader-wide { width: min(calc(1280px * var(--ui, 1)), calc(100vw - 32px)); }
