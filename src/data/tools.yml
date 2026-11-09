@@ -27,6 +27,12 @@
   repo: "WangSimiao2000/MiaoMinecraftLauncher"
   lang: "Rust"
 
+- name: "Mac Info Panel"
+  description: "为 Wokyis Mac mini 扩展坞的小屏设计的原生 macOS 信息面板：同步歌词、本机状态、mc-ops 服务器状态，SwiftUI 写的"
+  kind: repo
+  repo: "WangSimiao2000/mac-info-panel"
+  lang: "Swift"
+
 - name: "Minecraft Skin Raytracer"
   description: "把 Minecraft 皮肤 PNG 渲染成高质量图片的 CPU 光线追踪器，带 Qt6 实时预览"
   kind: repo
