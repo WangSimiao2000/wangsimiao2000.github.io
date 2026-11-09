@@ -556,7 +556,8 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 .js .reader:not(:has(.reader-side)) { display: flex; flex-direction: column; justify-content: flex-end; }
 
 /* 工具 */
-.tool .item-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* 标签单独一行，放在说明下面 */
+.tool-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .tool-badge { font-size: 11px; font-weight: 500; color: var(--muted); padding: 1px 8px; border-radius: 999px; box-shadow: inset 1px 1px 3px var(--sh-dark), inset -1px -1px 3px var(--sh-light); }
 .tool-badge.on { color: var(--accent); }
 .group-title { font-size: 15px; color: var(--muted); margin: 6px 0 12px; }
@@ -739,3 +740,8 @@ html.world-hover body { cursor: pointer; }
   .search, .search-card, .js .side-left.is-open, .hotbar, .qq-copied { transition: none; }
   .search-results li, .reader-card.reader-in, .reader-card.reader-out, .spark-box:not([hidden]) { animation: none; }
 }
+/* 首页工具卡片：说明最多两行（完整说明在 /tools/），标签单独一行后卡片才放得下 */
+.panel .tool .item-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.panel .tool .tool-tags { margin-top: 6px; }
+@media (max-height: 760px) { .panel .grid.tools li:nth-child(n + 3) { display: none; } }
+@media (max-width: 640px) and (max-height: 740px) { .panel .grid.tools li:nth-child(n + 2) { display: none; } }
