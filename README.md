@@ -16,6 +16,16 @@ npm run build    # 输出到 dist/
 
 可选的类型检查：`npx -p typescript tsc -p .`
 
+浏览器测试在 `tests/e2e/`，需要 playwright-core。它不在项目依赖里，装在别的目录，再用 `PLAYWRIGHT_CORE` 指过来：
+
+```bash
+npm i --prefix ~/pw playwright-core && npx --prefix ~/pw playwright-core install chromium chromium-headless-shell
+npm run dev   # 另开一个终端
+PLAYWRIGHT_CORE=~/pw node tests/e2e/flow.mjs
+```
+
+交互和时序测试用 headless shell。要看 WebGPU 画面的测试（`webgpu.mjs` 自检、`world-pixels.mjs` 画面回归）用完整版 Chromium，配合 SwiftShader 软件渲染。
+
 ## 依赖
 
 只有 4 个，都在构建时运行，页面上不加载任何第三方脚本：
