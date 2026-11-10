@@ -31,6 +31,7 @@ import type { Frame } from './sim/frame.js';
 import { DrawList, type Renderer } from './drawlist.js';
 import { pickRenderer } from './render/index.js';
 import { drawFront } from './sim/front.js';
+import { drawBackRow } from './sim/backrow.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
 
@@ -429,9 +430,12 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawSky(fr, stars);
     lanterns.draw(fr);
     fireworks?.draw(fr, dt, fireX);
-    drawLayer(fr, 'far', 0.18, dark ? 0.55 : 0.62);
-    drawLayer(fr, 'mid', 0.42, dark ? 0.32 : 0.36);
-    drawLayer(fr, 'near', 0.7, 0.14);
+    // 有景深时远近靠模糊区分，远景不再往雾色靠
+    const haze = renderer.depthOfField ? 0 : 1;
+    drawLayer(fr, 'far', 0.18, (dark ? 0.55 : 0.62) * haze);
+    drawLayer(fr, 'mid', 0.42, (dark ? 0.32 : 0.36) * haze);
+    drawLayer(fr, 'near', 0.7, 0.14 * haze);
+    drawBackRow(fr, sc);
     eggs.beginFrame();
     drawItems();
     drawGround(fr);
