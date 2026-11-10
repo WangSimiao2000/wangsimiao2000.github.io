@@ -1,44 +1,58 @@
-// 合成：把一层（预乘 alpha）按规则叠到画布上。规则见 drawlist.ts 的 COMPOSE：
-//   fade  自下而上淡出：不透明度乘以 fadeAt(y / H)，四个控制点由 util.ts 的 FADE_STOPS 传进来
-//   night 深色模式下用 source-atop 盖一层夜色：只染已有的像素，不改透明度
+// 合成一组（drawlist.ts 的 COMPOSE）：组里最多 3 层按顺序叠好，再整体处理，输出预乘 alpha 叠到画布上。
+//   night 深色模式下盖夜色（source-atop：只染已有的像素，不改透明度）
+//   lit   夜色在灯旁边变淡，染上灯的颜色（光照图）
+//   fade  自下而上淡出
+//   调色  轻轻往当前群系的色调偏
+// 画布可以比逻辑分辨率大（世界画布按屏幕像素画）：清晰的层按最近邻取像素，景深模糊过的层线性插值。
 
-struct Rule {
-  size: vec2f,  // 画布宽高（逻辑像素）
-  fade: f32,    // 1 = 淡出
-  night: f32,   // 1 = 盖夜色
-  nightColor: vec4f, // 夜色 rgb（0-1）和不透明度
-  stops: array<vec4f, 2>, // 淡出的四个控制点 (t, a)，两两一组
+struct Group {
+  a: vec4f, // 层数, 淡出, 盖夜色, 被灯照亮
+  b: vec4f, // 三层各自是否用模糊过的纹理, 画布像素 / 逻辑像素
+  c: vec4f, // 调色强度
 };
-@group(0) @binding(0) var<uniform> r: Rule;
-@group(0) @binding(1) var layer: texture_2d<f32>;
+@group(0) @binding(1) var<uniform> G: Group;
+@group(0) @binding(2) var t0: texture_2d<f32>;
+@group(0) @binding(3) var t1: texture_2d<f32>;
+@group(0) @binding(4) var t2: texture_2d<f32>;
+@group(0) @binding(5) var samp: sampler;
+@group(0) @binding(6) var lightmap: texture_2d<f32>;
 
-struct V { @builtin(position) pos: vec4f };
-
-@vertex fn vs(@builtin(vertex_index) i: u32) -> V {
-  var p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
-  var o: V;
-  o.pos = vec4f(p[i], 0.0, 1.0);
-  return o;
+fn fadeAt(t: f32) -> f32 {
+  let s = array<vec2f, 4>(F.stops[0].xy, F.stops[0].zw, F.stops[1].xy, F.stops[1].zw);
+  if (t <= s[0].x) { return s[0].y; }
+  for (var i = 1; i < 4; i++) {
+    if (t <= s[i].x) { return mix(s[i - 1].y, s[i].y, (t - s[i - 1].x) / (s[i].x - s[i - 1].x)); }
+  }
+  return s[3].y;
 }
 
-// 淡出曲线：控制点之间分段线性，两端取端点的值
-fn fadeAt(t: f32) -> f32 {
-  let p = array<vec2f, 4>(r.stops[0].xy, r.stops[0].zw, r.stops[1].xy, r.stops[1].zw);
-  if (t <= p[0].x) { return p[0].y; }
-  for (var i = 1; i < 4; i++) {
-    if (t <= p[i].x) { return mix(p[i - 1].y, p[i].y, (t - p[i - 1].x) / (p[i].x - p[i - 1].x)); }
-  }
-  return p[3].y;
+fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
+  if (soft > 0.5) { return textureSampleLevel(t, samp, lp / F.size.xy, 0.0); }
+  return textureLoad(t, vec2i(lp), 0);
 }
 
 @fragment fn fs(v: V) -> @location(0) vec4f {
-  var c = textureLoad(layer, vec2i(v.pos.xy), 0);
-  if (r.night > 0.5) {
-    let n = r.nightColor;
-    c = vec4f(n.rgb * n.a * c.a + c.rgb * (1.0 - n.a), c.a);
+  let lp = v.pos.xy / G.b.w; // 逻辑像素坐标
+  let n = i32(G.a.x);
+  // 三个分支要写开：纹理不能放进数组里按下标取
+  var c = pick(t0, G.b.x, lp);
+  if (n > 1) { let s = pick(t1, G.b.y, lp); c = s + c * (1.0 - s.a); }
+  if (n > 2) { let s = pick(t2, G.b.z, lp); c = s + c * (1.0 - s.a); }
+  if (c.a <= 0.0) { return vec4f(0.0); }
+
+  let dark = isDark();
+  var light = vec4f(0.0);
+  if (G.a.w > 0.5) { light = textureLoad(lightmap, vec2i(clamp(lp, vec2f(0.0), F.size.xy - 1.0)), 0); }
+  if (G.a.z > 0.5 && dark) {
+    let k = F.night.a * (1.0 - min(light.a, 0.85));
+    c = vec4f(F.night.rgb * k * c.a + c.rgb * (1.0 - k), c.a);
   }
-  if (r.fade > 0.5) {
-    c *= fadeAt(v.pos.y / r.size.y);
+  if (G.a.w > 0.5) {
+    c = vec4f(c.rgb + light.rgb * c.a * select(0.12, 0.3, dark), c.a);
   }
+  if (G.c.x > 0.0) {
+    c = vec4f(c.rgb * mix(vec3f(1.0), F.tint.rgb, G.c.x), c.a);
+  }
+  if (G.a.y > 0.5) { c *= fadeAt(lp.y / F.size.y); }
   return c;
 }

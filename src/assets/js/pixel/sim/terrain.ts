@@ -1,6 +1,6 @@
 /**
  * 地形：远景三层（远山、中景丘陵、近景树线）和前景地面，逐列写进绘制清单。
- * 远景进 far 层（合成时自下而上淡出）；地面进 fg 层（深色模式下会盖夜色）。
+ * 远景三层各进 far / mid / near 层（合成时一起自下而上淡出）；地面进 fg 层（深色模式下会盖夜色）。
  */
 import { hash } from './sprites.js';
 import { BIOMES, GROUND, biomeNum, heightAt, layerColor, onPath, paletteAt, weights, type Layer } from './biomes.js';
@@ -41,8 +41,8 @@ export function drawLayer(fr: Frame, which: Layer, factor: number, haze: number)
     }
     const y = Math.round(base - h);
     const [body, lit] = layerColor(wx, which, haze, fr.dark, fr.bg);
-    dl.rect('far', x, y, 1, H - y, body);
-    dl.rect('far', x, y, 1, 1, lit);
+    dl.rect(which, x, y, 1, H - y, body);
+    dl.rect(which, x, y, 1, 1, lit);
   }
 }
 

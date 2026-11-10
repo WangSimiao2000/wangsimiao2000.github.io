@@ -1,23 +1,44 @@
 /**
- * WebGPU 渲染器：每层先画到自己的纹理上（layer.wgsl），再按 COMPOSE 的规则叠到三张画布上（compose.wgsl）。
- * 和 Canvas 2D 渲染器读同一份绘制清单；光照、景深这些效果之后作为新的通道加在合成前后。
+ * WebGPU 渲染器。每帧的通道（都读同一份绘制清单）：
+ *
+ *   1. 图层      每层画到自己的纹理（逻辑分辨率，layer.wgsl）
+ *   2. 光照图    点光源照到哪里、多亮（lightmap.wgsl）
+ *   3. 景深      远景三层按离镜头的远近各自模糊（blur.wgsl）
+ *   4. 辉光      发光的层叠在一起再模糊（bloom.wgsl + blur.wgsl）
+ *   5. 体积光    白天从太阳射过来的光束（rays.wgsl）
+ *   6. 合成      按 COMPOSE 把各组叠到三张画布上（compose.wgsl），世界画布最后叠辉光和体积光（overlay.wgsl）
+ *
+ * 2-5 是光效，按 effects 开关跳过；全关时画面和 Canvas 2D 渲染器一致（网址 ?gpu&fx=0，画面回归测试用）。
+ * 世界画布按屏幕像素画（模糊和泛光才是平滑的），天空和主角画布按逻辑像素画、由 CSS 放大。
  */
 import { loadAtlas } from '../../atlas.js';
-import { COMPOSE, ERASE, LAYERS, NIGHT, STRIDE, type Canvases, type DrawList, type LayerName, type LayerRule, type Renderer } from '../../drawlist.js';
-import { FADE_STOPS } from '../../sim/util.js';
+import { COMPOSE, ERASE, LAYERS, NIGHT, STRIDE, type CanvasName, type Canvases, type DrawList, type LayerName, type Renderer } from '../../drawlist.js';
+import { FADE_STOPS, rgb } from '../../sim/util.js';
+
+export const FX = { lights: 1, dof: 2, bloom: 4, rays: 8, grade: 16 } as const;
+export const FX_ALL = Object.values(FX).reduce((a, b) => a | b, 0);
+
+const CANVASES: CanvasName[] = ['sky', 'world', 'hero'];
+const MAX_LIGHTS = 48;
+const FRAME_FLOATS = (4 + 2 + MAX_LIGHTS * 2) * 4;
+const DOF_SIGMA = 0.55; // 每一级深度模糊多少（逻辑像素的标准差）
+const BLOOM_SIGMA = 2.5;
+const BLOOM = { day: 0.35, night: 0.9 };
+const GRADE = 0.12; // 往群系色调偏多少
+const LOGICAL = 'rgba8unorm';
+const HDR = 'rgba16float';
 
 const shader = (name: string) => fetch(new URL(`./${name}.wgsl`, import.meta.url)).then((r) => r.text());
-const CANVASES = ['sky', 'world', 'hero'] as const;
-const RULE_BYTES = 64;
 
 /** 拿不到 WebGPU（浏览器不支持、没有适配器）时 reject，调用方决定怎么退回 */
-export async function createGpuRenderer(c: Canvases): Promise<Renderer> {
+export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<Renderer> {
   if (!('gpu' in navigator)) throw new Error('浏览器不支持 WebGPU');
   const adapter = await navigator.gpu.requestAdapter();
   if (!adapter) throw new Error('拿不到 WebGPU 适配器');
   const device = await adapter.requestDevice();
   device.lost.then((info) => console.error('[world] WebGPU 设备丢失', info.message));
-  const [layerSrc, composeSrc] = await Promise.all([shader('layer'), shader('compose')]);
+  const names = ['frame', 'layer', 'lightmap', 'blur', 'bloom', 'rays', 'compose', 'overlay'] as const;
+  const src = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await shader(n)]))) as Record<(typeof names)[number], string>;
   const format = navigator.gpu.getPreferredCanvasFormat();
   const contexts = Object.fromEntries(
     CANVASES.map((k) => {
@@ -25,12 +46,11 @@ export async function createGpuRenderer(c: Canvases): Promise<Renderer> {
       ctx.configure({ device, format, alphaMode: 'premultiplied' });
       return [k, ctx];
     }),
-  ) as Record<(typeof CANVASES)[number], GPUCanvasContext>;
+  ) as Record<CanvasName, GPUCanvasContext>;
 
   /* ---------- 管线 ---------- */
 
-  const layerModule = device.createShaderModule({ label: 'layer', code: layerSrc });
-  const composeModule = device.createShaderModule({ label: 'compose', code: composeSrc });
+  const module = (name: (typeof names)[number], withFrame = true) => device.createShaderModule({ label: name, code: withFrame ? src.frame + '\n' + src[name] : src[name] });
   const over: GPUBlendState = {
     color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
     alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
@@ -39,6 +59,7 @@ export async function createGpuRenderer(c: Canvases): Promise<Renderer> {
     color: { srcFactor: 'zero', dstFactor: 'one-minus-src-alpha', operation: 'add' },
     alpha: { srcFactor: 'zero', dstFactor: 'one-minus-src-alpha', operation: 'add' },
   };
+  const layerModule = module('layer', false);
   const cmdLayout: GPUVertexBufferLayout = {
     arrayStride: STRIDE * 4,
     stepMode: 'instance',
@@ -49,76 +70,130 @@ export async function createGpuRenderer(c: Canvases): Promise<Renderer> {
       { shaderLocation: 3, offset: 40, format: 'float32x3' },
     ],
   };
-  const layerBindLayout = device.createBindGroupLayout({
+  // 普通和擦除两条管线共用一套绑定，布局要显式给出（'auto' 生成的布局不能跨管线用）
+  const layerLayout = device.createBindGroupLayout({
     entries: [
       { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: {} },
       { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {} },
     ],
   });
-  const layerPipeline = (blend: GPUBlendState) =>
+  const layerPipe = (blend: GPUBlendState) =>
     device.createRenderPipeline({
-      layout: device.createPipelineLayout({ bindGroupLayouts: [layerBindLayout] }),
+      layout: device.createPipelineLayout({ bindGroupLayouts: [layerLayout] }),
       vertex: { module: layerModule, entryPoint: 'vs', buffers: [cmdLayout] },
-      fragment: { module: layerModule, entryPoint: 'fs', targets: [{ format: 'rgba8unorm', blend }] },
+      fragment: { module: layerModule, entryPoint: 'fs', targets: [{ format: LOGICAL, blend }] },
     });
-  const drawPipe = layerPipeline(over);
-  const erasePipe = layerPipeline(erase);
-  const composeBindLayout = device.createBindGroupLayout({
-    entries: [
-      { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
-      { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: {} },
-    ],
-  });
-  const composePipe = device.createRenderPipeline({
-    layout: device.createPipelineLayout({ bindGroupLayouts: [composeBindLayout] }),
-    vertex: { module: composeModule, entryPoint: 'vs' },
-    fragment: { module: composeModule, entryPoint: 'fs', targets: [{ format, blend: over }] },
-  });
+  const drawPipe = layerPipe(over);
+  const erasePipe = layerPipe(erase);
+  /** 全屏通道 */
+  const fullPipe = (m: GPUShaderModule, target: GPUTextureFormat, blend?: GPUBlendState) =>
+    device.createRenderPipeline({ layout: 'auto', vertex: { module: m, entryPoint: 'vs' }, fragment: { module: m, entryPoint: 'fs', targets: [{ format: target, blend }] } });
+  const lightPipe = fullPipe(module('lightmap'), HDR);
+  const blurModule = module('blur', false);
+  const blurPipe = { [LOGICAL]: fullPipe(blurModule, LOGICAL), [HDR]: fullPipe(blurModule, HDR) } as Record<string, GPURenderPipeline>;
+  const bloomPipe = fullPipe(module('bloom'), HDR);
+  const raysPipe = fullPipe(module('rays'), HDR);
+  const composePipe = fullPipe(module('compose'), format, over);
+  const overlayPipe = fullPipe(module('overlay'), format, over);
 
-  /* ---------- 资源 ---------- */
+  /* ---------- 不随尺寸变的资源 ---------- */
 
-  const sizeBuf = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-  // 每条合成规则一份参数（淡出、夜色）
-  const rules = LAYERS.map(() => device.createBuffer({ size: RULE_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }));
-  const ruleOf = (l: LayerName): LayerRule => Object.values(COMPOSE).flat().find((r) => r.layer === l)!;
-  let atlas = device.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
-  let cmdBuf: GPUBuffer | null = null;
-  let layers: Record<LayerName, GPUTexture> | null = null;
-  let layerBind: GPUBindGroup | null = null;
-  let composeBinds: Record<LayerName, GPUBindGroup> | null = null;
+  const uniform = (bytes: number, data?: Float32Array<ArrayBuffer>) => {
+    const b = device.createBuffer({ size: bytes, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    if (data) device.queue.writeBuffer(b, 0, data);
+    return b;
+  };
+  const frameBuf = uniform(FRAME_FLOATS * 4);
+  const frameData = new Float32Array(FRAME_FLOATS);
+  const sizeBuf = uniform(16); // 逻辑宽高（layer.wgsl）
+  const scaleBuf = uniform(16); // 世界画布像素 / 逻辑像素（overlay.wgsl）
+  const linear = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
+  const blank = device.createTexture({ size: [1, 1], format: LOGICAL, usage: GPUTextureUsage.TEXTURE_BINDING });
+  const groups = CANVASES.flatMap((k) => COMPOSE[k].map((g) => ({ canvas: k, g, buf: uniform(48) })));
+
+  // 图集加载好才算就位：截图测试等 <html data-renderer> 出现再截，不会截到没有精灵的画面
+  const img = await loadAtlas();
+  const atlas = device.createTexture({ size: [img.width, img.height], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
+  device.queue.copyExternalImageToTexture({ source: img }, { texture: atlas }, [img.width, img.height]);
+
+  /* ---------- 随尺寸变的资源 ---------- */
+
+  const usage = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING;
   let W = 0;
   let H = 0;
+  let scale = 1; // 世界画布的像素 / 逻辑像素
+  let T: ReturnType<typeof makeTargets> | null = null;
+  let cmdBuf: GPUBuffer | null = null;
 
-  function bindGroups() {
-    if (!layers) return;
-    layerBind = device.createBindGroup({ layout: layerBindLayout, entries: [{ binding: 0, resource: { buffer: sizeBuf } }, { binding: 1, resource: atlas.createView() }] });
-    composeBinds = Object.fromEntries(
-      LAYERS.map((l, i) => [l, device.createBindGroup({ layout: composeBindLayout, entries: [{ binding: 0, resource: { buffer: rules[i] } }, { binding: 1, resource: layers![l].createView() }] })]),
-    ) as Record<LayerName, GPUBindGroup>;
+  function makeTargets() {
+    const tex = (label: string, fmt: GPUTextureFormat = LOGICAL) => device.createTexture({ label, size: [W, H], format: fmt, usage });
+    const layers = Object.fromEntries(LAYERS.map((l) => [l, tex(l)])) as Record<LayerName, GPUTexture>;
+    const blurred: Partial<Record<LayerName, GPUTexture>> = {};
+    for (const { g } of groups) g.depth?.forEach((d, i) => d > 0 && (blurred[g.layers[i]] = tex(`${g.layers[i]}-dof`)));
+    const t = {
+      layers,
+      blurred,
+      scratch: tex('blur-scratch'),
+      scratchHdr: tex('blur-scratch-hdr', HDR),
+      lightmap: tex('lightmap', HDR),
+      bloom: tex('bloom', HDR),
+      rays: tex('rays', HDR),
+    };
+    const bind = (pipe: GPURenderPipeline, entries: (GPUBindingResource | GPUTexture)[]) =>
+      device.createBindGroup({
+        layout: pipe.getBindGroupLayout(0),
+        entries: entries.map((r, i) => ({ binding: i, resource: r instanceof GPUTexture ? r.createView() : r })),
+      });
+    // 每处模糊有自己的参数：同一帧里不能改同一块 uniform（writeBuffer 在整批命令执行前就生效了）
+    const blurBinds = (from: GPUTexture, mid: GPUTexture, pipe: GPURenderPipeline, sigma: number) => ({
+      h: bind(pipe, [{ buffer: uniform(16, new Float32Array([1, 0, sigma, 0])) }, from]),
+      v: bind(pipe, [{ buffer: uniform(16, new Float32Array([0, 1, sigma, 0])) }, mid]),
+    });
+    const depthOf = (l: LayerName) => groups.flatMap(({ g }) => g.layers.map((x, i) => [x, g.depth?.[i] ?? 0] as const)).find(([x]) => x === l)?.[1] ?? 0;
+    const F = { buffer: frameBuf };
+    return {
+      ...t,
+      layerBind: device.createBindGroup({ layout: layerLayout, entries: [{ binding: 0, resource: { buffer: sizeBuf } }, { binding: 1, resource: atlas.createView() }] }),
+      lightBind: bind(lightPipe, [F]),
+      dofBinds: Object.fromEntries(Object.keys(blurred).map((l) => [l, blurBinds(layers[l as LayerName], t.scratch, blurPipe[LOGICAL], depthOf(l as LayerName) * DOF_SIGMA)])) as Partial<Record<LayerName, { h: GPUBindGroup; v: GPUBindGroup }>>,
+      bloomSrcBind: bind(bloomPipe, [F, layers.emissive, layers.glow]),
+      bloomBlur: blurBinds(t.bloom, t.scratchHdr, blurPipe[HDR], BLOOM_SIGMA),
+      raysBind: bind(raysPipe, [F, layers.far, layers.mid, layers.near, layers.fg]),
+      composeBinds: groups.map(({ g, buf }) => {
+        const tx = [0, 1, 2].map((i) => {
+          const l = g.layers[i];
+          if (!l) return blank;
+          return effects & FX.dof && (g.depth?.[i] ?? 0) > 0 ? blurred[l]! : layers[l];
+        });
+        return bind(composePipe, [F, { buffer: buf }, ...tx, linear, t.lightmap]);
+      }),
+      overlayBind: bind(overlayPipe, [F, t.bloom, t.rays, linear, { buffer: scaleBuf }]),
+    };
   }
 
-  // 图集加载好之前，精灵命令从 1x1 的透明纹理取样，什么都画不出来（和 Canvas 2D 渲染器一样）
-  const atlasLoaded = loadAtlas().then(
-    async (img) => {
-      const tex = device.createTexture({ size: [img.width, img.height], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
-      device.queue.copyExternalImageToTexture({ source: img }, { texture: tex }, [img.width, img.height]);
-      atlas.destroy();
-      atlas = tex;
-      bindGroups();
-    },
-    (err) => console.error('[world]', err),
-  );
+  /* ---------- 每帧 ---------- */
 
-  function writeRules(dark: boolean) {
-    const d = new Float32Array(RULE_BYTES / 4);
-    LAYERS.forEach((l, i) => {
-      const r = ruleOf(l);
-      d.fill(0);
-      d.set([W, H, r.fade ? 1 : 0, r.night && dark ? 1 : 0], 0);
-      d.set([NIGHT[0] / 255, NIGHT[1] / 255, NIGHT[2] / 255, NIGHT[3]], 4);
-      d.set(FADE_STOPS.flat(), 8);
-      device.queue.writeBuffer(rules[i], 0, d);
+  function writeFrame(dl: DrawList, dark: boolean) {
+    const d = frameData;
+    d.fill(0);
+    const lights = dl.lights.slice(0, MAX_LIGHTS);
+    const tint = rgb(dl.env.tint);
+    d.set([W, H, effects, lights.length], 0);
+    d.set([dl.sun[0], dl.sun[1], dl.env.rays, dark ? 1 : 0], 4);
+    d.set([tint[0] / 255, tint[1] / 255, tint[2] / 255, dark ? BLOOM.night : BLOOM.day], 8);
+    d.set([NIGHT[0] / 255, NIGHT[1] / 255, NIGHT[2] / 255, NIGHT[3]], 12);
+    d.set(FADE_STOPS.flat(), 16);
+    lights.forEach((l, i) => {
+      const [r, g, b] = rgb(l.color);
+      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, 0], 24 + i * 8);
     });
+    device.queue.writeBuffer(frameBuf, 0, d);
+    for (const { canvas, g, buf } of groups) {
+      const s = canvas === 'world' ? scale : 1;
+      const soft = [0, 1, 2].map((i) => (effects & FX.dof && (g.depth?.[i] ?? 0) > 0 ? 1 : 0));
+      const grade = effects & FX.grade && (g.lit || g.fade) ? GRADE : 0;
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, g.fade ? 1 : 0, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, 0, 0, 0]));
+    }
   }
 
   /** 把所有层的命令拼成一块上传，返回每层在里面的起始实例号 */
@@ -140,58 +215,99 @@ export async function createGpuRenderer(c: Canvases): Promise<Renderer> {
     return first;
   }
 
+  const pass = (enc: GPUCommandEncoder, target: GPUTexture, load: GPULoadOp = 'clear') =>
+    enc.beginRenderPass({ colorAttachments: [{ view: target.createView(), loadOp: load, storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
+  /** 一个全屏通道 */
+  function full(enc: GPUCommandEncoder, target: GPUTexture, pipe: GPURenderPipeline, bind: GPUBindGroup) {
+    const p = pass(enc, target);
+    p.setPipeline(pipe);
+    p.setBindGroup(0, bind);
+    p.draw(3);
+    p.end();
+  }
+  /** 横竖两遍高斯模糊：from -> mid -> to（from 和 to 可以是同一张；参数在 binds 里） */
+  function blur(enc: GPUCommandEncoder, binds: { h: GPUBindGroup; v: GPUBindGroup }, mid: GPUTexture, to: GPUTexture, fmt: string) {
+    full(enc, mid, blurPipe[fmt], binds.h);
+    full(enc, to, blurPipe[fmt], binds.v);
+  }
+
   /** 画一层：连续的普通命令和擦除命令各成一段，按顺序切换管线 */
   function drawLayer(enc: GPUCommandEncoder, dl: DrawList, l: LayerName, first: number) {
-    const pass = enc.beginRenderPass({ colorAttachments: [{ view: layers![l].createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
+    const p = pass(enc, T!.layers[l]);
     const cmds = dl.layers[l];
     if (cmds.count) {
-      pass.setBindGroup(0, layerBind!);
-      pass.setVertexBuffer(0, cmdBuf!);
+      p.setBindGroup(0, T!.layerBind);
+      p.setVertexBuffer(0, cmdBuf!);
       const d = cmds.data;
       let start = 0;
       while (start < cmds.count) {
         const erasing = (d[start * STRIDE] & ERASE) !== 0;
         let end = start + 1;
         while (end < cmds.count && ((d[end * STRIDE] & ERASE) !== 0) === erasing) end++;
-        pass.setPipeline(erasing ? erasePipe : drawPipe);
-        pass.draw(6, end - start, 0, first + start);
+        p.setPipeline(erasing ? erasePipe : drawPipe);
+        p.draw(6, end - start, 0, first + start);
         start = end;
       }
     }
-    pass.end();
+    p.end();
   }
 
-  // 图集到了才算就位：截图测试等 <html data-renderer> 出现再截，不会截到没有精灵的画面
-  await atlasLoaded;
+  function composeCanvas(enc: GPUCommandEncoder, k: CanvasName, dark: boolean) {
+    const p = pass(enc, contexts[k].getCurrentTexture());
+    p.setPipeline(composePipe);
+    groups.forEach(({ canvas, g }, i) => {
+      if (canvas !== k || (g.darkOnly && !dark)) return;
+      p.setBindGroup(0, T!.composeBinds[i]);
+      p.draw(3);
+    });
+    if (k === 'world' && effects & (FX.bloom | FX.rays)) {
+      p.setPipeline(overlayPipe);
+      p.setBindGroup(0, T!.overlayBind);
+      p.draw(3);
+    }
+    p.end();
+  }
 
   return {
-    resize(w, h) {
+    resize(w, h, S) {
       W = w;
       H = h;
-      if (layers) for (const t of Object.values(layers)) t.destroy();
-      layers = Object.fromEntries(
-        LAYERS.map((l) => [l, device.createTexture({ label: l, size: [w, h], format: 'rgba8unorm', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING })]),
-      ) as Record<LayerName, GPUTexture>;
+      // 世界画布按屏幕像素画；高分屏最多按 2 倍，再高看不出区别，只是更费
+      scale = S * Math.min(2, window.devicePixelRatio || 1);
+      c.world.width = Math.round(w * scale);
+      c.world.height = Math.round(h * scale);
+      for (const cv of [c.sky, c.hero]) {
+        cv.width = w;
+        cv.height = h;
+      }
+      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.scratchHdr, T.lightmap, T.bloom, T.rays]) v!.destroy();
       device.queue.writeBuffer(sizeBuf, 0, new Float32Array([w, h, 0, 0]));
-      bindGroups();
+      device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, 0, 0, 0]));
+      T = makeTargets();
     },
     draw(dl, dark) {
-      if (!layers || !layerBind || !composeBinds) return;
-      writeRules(dark);
+      if (!T) return;
+      writeFrame(dl, dark);
       const first = upload(dl);
       const enc = device.createCommandEncoder();
       for (const l of LAYERS) drawLayer(enc, dl, l, first[l]);
-      for (const k of CANVASES) {
-        const pass = enc.beginRenderPass({ colorAttachments: [{ view: contexts[k].getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
-        pass.setPipeline(composePipe);
-        for (const r of COMPOSE[k]) {
-          if (r.darkOnly && !dark) continue;
-          pass.setBindGroup(0, composeBinds[r.layer]);
-          pass.draw(3);
+      if (effects & FX.lights) full(enc, T.lightmap, lightPipe, T.lightBind);
+      if (effects & FX.dof) {
+        for (const { g } of groups) {
+          g.depth?.forEach((d, i) => {
+            const l = g.layers[i];
+            if (d > 0) blur(enc, T!.dofBinds[l]!, T!.scratch, T!.blurred[l]!, LOGICAL);
+          });
         }
-        pass.end();
       }
+      if (effects & FX.bloom) {
+        full(enc, T.bloom, bloomPipe, T.bloomSrcBind);
+        blur(enc, T.bloomBlur, T.scratchHdr, T.bloom, HDR);
+      }
+      if (effects & FX.rays) full(enc, T.rays, raysPipe, T.raysBind);
+      for (const k of CANVASES) composeCanvas(enc, k, dark);
       device.queue.submit([enc.finish()]);
     },
   };
 }
+

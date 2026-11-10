@@ -83,6 +83,8 @@ export class Particles {
       // 雪、花瓣、落叶这些飘在半空的粒子和远景一起往上淡出，不满屏乱飞；地面附近的灰、烟、火星照常
       if (pt.kind === 'snow' || pt.kind === 'petal' || pt.kind === 'leaf' || pt.kind === 'firefly') a *= fadeAt(pt.y / H);
       dl.rect('over', sx, Math.round(pt.y), pt.size, pt.size, pt.color, clamp(a) * (pt.kind === 'smoke' ? 0.45 : 1));
+      // 萤火虫和火星自己也是一点小小的光
+      if (fr.dark && (pt.kind === 'firefly' || pt.kind === 'spark')) dl.light(sx + 0.5, Math.round(pt.y) + 0.5, pt.kind === 'firefly' ? 7 : 5, clamp(a) * 0.5, pt.color);
     }
   }
 }
