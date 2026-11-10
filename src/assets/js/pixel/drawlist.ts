@@ -59,13 +59,26 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
 /** 夜色：rgba(14, 20, 38, 0.46) */
 export const NIGHT = [14, 20, 38, 0.46] as const;
 
-/** 点光源：屏幕坐标（逻辑像素）、照多远、多亮、什么颜色 */
+/**
+ * 夜里从灯里洒出来的一束光（体积光）：往 dir 方向张开，半张角的余弦是 cos（-1 = 四面八方），照 length 这么远。
+ * 人物从光束里走过会挡出一道影子
+ */
+export interface Beam {
+  dir: readonly [number, number];
+  cos: number;
+  length: number;
+  /** 地面在哪一行（屏幕 y）：光束照到地面就停，不照进土层的剖面 */
+  floor?: number;
+}
+
+/** 点光源：屏幕坐标（逻辑像素）、照多远、多亮、什么颜色，可选一束体积光 */
 export interface Light {
   x: number;
   y: number;
   radius: number;
   intensity: number;
   color: string;
+  beam?: Beam;
 }
 
 /** 这一帧的环境：随相机所在的群系插值，渲染器拿来调光效 */
@@ -143,8 +156,8 @@ export class DrawList {
     this.lights.length = 0;
   }
 
-  light(x: number, y: number, radius: number, intensity: number, color: string) {
-    if (intensity > 0) this.lights.push({ x, y, radius, intensity, color });
+  light(x: number, y: number, radius: number, intensity: number, color: string, beam?: Beam) {
+    if (intensity > 0) this.lights.push({ x, y, radius, intensity, color, beam });
   }
 
   /** 画一个精灵（或它的一部分），左上角在 (x, y) */

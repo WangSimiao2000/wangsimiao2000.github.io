@@ -3,8 +3,8 @@
  * 所有光源共用一套亮度：夜里的光晕强度和营火一致，白天按同样比例减弱。
  */
 import type { Sprite } from '../atlas.js';
-import type { DrawList, LayerName } from '../drawlist.js';
-import type { GlowKind } from './biomes.js';
+import type { Beam, DrawList, LayerName } from '../drawlist.js';
+import { heightAt, type GlowKind } from './biomes.js';
 import type { Particles } from './particles.js';
 import type { Frame } from './frame.js';
 
@@ -53,12 +53,13 @@ function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: P
 
 /**
  * 点光源（照多远、多亮、什么颜色）：夜里把周围的夜色照淡、染上暖色。只有 WebGPU 渲染器用，
- * 白天不点灯（营火白天也亮，但弱很多）
+ * 白天不点灯（营火白天也亮，但弱很多）。
+ * beam 是夜里洒出来的一束体积光：路灯往下照成一个锥形，窗户的光斜着洒到屋前的地上，营火往四周散开
  */
-const LIGHT: Record<Glow['kind'], { radius: number; intensity: number; color: string }> = {
-  lamp: { radius: 30, intensity: 0.9, color: '#ffd38a' },
-  window: { radius: 28, intensity: 0.8, color: '#ffc874' },
-  fire: { radius: 44, intensity: 1.2, color: '#ff9a4a' },
+const LIGHT: Record<Glow['kind'], { radius: number; intensity: number; color: string; beam: Beam }> = {
+  lamp: { radius: 30, intensity: 0.9, color: '#ffd38a', beam: { dir: [0, 1], cos: Math.cos(0.5), length: 42 } },
+  window: { radius: 28, intensity: 0.8, color: '#ffc874', beam: { dir: [-0.45, 0.89], cos: Math.cos(0.7), length: 44 } },
+  fire: { radius: 44, intensity: 1.2, color: '#ff9a4a', beam: { dir: [0, -1], cos: -1, length: 42 } },
 };
 
 /** 光晕和火焰画在夜色之上、角色之下（角色经过会挡光） */
@@ -71,6 +72,7 @@ export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
     if (gl.kind === 'fire') drawFlame(fr, gl.x, gl.y, gl.wx, particles);
     const l = LIGHT[gl.kind];
     const ly = gl.kind === 'fire' ? gl.y - 3 : gl.y;
-    fr.dl.light(gl.x, ly, l.radius, l.intensity * flicker * (fr.dark ? 1 : gl.kind === 'fire' ? 0.25 : 0), l.color);
+    const floor = fr.H - Math.round(heightAt(gl.wx));
+    fr.dl.light(gl.x, ly, l.radius, l.intensity * flicker * (fr.dark ? 1 : gl.kind === 'fire' ? 0.25 : 0), l.color, { ...l.beam, floor });
   }
 }

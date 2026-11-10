@@ -8,8 +8,8 @@
   var total = 0.0;
   var color = vec3f(0.0);
   for (var i = 0; i < i32(F.size.w); i++) {
-    let l0 = F.lights[i * 2];
-    let l1 = F.lights[i * 2 + 1];
+    let l0 = F.lights[i * 3];
+    let l1 = F.lights[i * 3 + 1];
     let below = p.y > l0.y;
     let d = length((p - l0.xy) * vec2f(1.0, select(1.2, 3.0, below)));
     var a = clamp(1.0 - d / l0.z, 0.0, 1.0);

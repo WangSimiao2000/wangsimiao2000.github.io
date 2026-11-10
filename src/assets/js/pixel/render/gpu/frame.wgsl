@@ -1,4 +1,4 @@
-// 每帧共用的参数，拼在 lightmap / bloom / rays / compose / overlay 几个着色器前面。
+// 每帧共用的参数，拼在 lightmap / bloom / rays / beams / compose / overlay 几个着色器前面。
 // 和 renderer.ts 的 writeFrame 一一对应。
 
 struct Frame {
@@ -7,7 +7,8 @@ struct Frame {
   tint: vec4f,   // 群系色调 rgb（0-1）, 辉光强度
   night: vec4f,  // 夜色 rgb（0-1）和不透明度
   stops: array<vec4f, 2>,   // 淡出的四个控制点 (t, a)，两两一组
-  lights: array<vec4f, 96>, // 每个光源两项：(x, y, 半径, 强度), (r, g, b, -)
+  // 每个光源三项：(x, y, 半径, 强度), (r, g, b, 光束停在哪一行), (光束方向 x, y, 半张角余弦, 光束长度；长度 0 = 没有光束)
+  lights: array<vec4f, 144>,
 };
 @group(0) @binding(0) var<uniform> F: Frame;
 
@@ -16,6 +17,7 @@ const FX_DOF = 2u;
 const FX_BLOOM = 4u;
 const FX_RAYS = 8u;
 const FX_GRADE = 16u;
+const FX_BEAMS = 32u;
 fn fx(bit: u32) -> bool { return (u32(F.size.z) & bit) != 0u; }
 fn isDark() -> bool { return F.sun.w > 0.5; }
 
