@@ -9,7 +9,7 @@
 @group(0) @binding(1) var bloom: texture_2d<f32>;
 @group(0) @binding(2) var rays: texture_2d<f32>;
 @group(0) @binding(3) var samp: sampler;
-@group(0) @binding(4) var<uniform> scale: vec4f; // 画布像素 / 逻辑像素, 对焦拉近, 世界下沉了多少（逻辑像素）
+@group(0) @binding(4) var<uniform> scale: vec4f; // 画布像素 / 逻辑像素, -, 世界下沉了多少（逻辑像素）
 @group(0) @binding(5) var beams: texture_2d<f32>;
 
 @fragment fn fs(v: V) -> @location(0) vec4f {

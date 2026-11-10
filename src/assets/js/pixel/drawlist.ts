@@ -242,7 +242,7 @@ export interface GlassRect {
   alpha: number;
 }
 
-/** 页面 UI 传给渲染器的东西（见 ui-bridge.ts）：哪些地方要画毛玻璃、镜头对焦拉近了多少（0..1） */
+/** 页面 UI 传给渲染器的东西（见 ui-bridge.ts）：哪些地方要画毛玻璃、打开文章走到了哪一步（0..1，前景跟着淡出） */
 export interface View {
   glass: GlassRect[];
   focus: number;

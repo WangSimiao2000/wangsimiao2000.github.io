@@ -8,7 +8,8 @@
  *   5. 体积光    太阳 / 月亮从山脊、树冠缝里漏下来的光束（rays.wgsl）；夜里灯光洒出来的光束，人物会挡出影子（beams.wgsl）
  *   6. 合成      世界画布先画天空渐变（sky.wgsl），再按 COMPOSE 把各组叠到各张画布上（compose.wgsl，顺带调色），
  *                镜头光斑紧跟在自己那层后面（bokeh.wgsl），最后叠辉光和光束（overlay.wgsl）
- *   7. 毛玻璃    天空 + 世界再合成一份逻辑分辨率的、模糊掉，画在卡片后面；打开文章时整个世界换成它，主角也跟着糊（glass.wgsl）
+ *   7. 毛玻璃    天空 + 世界再合成一份逻辑分辨率的、模糊掉，只画在卡片、阅读面板这些表面后面（glass.wgsl）；
+ *                打开文章时世界照常清楚，主角坐在地上看书的样子看得见
  *   8. 暗角      世界画布边上压暗（overlay.wgsl 的 vignetteFs），前景画布合成时自己压
  *
  * 2-5、7、8 和调色、投影是效果，按 effects 开关跳过（网址 ?fx=0 全关、?fx=lights,bloom 只开几项，调试和画面对比用）。
@@ -26,7 +27,6 @@ const MAX_GLASS = 16;
 const GLASS_SIGMA = 7; // 毛玻璃糊多少（逻辑像素的标准差）
 const GLASS_SHARP = 1.2; // 毛玻璃透出来的亮点糊多少
 const FRONT_ALPHA = 0.92; // 前景压在卡片上，留一点点透
-const HERO_FOCUS = { sigma: 1.2, dim: 0.22 }; // 打开文章时主角跟着糊多少（逻辑像素的标准差）、压暗多少
 const MAX_LIGHTS = 48;
 const MAX_BOKEH = 64;
 const BOKEH_FLOATS = 8; // 和 bokeh.wgsl 的 Dot 一一对应
@@ -150,7 +150,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   const frameBuf = uniform(FRAME_FLOATS * 4);
   const frameData = new Float32Array(FRAME_FLOATS);
   const sizeBuf = uniform(16); // 逻辑宽高（layer.wgsl）
-  const scaleBuf = uniform(16); // 世界画布像素 / 逻辑像素, 对焦拉近, 世界下沉了多少（逻辑像素）（overlay.wgsl、bokeh.wgsl、sky.wgsl）
+  const scaleBuf = uniform(16); // 世界画布像素 / 逻辑像素, -, 世界下沉了多少（逻辑像素）（overlay.wgsl、bokeh.wgsl、sky.wgsl）
   const unitBuf = uniform(16, new Float32Array([1, 0, 0, 0])); // 毛玻璃那份按逻辑分辨率画：放大 1 倍
   const linear = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
   const blank = device.createTexture({ size: [1, 1], format: LOGICAL, usage: GPUTextureUsage.TEXTURE_BINDING });
@@ -159,16 +159,14 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
    * 天空和世界画在同一张画布上，画布不透明：阅读时由这里把世界往下沉、天空不动（贴着屏幕的组）
    */
   type Target = CanvasName | 'glass';
-  const entry = (canvas: Target, g: Group) => ({ canvas, g, buf: uniform(96) });
+  const entry = (canvas: Target, g: Group) => ({ canvas, g, buf: uniform(80) });
   const groups = [
     ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => entry(k, g))),
     ...COMPOSE.world.map((g) => entry('glass', g)),
   ];
-  const heroGroup = groups.findIndex((e) => e.canvas === 'hero');
   /** 这一组这一帧画不画：只在深色模式合成的组、影子开没开 */
   const skip = (e: (typeof groups)[number], dark: boolean) => (e.g.darkOnly && !dark) || (e.g.layers.includes('shadow') && !(effects & FX.shadow));
-  // 主角跟着对焦拉近糊开：每帧的模糊程度不一样，参数单独两块（横、竖）
-  const heroBlurBuf = [uniform(16), uniform(16)];
+
   const glassBuf = uniform((1 + MAX_GLASS * 2) * 16);
 
   // 图集加载好才算就位：截图测试等 <html data-renderer> 出现再截，不会截到没有精灵的画面
@@ -205,7 +203,6 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       glassSrc: tex('glass-src'),
       glassBlur: tex('glass-blur'),
       glassSharp: tex('glass-sharp'),
-      heroBlur: tex('hero-blur'),
     };
     const bind = (pipe: GPURenderPipeline, entries: (GPUBindingResource | GPUTexture)[]) =>
       device.createBindGroup({
@@ -243,8 +240,6 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       bokehBind: bind(bokehPipe, [F, { buffer: scaleBuf }]),
       // vignetteFs 只用到 0 号和 4 号绑定，自动生成的布局里只有这两个
       vignetteBind: device.createBindGroup({ layout: vignettePipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: F }, { binding: 4, resource: { buffer: scaleBuf } }] }),
-      heroBlurBinds: { h: bind(blurPipe[LOGICAL], [{ buffer: heroBlurBuf[0] }, layers.hero]), v: bind(blurPipe[LOGICAL], [{ buffer: heroBlurBuf[1] }, t.scratch]) },
-      heroBlurCompose: bind(composePipe, [F, { buffer: groups[heroGroup].buf }, t.heroBlur, blank, blank, linear, t.lightmap]),
       composeBinds: groups.map(({ canvas, g, buf }) => {
         const tx = [0, 1, 2].map((i) => {
           const l = g.layers[i];
@@ -288,12 +283,11 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     // 天空按主角画布（不平移、不下沉）对齐屏幕，世界跟着主角画布往下沉
     const skyX = view.hero[0] / scale;
     const sink = view.hero[1] / scale;
-    const heroSoft = view.focus > 0.01;
     for (const { canvas, g, buf } of groups) {
       const s = canvas === 'glass' ? 1 : scale;
-      // 前景压在卡片上：打开文章时跟着对焦淡出，不挡正文
+      // 前景压在卡片上：打开文章时淡出，不挡正文
       const opacity = canvas === 'front' ? FRONT_ALPHA * (1 - view.focus) : 1;
-      const soft = [0, 1, 2].map((i) => ((effects & FX.dof && (g.depth?.[i] ?? 0) > 0) || (canvas === 'hero' && heroSoft) ? 1 : 0));
+      const soft = [0, 1, 2].map((i) => (effects & FX.dof && (g.depth?.[i] ?? 0) > 0 ? 1 : 0));
       const grade = effects & FX.grade && (g.lit || g.fade) ? GRADE : 0;
       // 亚像素偏移只对模糊过的层有意义（线性插值取样）；清晰的层按最近邻取，偏移了也还是跳格
       const shift = [0, 1, 2].map((i) => (soft[i] ? (dl.shift[g.layers[i]] ?? 0) : 0));
@@ -307,13 +301,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const fade = g.fade && !aerial ? 1 : 0;
       const fog = [0, 1, 2].map((i) => (aerial ? (g.depth?.[i] ?? 0) * (dark ? FOG.night : FOG.day) : 0));
       const ambient = effects & FX.grade && (g.lit || g.fade) ? 1 : 0;
-      const dim = canvas === 'hero' ? 1 - HERO_FOCUS.dim * view.focus : 1;
-      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient, dim, 0, 0, 0]));
-    }
-    if (heroSoft) {
-      const sigma = HERO_FOCUS.sigma * view.focus;
-      device.queue.writeBuffer(heroBlurBuf[0], 0, new Float32Array([1, 0, sigma, 0]));
-      device.queue.writeBuffer(heroBlurBuf[1], 0, new Float32Array([0, 1, sigma, 0]));
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient]));
     }
   }
 
@@ -392,7 +380,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   }
 
   /** 把各组合成到一张画布（或毛玻璃用的那张纹理）上 */
-  function composeTo(enc: GPUCommandEncoder, k: Target, dark: boolean, glassCount: number, focus: number, dots: Partial<Record<LayerName, [number, number]>> = {}) {
+  function composeTo(enc: GPUCommandEncoder, k: Target, dark: boolean, glassCount: number, dots: Partial<Record<LayerName, [number, number]>> = {}) {
     const p = pass(enc, k === 'glass' ? T!.glassSrc : contexts[k].getCurrentTexture());
     // 前景画布关掉时清成透明就结束
     if (k === 'front' && !(effects & FX.front)) return p.end();
@@ -406,7 +394,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     groups.forEach((e, i) => {
       const { canvas, g } = e;
       if (canvas !== k || skip(e, dark)) return;
-      p.setBindGroup(0, i === heroGroup && focus > 0.01 ? T!.heroBlurCompose : T!.composeBinds[i]);
+      p.setBindGroup(0, T!.composeBinds[i]);
       p.draw(3);
       // 这一组里的层上有失焦的光点：紧跟着叠上去，后面的组照常盖住它
       for (const l of g.layers) {
@@ -424,7 +412,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       p.setBindGroup(0, T!.overlayBind);
       p.draw(3);
     }
-    if (k === 'world' && effects & FX.glass && (glassCount > 0 || focus > 0)) {
+    if (k === 'world' && effects & FX.glass && glassCount > 0) {
       p.setPipeline(glassPipe);
       p.setBindGroup(0, T!.glassBind);
       p.draw(3);
@@ -440,7 +428,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   function writeGlass(view: View): number {
     const rects = view.glass.slice(0, MAX_GLASS);
     const d = new Float32Array((1 + MAX_GLASS * 2) * 4);
-    d.set([rects.length, view.focus, c.world.width, c.world.height], 0);
+    d.set([rects.length, 0, c.world.width, c.world.height], 0);
     rects.forEach((r, i) => {
       d.set([r.x, r.y, r.w, r.h], 4 + i * 4);
       d.set([r.radius, r.alpha, 0, 0], 4 + (MAX_GLASS + i) * 4);
@@ -459,14 +447,14 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         c[k].width = Math.round(w * scale);
         c[k].height = Math.round(h * scale);
       }
-      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.lightmap, T.bloomSrc, ...T.bloom, T.rays, T.beams, T.glassSrc, T.glassBlur, T.glassSharp, T.heroBlur]) v!.destroy();
+      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.lightmap, T.bloomSrc, ...T.bloom, T.rays, T.beams, T.glassSrc, T.glassBlur, T.glassSharp]) v!.destroy();
       device.queue.writeBuffer(sizeBuf, 0, new Float32Array([w, h, 0, 0]));
       T = makeTargets();
     },
     draw(dl, dark, view) {
       if (!T) return;
       writeFrame(dl, dark, view);
-      device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, view.focus, view.hero[1] / scale, 0]));
+      device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, 0, view.hero[1] / scale, 0]));
       const glassCount = effects & FX.glass ? writeGlass(view) : 0;
       const first = upload(dl);
       const enc = device.createCommandEncoder();
@@ -488,14 +476,13 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       }
       if (effects & FX.rays) full(enc, T.rays, raysPipe, T.raysBind);
       if (effects & FX.beams) full(enc, T.beams, beamsPipe, T.beamsBind);
-      if (effects & FX.glass && (glassCount > 0 || view.focus > 0)) {
-        composeTo(enc, 'glass', dark, 0, 0);
+      if (effects & FX.glass && glassCount > 0) {
+        composeTo(enc, 'glass', dark, 0);
         blur(enc, T.glassBlurBinds, T.scratch, T.glassBlur, LOGICAL);
         blur(enc, T.glassSharpBinds, T.scratch, T.glassSharp, LOGICAL);
       }
-      if (view.focus > 0.01) blur(enc, T.heroBlurBinds, T.scratch, T.heroBlur, LOGICAL);
       const dots = uploadBokeh(dl, view.focus);
-      for (const k of CANVASES) composeTo(enc, k, dark, glassCount, view.focus, dots);
+      for (const k of CANVASES) composeTo(enc, k, dark, glassCount, dots);
       device.queue.submit([enc.finish()]);
     },
   };

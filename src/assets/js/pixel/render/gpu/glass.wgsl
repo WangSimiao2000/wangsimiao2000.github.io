@@ -1,12 +1,11 @@
 // 毛玻璃（世界画布，屏幕像素）：卡片、阅读面板、快捷栏、顶栏按钮后面那块换成大幅模糊过的场景，
 // 卡片本身是半透明的（CSS），透出来的就是这层。圆角和卡片的 CSS 圆角一致，边缘 1 像素抗锯齿。
-// 打开文章时镜头对焦拉近：整个世界一起换成模糊的场景、压暗一些（focus 0..1）。
 // 糊得很开，星星、灯这些小亮点会被抹平；另外取一份只糊一点的，比大幅模糊亮出来的部分（亮点）再加回去，
 // 透过玻璃还能看到一点点散开的亮光。
 // 真的毛玻璃看起来不是一层白雾：透过来的颜色更浓（饱和度提高），表面有细细的颗粒。
 
 struct Glass {
-  info: vec4f, // 块数, 对焦拉近, 画布宽, 画布高
+  info: vec4f, // 块数, -, 画布宽, 画布高
   rects: array<vec4f, 16>, // x, y, w, h（画布像素）
   shape: array<vec4f, 16>, // 圆角, 不透明度, -, -
 };
@@ -39,8 +38,7 @@ fn roundRect(p: vec2f, r: vec4f, rad: f32) -> f32 {
     let rad = min(G.shape[i].x, min(r.z, r.w) * 0.5);
     cover = max(cover, clamp(0.5 - roundRect(fp, r, rad), 0.0, 1.0) * G.shape[i].y);
   }
-  let focus = G.info.y;
-  let a = max(cover, focus);
+  let a = cover;
   if (a <= 0.0) { return vec4f(0.0); }
   let uv = fp / G.info.zw;
   var c = textureSampleLevel(scene, samp, uv, 0.0);
@@ -51,7 +49,5 @@ fn roundRect(p: vec2f, r: vec4f, rad: f32) -> f32 {
   let grain = fract(sin(dot(floor(fp), vec2f(12.9898, 78.233))) * 43758.5453) - 0.5;
   c = vec4f(c.rgb * (1.0 + grain * 0.06), c.a);
   c.a = clamp(max(c.a, max(c.r, max(c.g, c.b))), 0.0, 1.0);
-  // 对焦拉近时整体压暗一些，焦点像是落到了面板上
-  c = vec4f(c.rgb * (1.0 - focus * 0.25), c.a);
   return c * a;
 }

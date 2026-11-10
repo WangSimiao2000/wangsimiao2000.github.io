@@ -14,7 +14,6 @@ struct Group {
   c: vec4f, // 往群系色调偏多少, 整组的不透明度, 调色, 压暗角
   d: vec4f, // 三层各自往右挪的亚像素（逻辑像素，drawlist.ts 的 shift）, 整组往下挪多少（毛玻璃里对齐天空用）
   e: vec4f, // 三层各自往天空的颜色靠多少（空气透视）, 乘环境光
-  f: vec4f, // 整组压暗（打开文章时的主角）, -, -, -
 };
 @group(0) @binding(1) var<uniform> G: Group;
 @group(0) @binding(2) var t0: texture_2d<f32>;
@@ -85,6 +84,5 @@ fn haze(s: vec4f, k: f32) -> vec4f {
   }
   if (G.a.y > 0.5) { c *= fadeAt(q.y / F.size.y); }
   if (G.c.z > 0.5) { c = vec4f(c.rgb + dither(v.pos.xy) * c.a, c.a); }
-  c = vec4f(c.rgb * G.f.x, c.a);
   return c * G.c.y;
 }
