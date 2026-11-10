@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BIOMES, GROUND, OFF, SECTION, biomeOf, heightAt, onPath, paletteAt, setPieces, slotItem, weights } from '../../src/assets/js/pixel/biomes.ts';
-import type { Scenery } from '../../src/assets/js/pixel/scenery.ts';
+import { BIOMES, GROUND, OFF, SECTION, biomeOf, heightAt, onPath, paletteAt, setPieces, slotItem, weights } from '../../src/assets/js/pixel/sim/biomes.ts';
+import type { Scenery } from '../../src/assets/js/pixel/sim/scenery.ts';
 
 /** 假的 Scenery：每个键返回带名字的占位对象，不需要 canvas */
 const sc = new Proxy({} as Record<string, unknown>, {

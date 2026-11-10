@@ -4,7 +4,7 @@
  */
 import { heightAt } from './biomes.js';
 import { halo } from './lights.js';
-import { sprite } from './atlas.js';
+import { sprite } from '../atlas.js';
 import type { Frame } from './frame.js';
 
 const BIRTHDAY = '11-06';
@@ -24,17 +24,10 @@ export const isBirthday = (key = todayKey()) => key === BIRTHDAY;
  * 帽子画在主角头顶。x、y 是主角精灵的左上角，at 是帽子相对朝右精灵左上角的位置；
  * mirrorW > 0 表示主角朝左（精灵宽 mirrorW），帽子位置和图案都水平镜像
  */
-export function drawHat(hc: CanvasRenderingContext2D, x: number, y: number, at: readonly [number, number], mirrorW = 0) {
+export function drawHat(fr: Frame, x: number, y: number, at: readonly [number, number], mirrorW = 0) {
   const hat = sprite('hat');
-  if (!mirrorW) {
-    hc.drawImage(hat, x + at[0], y + at[1]);
-    return;
-  }
-  hc.save();
-  hc.translate(x + mirrorW - at[0], y + at[1]);
-  hc.scale(-1, 1);
-  hc.drawImage(hat, 0, 0);
-  hc.restore();
+  if (!mirrorW) fr.dl.sprite('hero', hat, x + at[0], y + at[1]);
+  else fr.dl.sprite('hero', hat, x + mirrorW - at[0] - hat.width, y + at[1], { flip: true });
 }
 
 /* ---------- 烟花 ---------- */
@@ -72,7 +65,7 @@ export class Fireworks {
    */
   draw(fr: Frame, dt: number, fireX: number | null) {
     if (fr.reduced) return;
-    const { sk, W, H, camLeft, time } = fr;
+    const { dl, W, H, camLeft, time } = fr;
     const k = dt * 60;
     if (time > this.next) {
       this.next = time + 1.1 + Math.random() * 1.8;
@@ -107,18 +100,13 @@ export class Fireworks {
       const sx = Math.round(s.x - camLeft);
       const sy = Math.round(s.y);
       if (sx < -10 || sx > W + 10) continue;
-      sk.globalAlpha = s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7;
-      sk.fillStyle = s.color;
       const sz = s.rocket ? 2 : (s.size ?? 1);
-      sk.fillRect(sx, sy, sz, sz);
+      dl.rect('sky', sx, sy, sz, sz, s.color, s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7);
       if (s.rocket) {
-        sk.globalAlpha = 0.5;
-        sk.fillRect(sx, sy + 2, 2, 3); // 拖尾
-        sk.globalAlpha = 0.25;
-        sk.fillRect(sx, sy + 5, 2, 3);
+        dl.rect('sky', sx, sy + 2, 2, 3, s.color, 0.5); // 拖尾
+        dl.rect('sky', sx, sy + 5, 2, 3, s.color, 0.25);
       }
     }
-    sk.globalAlpha = 1;
     for (let i = this.flashes.length - 1; i >= 0; i--) {
       const fl = this.flashes[i];
       fl.t += dt;
@@ -126,7 +114,7 @@ export class Fireworks {
         this.flashes.splice(i, 1);
         continue;
       }
-      halo(sk, Math.round(fl.x - camLeft), Math.round(fl.y), 18, fl.color, (fr.dark ? 0.45 : 0.22) * (1 - fl.t / 0.35));
+      halo(dl, 'sky', Math.round(fl.x - camLeft), Math.round(fl.y), 18, fl.color, (fr.dark ? 0.45 : 0.22) * (1 - fl.t / 0.35));
     }
   }
 

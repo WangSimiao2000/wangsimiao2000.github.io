@@ -4,12 +4,15 @@
  * 布景里带 egg 标记的物体由这里接管绘制；每帧登记可点击区域（spots），
  * 点击判定、动画推进、气泡都在这里。world.ts 只负责转发点击和告诉它「现在是不是在起点」。
  */
+import type { Sprite } from '../atlas.js';
+import type { DrawList } from '../drawlist.js';
 import type { Item } from './biomes.js';
 import { heightAt } from './biomes.js';
 import { COTTAGE } from './scenery.js';
 import { buildCat, buildGirl } from './npcs.js';
 import { emit } from './lights.js';
 import { clamp } from './util.js';
+import type { Frame } from './frame.js';
 
 /** 路牌素材里立柱占第 5-7 列（转轴在 6.5），牌子占第 2-8 行 */
 const SIGN_POLE = [5, 8];
@@ -17,29 +20,16 @@ const SIGN_PIVOT = (SIGN_POLE[0] + SIGN_POLE[1]) / 2;
 const SIGN_BOARD = [2, 9];
 
 /**
- * 把路牌拆成立柱和牌子两张图。牌子挡住的那段立柱素材里没画，
- * 用牌子正下方那一行立柱补上，牌子转到侧面时露出来
+ * 只画路牌的立柱。牌子挡住的那段立柱素材里没画，用牌子正下方那一行立柱补上，牌子转到侧面时露出来
  */
-let signCache: { src: HTMLCanvasElement; pole: HTMLCanvasElement; board: HTMLCanvasElement } | null = null;
-function signParts(sp: HTMLCanvasElement) {
-  if (signCache?.src === sp) return signCache;
+function drawPole(dl: DrawList, sp: Sprite, x: number, y: number) {
   const [p0, p1] = SIGN_POLE;
   const [b0, b1] = SIGN_BOARD;
-  const pole = document.createElement('canvas');
-  pole.width = sp.width;
-  pole.height = sp.height;
-  const pc = pole.getContext('2d')!;
-  pc.drawImage(sp, p0, 0, p1 - p0, b0, p0, 0, p1 - p0, b0);
-  pc.drawImage(sp, p0, b1, p1 - p0, sp.height - b1, p0, b1, p1 - p0, sp.height - b1);
-  for (let r = b0; r < b1; r++) pc.drawImage(sp, p0, b1, p1 - p0, 1, p0, r, p1 - p0, 1);
-  const board = document.createElement('canvas');
-  board.width = sp.width;
-  board.height = b1 - b0;
-  board.getContext('2d')!.drawImage(sp, 0, b0, sp.width, b1 - b0, 0, 0, sp.width, b1 - b0);
-  signCache = { src: sp, pole, board };
-  return signCache;
+  const w = p1 - p0;
+  dl.sprite('fg', sp, x + p0, y, { part: [p0, 0, w, b0] });
+  dl.sprite('fg', sp, x + p0, y + b1, { part: [p0, b1, w, sp.height - b1] });
+  for (let r = b0; r < b1; r++) dl.sprite('fg', sp, x + p0, y + r, { part: [p0, b1, w, 1] });
 }
-import type { Frame } from './frame.js';
 
 export interface Spot {
   kind: 'sign' | 'hay' | 'door' | 'cat';
@@ -57,24 +47,21 @@ const GLYPHS: Record<string, string[]> = {
   '♥': ['.....', 'xx.xx', 'xxxxx', '.xxx.', '..x..'],
 };
 
-function bubble(g: CanvasRenderingContext2D, cx: number, bottom: number, text: string, color: string) {
+function bubble(dl: DrawList, cx: number, bottom: number, text: string, color: string) {
   const glyphs = [...text].map((c) => GLYPHS[c]);
   const w = glyphs.reduce((a, gl) => a + gl[0].length + 1, 3);
   const h = 9;
   const x = Math.round(cx - w / 2);
   const y = bottom - h - 3;
-  g.fillStyle = '#2a1f22';
-  g.fillRect(x, y + 1, w, h - 2);
-  g.fillRect(x + 1, y, w - 2, h);
-  g.fillStyle = '#ffffff';
-  g.fillRect(x + 1, y + 1, w - 2, h - 2);
-  g.fillRect(Math.round(cx) - 1, y + h - 1, 2, 2); // 小尾巴
-  g.fillStyle = '#2a1f22';
-  g.fillRect(Math.round(cx) - 1, y + h + 1, 1, 1);
-  g.fillStyle = color;
+  const fill = (fx: number, fy: number, fw: number, fh: number, c: string) => dl.rect('over', fx, fy, fw, fh, c);
+  fill(x, y + 1, w, h - 2, '#2a1f22');
+  fill(x + 1, y, w - 2, h, '#2a1f22');
+  fill(x + 1, y + 1, w - 2, h - 2, '#ffffff');
+  fill(Math.round(cx) - 1, y + h - 1, 2, 2, '#ffffff'); // 小尾巴
+  fill(Math.round(cx) - 1, y + h + 1, 1, 1, '#2a1f22');
   let gx = x + 2;
   for (const gl of glyphs) {
-    gl.forEach((row, ry) => [...row].forEach((c, rx) => c === 'x' && g.fillRect(gx + rx, y + 2 + ry, 1, 1)));
+    gl.forEach((row, ry) => [...row].forEach((c, rx) => c === 'x' && fill(gx + rx, y + 2 + ry, 1, 1, color)));
     gx += gl[0].length + 1;
   }
 }
@@ -113,10 +100,9 @@ export class Eggs {
    */
   drawItem(fr: Frame, it: Item, x: number, y: number, base: number): boolean {
     const sp = it.sprite;
-    const { f } = fr;
+    const { dl } = fr;
     if (it.egg === 'sign') {
       // 起点的路牌：立柱不动，牌子绕立柱顺时针转（从上往下看），转到侧面时近大远小
-      const { pole, board } = signParts(sp);
       const th = this.signFlip * Math.PI;
       const c = Math.cos(th);
       const s = Math.sin(th);
@@ -124,20 +110,20 @@ export class Eggs {
       const bh = SIGN_BOARD[1] - SIGN_BOARD[0];
       // 每一列按深度排好：远的先画，立柱夹在中间，近的后画
       const cols: { i: number; z: number }[] = [];
-      for (let i = 0; i < board.width; i++) cols.push({ i, z: (i + 0.5 - SIGN_PIVOT) * s });
+      for (let i = 0; i < sp.width; i++) cols.push({ i, z: (i + 0.5 - SIGN_PIVOT) * s });
       cols.sort((p, q) => p.z - q.z);
       let poleDrawn = false;
       for (const { i, z } of cols) {
         if (!poleDrawn && z > 0) {
-          f.drawImage(pole, x, y);
+          drawPole(dl, sp, x, y);
           poleDrawn = true;
         }
         const cx = x + SIGN_PIVOT + (i + 0.5 - SIGN_PIVOT) * c;
         const w = Math.max(1, Math.abs(c));
         const h = Math.round(bh * (1 + z * 0.03));
-        f.drawImage(board, i, 0, 1, bh, Math.round(cx - w / 2), Math.round(by + (bh - h) / 2), Math.round(w), h);
+        dl.sprite('fg', sp, Math.round(cx - w / 2), Math.round(by + (bh - h) / 2), { part: [i, SIGN_BOARD[0], 1, bh], w: Math.round(w), h });
       }
-      if (!poleDrawn) f.drawImage(pole, x, y);
+      if (!poleDrawn) drawPole(dl, sp, x, y);
       // 翻过来以后牌子伸到立柱左边，点击区域两边都留够
       const reach = sp.width - SIGN_PIVOT;
       this.spots.push({ kind: 'sign', x0: x + SIGN_PIVOT - reach - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height });
@@ -145,14 +131,14 @@ export class Eggs {
     }
     if (it.egg === 'hay') {
       const jig = this.hayShake > 0 ? Math.round(Math.sin(fr.time * 70) * 1.5 * Math.min(1, this.hayShake * 4)) : 0;
-      f.drawImage(sp, x + jig, y + (this.hayShake > 0.15 ? -1 : 0));
+      dl.sprite('fg', sp, x + jig, y + (this.hayShake > 0.15 ? -1 : 0));
       this.hayX = it.wx;
       this.hayBase = base;
       this.spots.push({ kind: 'hay', x0: x - 2, y0: y - 3, x1: x + sp.width + 2, y1: base });
       return true;
     }
     if (it.egg === 'door') {
-      f.drawImage(sp, x, y);
+      dl.sprite('fg', sp, x, y);
       emit(fr, sp, x, y);
       this.cottageWx = it.wx - sp.width / 2;
       // 门：女孩进出时是开着的（门洞发暗，屋里的暖光透出来，算自发光）
@@ -160,18 +146,13 @@ export class Eggs {
       if (g.state !== 'none' && (g.state !== 'wave' || g.t < 0.3)) {
         const [dx, dy, dw, dh] = COTTAGE.door;
         const [lx, ly, lw, lh] = COTTAGE.doorLight;
-        f.fillStyle = '#3b2a22';
         // 门洞按门的拱形画：顶上几行左右内收，不盖住门框
         for (let r = 0; r < dh; r++) {
           const inset = COTTAGE.doorArch[r] ?? 0;
-          f.fillRect(x + dx + inset, y + dy + r, dw - inset * 2, 1);
+          dl.rect('fg', x + dx + inset, y + dy + r, dw - inset * 2, 1, '#3b2a22');
         }
-        for (const ctx of [f, fr.e]) {
-          ctx.fillStyle = '#ffd77e';
-          ctx.globalAlpha = 0.35;
-          ctx.fillRect(x + lx, y + ly, lw, lh);
-          ctx.globalAlpha = 1;
-        }
+        dl.rect('fg', x + lx, y + ly, lw, lh, '#ffd77e', 0.35);
+        dl.rect('emissive', x + lx, y + ly, lw, lh, '#ffd77e', 0.35);
       }
       const [x0, y0, x1, y1] = COTTAGE.doorHit;
       this.spots.push({ kind: 'door', x0: x + x0, y0: y + y0, x1: x + x1, y1: y + y1 });
@@ -199,7 +180,7 @@ export class Eggs {
 
   /** 推进彩蛋动画；女孩和猫画到角色层（夜色会盖上去，经过窗前会挡光） */
   drawActors(fr: Frame, dt: number) {
-    const { a, H, camLeft } = fr;
+    const { dl, H, camLeft } = fr;
     // 路牌只往一个方向转：0 -> 1 翻过去，1 -> 2（即 0）转回来，都是顺时针
     const goal = this.signOpen ? 1 : 0;
     if (this.signFlip !== goal) {
@@ -233,11 +214,7 @@ export class Eggs {
       let alpha = 1;
       if (girl.state === 'out') alpha = clamp((girl.t - 0.3) / 0.3);
       if (girl.state === 'in' && girl.off > -4) alpha = clamp(-girl.off / 4);
-      if (alpha > 0) {
-        a.globalAlpha = alpha;
-        a.drawImage(sp, x, gy - sp.height);
-        a.globalAlpha = 1;
-      }
+      if (alpha > 0) dl.sprite('actors', sp, x, gy - sp.height, { alpha });
     }
     // 彩狸猫：从草堆里跳出来落在旁边，坐着甩尾巴、眨眼
     const cat = this.cat;
@@ -260,22 +237,22 @@ export class Eggs {
       }
       cat.x = cx;
       const x = Math.round(cx - sp.width / 2 - camLeft);
-      a.drawImage(sp, x, cy - sp.height + 1);
+      dl.sprite('actors', sp, x, cy - sp.height + 1);
       this.spots.push({ kind: 'cat', x0: x - 2, y0: cy - sp.height - 2, x1: x + sp.width + 2, y1: cy + 1 });
     }
   }
 
   /** 招呼和喵的气泡画在夜色之上，晚上也看得清 */
   drawBubbles(fr: Frame, dt: number) {
-    const { g, H, camLeft } = fr;
+    const { dl, H, camLeft } = fr;
     const girl = this.girl;
     if (girl.state === 'wave' && girl.t > 0.2) {
       const wx = this.cottageWx + COTTAGE.doorCenter + girl.off;
-      bubble(g, wx - camLeft, H - Math.round(heightAt(wx)) - 22, 'Hi!', '#d0603a');
+      bubble(dl, wx - camLeft, H - Math.round(heightAt(wx)) - 22, 'Hi!', '#d0603a');
     }
     if (this.cat.meow > 0) {
       this.cat.meow -= dt;
-      bubble(g, this.cat.x - camLeft, H - Math.round(heightAt(this.cat.x)) - 10, '♥', '#e85d7a');
+      bubble(dl, this.cat.x - camLeft, H - Math.round(heightAt(this.cat.x)) - 10, '♥', '#e85d7a');
     }
   }
 }

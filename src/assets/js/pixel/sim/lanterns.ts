@@ -1,14 +1,14 @@
 /**
  * 秋林里的孔明灯：留言板每条留言放一盏，从树梢后面慢慢升起、左右轻摆，升到天顶淡出，再从树后升起。
  *
- * 画在天空层：世界画布上半截是透明渐隐的，孔明灯要升到天上就只能画在天空里；
- * 天空层在世界和卡片后面，被挡住的时候不能点（只登记露在外面那段的点击区域）。
+ * 画在天空层：天空在世界和卡片后面，孔明灯从树后升起时被树挡着，
+ * 被挡住的时候不能点（只登记露在外面那段的点击区域）。
  * 数据是构建时生成的 /guestbook.json（作者、前 30 个字、日期），走到秋林附近才去取。
  */
 import { SECTION, heightAt } from './biomes.js';
 import { halo } from './lights.js';
 import { hash } from './sprites.js';
-import { sprite } from './atlas.js';
+import { sprite } from '../atlas.js';
 import type { Frame } from './frame.js';
 
 export interface Note {
@@ -81,7 +81,7 @@ export class Lanterns {
   /** 在天空层画出来（drawSky 之后） */
   draw(fr: Frame) {
     this.hits = [];
-    const { sk, W, camLeft, dark } = fr;
+    const { dl, W, camLeft, dark } = fr;
     if (camLeft > CENTER + SPREAD + 30 || camLeft + W < CENTER - SPREAD - 30) return;
     this.load();
     const n = this.notes.length;
@@ -93,13 +93,11 @@ export class Lanterns {
       const x = Math.round(p.x - camLeft - sp.width / 2);
       const y = Math.round(p.y);
       if (x > W || x + sp.width < 0 || p.alpha <= 0) continue;
-      if (dark) halo(sk, x + 4, y + 7, 12, '#ffc96a', 0.32 * p.alpha);
-      sk.globalAlpha = p.alpha;
-      sk.drawImage(sp, x, y);
+      if (dark) halo(dl, 'sky', x + 4, y + 7, 12, '#ffc96a', 0.32 * p.alpha);
+      dl.sprite('sky', sp, x, y, { alpha: p.alpha });
       // 刚从树后冒头时还被树挡着，露出来以后才能点
       if (p.alpha > 0.5 && y < p.start - 6) this.hits.push({ note: this.notes[i], x0: x - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height + 2 });
     }
-    sk.globalAlpha = 1;
   }
 
   hitAt(lx: number, ly: number) {

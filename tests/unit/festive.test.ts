@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isBirthday, todayKey } from '../../src/assets/js/pixel/festive.ts';
-import { lanternX } from '../../src/assets/js/pixel/lanterns.ts';
-import { SECTION } from '../../src/assets/js/pixel/biomes.ts';
+import { isBirthday, todayKey } from '../../src/assets/js/pixel/sim/festive.ts';
+import { lanternX } from '../../src/assets/js/pixel/sim/lanterns.ts';
+import { SECTION } from '../../src/assets/js/pixel/sim/biomes.ts';
 
 test('生日按访客本地日期判断：11 月 6 日当天才算', () => {
   assert.equal(todayKey(new Date(2026, 10, 6, 0, 5), ''), '11-06');

@@ -1,6 +1,6 @@
 /**
  * 粒子：群系天气（雪、花瓣、落叶、萤火虫）、小人脚下的灰、篝火的火星和烟。
- * 粒子用世界坐标，画到主画布上（不吃夜色）。
+ * 粒子用世界坐标，画在 over 层（不吃夜色）。
  */
 import { BIOMES, OFF, heightAt, GROUND, type WeatherKind } from './biomes.js';
 import { clamp, fadeAt } from './util.js';
@@ -51,7 +51,7 @@ export class Particles {
 
   /** 推进并绘制所有粒子；落地、出屏、寿命到了的移除 */
   draw(fr: Frame, dt: number) {
-    const { g, W, H, camLeft } = fr;
+    const { dl, W, H, camLeft } = fr;
     const k = dt * 60;
     const list = this.list;
     for (let i = list.length - 1; i >= 0; i--) {
@@ -82,10 +82,7 @@ export class Particles {
       if (pt.kind === 'firefly') a = (0.5 + 0.5 * Math.sin(pt.life * 0.08)) * Math.min(1, (pt.max - pt.life) / 40);
       // 雪、花瓣、落叶这些飘在半空的粒子和远景一起往上淡出，不满屏乱飞；地面附近的灰、烟、火星照常
       if (pt.kind === 'snow' || pt.kind === 'petal' || pt.kind === 'leaf' || pt.kind === 'firefly') a *= fadeAt(pt.y / H);
-      g.globalAlpha = clamp(a) * (pt.kind === 'smoke' ? 0.45 : 1);
-      g.fillStyle = pt.color;
-      g.fillRect(sx, Math.round(pt.y), pt.size, pt.size);
+      dl.rect('over', sx, Math.round(pt.y), pt.size, pt.size, pt.color, clamp(a) * (pt.kind === 'smoke' ? 0.45 : 1));
     }
-    g.globalAlpha = 1;
   }
 }

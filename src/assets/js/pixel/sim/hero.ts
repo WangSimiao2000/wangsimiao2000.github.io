@@ -44,7 +44,7 @@ export class Hero {
 
   draw(fr: Frame, running: boolean, sitting: boolean) {
     const frames = this.facing > 0 ? this.right : this.left;
-    const { time, hc, W, H } = fr;
+    const { time, dl } = fr;
     let sprite: Sprite;
     let hat: readonly [number, number];
     if (sitting) {
@@ -67,12 +67,8 @@ export class Hero {
     }
     const x = Math.round(fr.HALF - CHAR_W / 2);
     const y = Math.round(this.y - sprite.height);
-    hc.clearRect(0, 0, W, H);
-    hc.globalAlpha = 0.22;
-    hc.fillStyle = '#000';
-    hc.fillRect(x + 2, Math.round(this.y), CHAR_W - 4, 1);
-    hc.globalAlpha = 1;
-    hc.drawImage(sprite, x, y);
-    if (this.hat) drawHat(hc, x, y, hat, this.facing < 0 ? sprite.width : 0);
+    dl.rect('hero', x + 2, Math.round(this.y), CHAR_W - 4, 1, '#000', 0.22);
+    dl.sprite('hero', sprite, x, y);
+    if (this.hat) drawHat(fr, x, y, hat, this.facing < 0 ? sprite.width : 0);
   }
 }
