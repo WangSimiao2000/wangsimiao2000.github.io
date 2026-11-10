@@ -18,8 +18,6 @@ fn source(q: vec2f) -> f32 {
   return (1.0 - blocked(q)) * exp(-length(q - F.sun.xy) / 46.0);
 }
 
-fn hash2(p: vec2f) -> f32 { return fract(sin(dot(p, vec2f(12.9898, 78.233))) * 43758.5453); }
-
 @fragment fn fs(v: V) -> @location(0) vec4f {
   if (!fx(FX_RAYS) || F.sun.z <= 0.0) { return vec4f(0.0); }
   let p = v.pos.xy;

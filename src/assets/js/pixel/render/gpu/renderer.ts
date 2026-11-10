@@ -15,10 +15,10 @@
  * 世界和前景画布按屏幕像素画（模糊和泛光才是平滑的），天空和主角画布按逻辑像素画、由 CSS 放大。
  */
 import { loadAtlas } from '../../atlas.js';
-import { COMPOSE, ERASE, LAYERS, NIGHT, STRIDE, type CanvasName, type Canvases, type DrawList, type LayerName, type Renderer, type View } from '../../drawlist.js';
+import { COMPOSE, ERASE, LAYERS, NIGHT, STRIDE, type CanvasName, type Canvases, type DrawList, type Group, type LayerName, type Renderer, type View } from '../../drawlist.js';
 import { FADE_STOPS, rgb } from '../../sim/util.js';
 
-export const FX = { lights: 1, dof: 2, bloom: 4, rays: 8, grade: 16, beams: 32, glass: 64, front: 128, bokeh: 256, vignette: 512 } as const;
+export const FX = { lights: 1, dof: 2, bloom: 4, rays: 8, grade: 16, beams: 32, glass: 64, front: 128, bokeh: 256, vignette: 512, sky: 1024, shadow: 2048 } as const;
 export const FX_ALL = Object.values(FX).reduce((a, b) => a | b, 0);
 
 const CANVASES: CanvasName[] = ['sky', 'world', 'hero', 'front'];
@@ -30,10 +30,10 @@ const FRONT_ALPHA = 0.92; // 前景压在卡片上，留一点点透
 const MAX_LIGHTS = 48;
 const MAX_BOKEH = 64;
 const BOKEH_FLOATS = 8; // 和 bokeh.wgsl 的 Dot 一一对应
-const FRAME_FLOATS = (7 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
+const FRAME_FLOATS = (9 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
 const DOF_SIGMA = 0.5; // 每一级深度模糊多少（逻辑像素的标准差）：远山 4 级 = 2，后排 2 级 = 1，前景 6 级 = 3
-const BLOOM_SIGMA = 2.5;
-const BLOOM = { day: 0.3, night: 0.65 };
+const BLOOM_LEVELS = 4; // 辉光逐级缩小几次（每级一半），再逐级放大叠回来：光晕大而柔
+const BLOOM = { day: 0.22, night: 0.45 };
 const GRADE = 0.12; // 往群系色调偏多少
 /** 空气透视：远景每一级深度往天空的颜色靠多少（开了景深时代替自下而上的淡出，山的轮廓才看得清） */
 const FOG = { day: 0.07, night: 0.04 };
@@ -49,7 +49,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   if (!adapter) throw new Error('拿不到 WebGPU 适配器');
   const device = await adapter.requestDevice();
   device.lost.then((info) => console.error('[world] WebGPU 设备丢失', info.message));
-  const names = ['frame', 'layer', 'lightmap', 'blur', 'bloom', 'rays', 'beams', 'compose', 'overlay', 'glass', 'bokeh'] as const;
+  const names = ['frame', 'layer', 'lightmap', 'blur', 'bloom', 'rays', 'beams', 'compose', 'overlay', 'glass', 'bokeh', 'sky'] as const;
   const src = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await shader(n)]))) as Record<(typeof names)[number], string>;
   const format = navigator.gpu.getPreferredCanvasFormat();
   const contexts = Object.fromEntries(
@@ -85,6 +85,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       { shaderLocation: 1, offset: 8, format: 'float32x4' },
       { shaderLocation: 2, offset: 24, format: 'float32x4' },
       { shaderLocation: 3, offset: 40, format: 'float32x3' },
+      { shaderLocation: 4, offset: 52, format: 'float32' },
     ],
   };
   // 普通和擦除两条管线共用一套绑定，布局要显式给出（'auto' 生成的布局不能跨管线用）
@@ -107,8 +108,15 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     device.createRenderPipeline({ layout: 'auto', vertex: { module: m, entryPoint: 'vs' }, fragment: { module: m, entryPoint, targets: [{ format: target, blend }] } });
   const lightPipe = fullPipe(module('lightmap'), HDR);
   const blurModule = module('blur', false);
-  const blurPipe = { [LOGICAL]: fullPipe(blurModule, LOGICAL), [HDR]: fullPipe(blurModule, HDR) } as Record<string, GPURenderPipeline>;
-  const bloomPipe = fullPipe(module('bloom'), HDR);
+  const blurPipe = { [LOGICAL]: fullPipe(blurModule, LOGICAL) } as Record<string, GPURenderPipeline>;
+  const bloomModule = module('bloom');
+  const bloomPipe = fullPipe(bloomModule, HDR);
+  const bloomDownPipe = fullPipe(bloomModule, HDR, undefined, 'down');
+  const add: GPUBlendState = { color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'add' } };
+  const bloomUpPipe = fullPipe(bloomModule, HDR, add, 'up');
+  const skyModule = module('sky');
+  const skyPipe = fullPipe(skyModule, format);
+  const skyGlassPipe = fullPipe(skyModule, LOGICAL);
   const raysPipe = fullPipe(module('rays'), HDR);
   const beamsPipe = fullPipe(module('beams'), HDR);
   const composeModule = module('compose');
@@ -142,15 +150,32 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   const frameBuf = uniform(FRAME_FLOATS * 4);
   const frameData = new Float32Array(FRAME_FLOATS);
   const sizeBuf = uniform(16); // 逻辑宽高（layer.wgsl）
-  const scaleBuf = uniform(16); // 世界画布像素 / 逻辑像素, 对焦拉近（overlay.wgsl、bokeh.wgsl）
+  const scaleBuf = uniform(16); // 世界画布像素 / 逻辑像素, 对焦拉近, 世界下沉了多少（逻辑像素）（overlay.wgsl、bokeh.wgsl、sky.wgsl）
+  const unitBuf = uniform(16, new Float32Array([1, 0, 0, 0])); // 毛玻璃那份按逻辑分辨率画：放大 1 倍
   const linear = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
   const blank = device.createTexture({ size: [1, 1], format: LOGICAL, usage: GPUTextureUsage.TEXTURE_BINDING });
-  // 每个合成组一份参数；毛玻璃要把天空和世界再合成一遍（target 'glass'），参数单独一份
+  /*
+   * 每个合成组一份参数；毛玻璃要把天空和世界再合成一遍（target 'glass'），参数单独一份。
+   * 开了 FX.sky 时天空画进世界画布（sky: true 的那几份），天空画布空着：世界画布不透明，
+   * 阅读时由这里把世界往下沉、天空不动，不会在两张画布的接缝处看到一条线
+   */
   type Target = CanvasName | 'glass';
+  const entry = (canvas: Target, g: Group, sky = false) => ({ canvas, g, sky, buf: uniform(80) });
   const groups = [
-    ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => ({ canvas: k as Target, g, buf: uniform(80) }))),
-    ...[...COMPOSE.sky, ...COMPOSE.world].map((g) => ({ canvas: 'glass' as Target, g, buf: uniform(80) })),
+    ...COMPOSE.sky.map((g) => entry('sky', g, true)),
+    ...COMPOSE.sky.map((g) => entry('world', g, true)),
+    ...COMPOSE.world.map((g) => entry('world', g)),
+    ...COMPOSE.hero.map((g) => entry('hero', g)),
+    ...COMPOSE.front.map((g) => entry('front', g)),
+    ...COMPOSE.sky.map((g) => entry('glass', g, true)),
+    ...COMPOSE.world.map((g) => entry('glass', g)),
   ].filter(({ g }) => !g.classicOnly); // 像素光晕这类只给 Canvas 2D 的组不合成
+  const skyInWorld = (effects & FX.sky) !== 0;
+  /** 这一组这一帧画不画：天空画在哪张画布上、影子开没开、只在深色模式合成的组 */
+  const skip = (e: (typeof groups)[number], dark: boolean) =>
+    (e.g.darkOnly && !dark) ||
+    (e.sky && (e.canvas === 'sky') === skyInWorld) ||
+    (e.g.layers.includes('shadow') && !(effects & FX.shadow));
   const glassBuf = uniform((1 + MAX_GLASS * 2) * 16);
 
   // 图集加载好才算就位：截图测试等 <html data-renderer> 出现再截，不会截到没有精灵的画面
@@ -176,9 +201,12 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       layers,
       blurred,
       scratch: tex('blur-scratch'),
-      scratchHdr: tex('blur-scratch-hdr', HDR),
       lightmap: tex('lightmap', HDR),
-      bloom: tex('bloom', HDR),
+      bloomSrc: tex('bloom-src', HDR),
+      // 辉光的几级：一级比一级小一半
+      bloom: Array.from({ length: BLOOM_LEVELS }, (_, i) =>
+        device.createTexture({ label: `bloom-${i}`, size: [Math.max(1, W >> (i + 1)), Math.max(1, H >> (i + 1))], format: HDR, usage }),
+      ),
       rays: tex('rays', HDR),
       beams: tex('beams', HDR),
       glassSrc: tex('glass-src'),
@@ -202,8 +230,12 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       layerBind: device.createBindGroup({ layout: layerLayout, entries: [{ binding: 0, resource: { buffer: sizeBuf } }, { binding: 1, resource: atlas.createView() }] }),
       lightBind: bind(lightPipe, [F]),
       dofBinds: Object.fromEntries(Object.keys(blurred).map((l) => [l, blurBinds(layers[l as LayerName], t.scratch, blurPipe[LOGICAL], depthOf(l as LayerName) * DOF_SIGMA)])) as Partial<Record<LayerName, { h: GPUBindGroup; v: GPUBindGroup }>>,
-      bloomSrcBind: bind(bloomPipe, [F, layers.emissive, layers.glow]),
-      bloomBlur: blurBinds(t.bloom, t.scratchHdr, blurPipe[HDR], BLOOM_SIGMA),
+      bloomSrcBind: bind(bloomPipe, [F, layers.emissive, layers.glow, layers.sky]),
+      // 往下：原图 -> 第 0 级 -> 第 1 级……；往上：第 n 级叠回第 n-1 级
+      bloomDown: [t.bloomSrc, ...t.bloom.slice(0, -1)].map((from) => device.createBindGroup({ layout: bloomDownPipe.getBindGroupLayout(0), entries: [{ binding: 4, resource: from.createView() }, { binding: 5, resource: linear }] })),
+      bloomUp: t.bloom.slice(1).map((from) => device.createBindGroup({ layout: bloomUpPipe.getBindGroupLayout(0), entries: [{ binding: 4, resource: from.createView() }, { binding: 5, resource: linear }] })),
+      skyBind: bind(skyPipe, [F, { buffer: scaleBuf }]),
+      skyGlassBind: bind(skyGlassPipe, [F, { buffer: unitBuf }]),
       raysBind: bind(raysPipe, [F, layers.far, layers.mid, layers.near, layers.fg]),
       beamsBind: bind(beamsPipe, [F, layers.actors, layers.hero, layers.fg]),
       glassBlurBinds: blurBinds(t.glassSrc, t.scratch, blurPipe[LOGICAL], GLASS_SIGMA),
@@ -220,7 +252,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         });
         return bind(canvas === 'glass' ? composeGlassPipe : composePipe, [F, { buffer: buf }, ...tx, linear, t.lightmap]);
       }),
-      overlayBind: bind(overlayPipe, [F, t.bloom, t.rays, linear, { buffer: scaleBuf }, t.beams]),
+      overlayBind: bind(overlayPipe, [F, t.bloom[0], t.rays, linear, { buffer: scaleBuf }, t.beams]),
     };
   }
 
@@ -239,17 +271,23 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     d.set([amb[0] / 255, amb[1] / 255, amb[2] / 255, 0], 16);
     const ray = rgb(dl.env.light);
     d.set([ray[0] / 255, ray[1] / 255, ray[2] / 255, 0], 20);
-    // 空气透视：远景往天空的颜色靠，暗色模式靠得少，不然山就融进黑夜里了
-    const fog = rgb(dl.env.fog);
+    // 空气透视：远景往地平线的颜色靠
+    const fog = rgb(dl.env.skyHorizon);
     d.set([fog[0] / 255, fog[1] / 255, fog[2] / 255, 0], 24);
-    d.set(FADE_STOPS.flat(), 28);
+    const top = rgb(dl.env.skyTop);
+    d.set([top[0] / 255, top[1] / 255, top[2] / 255, dl.env.skyY[1]], 28);
+    d.set([fog[0] / 255, fog[1] / 255, fog[2] / 255, dl.env.skyY[0]], 32);
+    d.set(FADE_STOPS.flat(), 36);
     lights.forEach((l, i) => {
       const [r, g, b] = rgb(l.color);
       const bm = l.beam;
-      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 36 + i * 12);
+      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 44 + i * 12);
     });
     device.queue.writeBuffer(frameBuf, 0, d);
-    for (const { canvas, g, buf } of groups) {
+    // 天空画进世界画布时：天空按主角画布（不平移、不下沉）对齐屏幕，世界跟着主角画布往下沉
+    const skyX = skyInWorld ? view.hero[0] / scale : 0;
+    const sink = skyInWorld ? view.hero[1] / scale : 0;
+    for (const { canvas, g, buf, sky } of groups) {
       const s = canvas !== 'glass' && FULL_RES.has(canvas) ? scale : 1;
       // 前景压在卡片上：打开文章时跟着对焦淡出，不挡正文
       const opacity = canvas === 'front' ? FRONT_ALPHA * (1 - view.focus) : 1;
@@ -257,12 +295,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const grade = effects & FX.grade && (g.lit || g.fade) ? GRADE : 0;
       // 亚像素偏移只对模糊过的层有意义（线性插值取样）；清晰的层按最近邻取，偏移了也还是跳格
       const shift = [0, 1, 2].map((i) => (soft[i] ? (dl.shift[g.layers[i]] ?? 0) : 0));
-      // 毛玻璃里的天空：天空画布和世界画布不一起动（亚像素平移、阅读时下沉），按两张画布的相对位置对齐
-      let rise = 0;
-      if (canvas === 'glass' && g.layers.includes('sky')) {
-        shift[0] = view.sky[0] / scale;
-        rise = view.sky[1] / scale;
-      }
+      const inWorld = canvas === 'world' || canvas === 'glass';
+      if (sky && inWorld) shift[0] = skyX;
+      const rise = !sky && inWorld ? sink : 0;
       const vignette = canvas === 'front' && effects & FX.vignette ? 1 : 0;
       const look = effects & FX.grade && !g.layers.includes('sky') ? 1 : 0;
       // 有景深时远近靠模糊和空气透视区分，远景不再自下而上淡出（山顶淡没了就看不出是山）
@@ -353,9 +388,16 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     const p = pass(enc, k === 'glass' ? T!.glassSrc : contexts[k].getCurrentTexture());
     // 前景画布关掉时清成透明就结束
     if (k === 'front' && !(effects & FX.front)) return p.end();
+    // 天空的底色：天顶到地平线的渐变（天空画进世界画布时）
+    if (skyInWorld && (k === 'world' || k === 'glass')) {
+      p.setPipeline(k === 'glass' ? skyGlassPipe : skyPipe);
+      p.setBindGroup(0, k === 'glass' ? T!.skyGlassBind : T!.skyBind);
+      p.draw(3);
+    }
     p.setPipeline(k === 'glass' ? composeGlassPipe : composePipe);
-    groups.forEach(({ canvas, g }, i) => {
-      if (canvas !== k || (g.darkOnly && !dark)) return;
+    groups.forEach((e, i) => {
+      const { canvas, g } = e;
+      if (canvas !== k || skip(e, dark)) return;
       p.setBindGroup(0, T!.composeBinds[i]);
       p.draw(3);
       // 这一组里的层上有失焦的光点：紧跟着叠上去，后面的组照常盖住它
@@ -410,14 +452,14 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         c[k].width = FULL_RES.has(k) ? Math.round(w * scale) : w;
         c[k].height = FULL_RES.has(k) ? Math.round(h * scale) : h;
       }
-      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.scratchHdr, T.lightmap, T.bloom, T.rays, T.beams, T.glassSrc, T.glassBlur, T.glassSharp]) v!.destroy();
+      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.lightmap, T.bloomSrc, ...T.bloom, T.rays, T.beams, T.glassSrc, T.glassBlur, T.glassSharp]) v!.destroy();
       device.queue.writeBuffer(sizeBuf, 0, new Float32Array([w, h, 0, 0]));
       T = makeTargets();
     },
     draw(dl, dark, view) {
       if (!T) return;
       writeFrame(dl, dark, view);
-      device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, view.focus, 0, 0]));
+      device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, view.focus, skyInWorld ? view.hero[1] / scale : 0, 0]));
       const glassCount = effects & FX.glass ? writeGlass(view) : 0;
       const first = upload(dl);
       const enc = device.createCommandEncoder();
@@ -427,8 +469,15 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         for (const l of Object.keys(T.blurred) as LayerName[]) blur(enc, T.dofBinds[l]!, T.scratch, T.blurred[l]!, LOGICAL);
       }
       if (effects & FX.bloom) {
-        full(enc, T.bloom, bloomPipe, T.bloomSrcBind);
-        blur(enc, T.bloomBlur, T.scratchHdr, T.bloom, HDR);
+        full(enc, T.bloomSrc, bloomPipe, T.bloomSrcBind);
+        T.bloom.forEach((to, i) => full(enc, to, bloomDownPipe, T!.bloomDown[i]));
+        for (let i = BLOOM_LEVELS - 2; i >= 0; i--) {
+          const p = pass(enc, T.bloom[i], 'load');
+          p.setPipeline(bloomUpPipe);
+          p.setBindGroup(0, T.bloomUp[i]);
+          p.draw(3);
+          p.end();
+        }
       }
       if (effects & FX.rays) full(enc, T.rays, raysPipe, T.raysBind);
       if (effects & FX.beams) full(enc, T.beams, beamsPipe, T.beamsBind);

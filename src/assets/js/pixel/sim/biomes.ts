@@ -63,8 +63,6 @@ export interface Biome {
   weather?: { kind: WeatherKind; rate: number };
   /** 深色模式下萤火虫的生成概率 */
   fireflies?: number;
-  /** 每一屏有几团风滚草在地上滚（tumbleweed.ts） */
-  tumbleweeds?: number;
   /** 白天体积光的强度：树多、林子密的地方光束更明显（只有 WebGPU 渲染器用） */
   rays: number;
 }
@@ -116,7 +114,6 @@ export const BIOMES: Biome[] = [
     name: 'desert', rays: 0.35, tint: '#ffe6b8', far: '#e9d2b3', mid: '#e6c595', near: '#dcb07d', treeline: 0, spiky: false,
     line: '#9a6f42', rim: '#fdebc6', top: '#f2d6a3', shade: '#e2bb86', soil: ['#d7ad78', '#c39667', '#a97e58'], amp: 15, blades: false,
     flora: [{ until: 0.1, kind: 'cactus', z: 1 }, { until: 0.2, kind: 'sandRock', z: 2 }, { until: 0.36, kind: 'dryTuft', z: 3 }],
-    tumbleweeds: 3,
   },
   {
     name: 'village', rays: 0.55, tint: '#ffd9ae', far: '#bcbad6', mid: '#a7c792', near: '#87b56c', treeline: 0.45, spiky: false,
