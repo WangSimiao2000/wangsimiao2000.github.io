@@ -88,12 +88,17 @@ export const BIOMES: Biome[] = [
   {
     name: 'plains', rays: 0.45, tint: '#cdebff', far: '#a9c3da', mid: '#a3c99a', near: '#82b76e', treeline: 0.35, spiky: false,
     line: '#1e462b', rim: '#d2ee95', top: '#8cc762', shade: '#68a44d', soil: SOIL, amp: 9, blades: true,
-    // 蘑菇占 0.26-0.29 这一段：槽位的随机数相邻几个会扎堆，放在 0.73 附近时起点路牌旁会连着长四丛
     flora: [
       { until: 0.1, kind: 'oak', z: 0 }, { until: 0.18, kind: 'bush', z: 2 }, { until: 0.21, kind: 'berryBush', z: 2 },
-      { until: 0.26, kind: 'rock', z: 2 }, { until: 0.29, kind: 'mushroom', z: 2 }, { until: 0.32, kind: 'pebbles', z: 2 },
-      { until: 0.53, kind: 'tuft', z: 3 }, { until: 0.73, kind: 'flowers', z: 3 }, { until: 0.77, kind: 'reeds', z: 3 },
+      { until: 0.26, kind: 'rock', z: 2 }, { until: 0.29, kind: 'pebbles', z: 2 },
+      { until: 0.53, kind: 'tuft', z: 3 }, { until: 0.73, kind: 'flowers', z: 3 },
     ],
+    // 两丛芦苇，离路牌（板块中心左边 32）远一点
+    pieces: [
+      { kind: 'reeds', dx: 64, z: 3 },
+      { kind: 'reeds', dx: 118, z: 3 },
+    ],
+    clear: [[56, 74], [110, 128]],
     fireflies: 0.04,
   },
   {
