@@ -91,6 +91,19 @@ export interface Light {
   beam?: Beam;
 }
 
+/**
+ * 一个失焦的光点（散景）：画成六边形（光圈的形状），紧跟在 layer 所在的合成组后面叠上去，
+ * 于是后排的光点会被主平面挡住，前景的光点压在卡片上。坐标是逻辑像素，r 是外接圆半径。只有 WebGPU 渲染器画
+ */
+export interface Bokeh {
+  layer: LayerName;
+  x: number;
+  y: number;
+  r: number;
+  color: string;
+  alpha: number;
+}
+
 /** 这一帧的环境：随相机所在的群系插值，渲染器拿来调光效 */
 export interface Env {
   /** 群系的地平线色调，调色时轻轻往这个颜色偏 */
@@ -157,6 +170,7 @@ export class Commands {
 export class DrawList {
   readonly layers = Object.fromEntries(LAYERS.map((l) => [l, new Commands()])) as Record<LayerName, Commands>;
   readonly lights: Light[] = [];
+  readonly bokeh: Bokeh[] = [];
   /** 太阳 / 月亮在天空画布上的位置（逻辑像素），体积光从这里射出 */
   sun: [number, number] = [0, 0];
   env: Env = { tint: '#ffffff', rays: 0 };
@@ -172,6 +186,7 @@ export class DrawList {
       delete this.shift[l];
     }
     this.lights.length = 0;
+    this.bokeh.length = 0;
   }
 
   light(x: number, y: number, radius: number, intensity: number, color: string, beam?: Beam) {

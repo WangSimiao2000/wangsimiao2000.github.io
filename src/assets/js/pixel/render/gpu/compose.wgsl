@@ -2,13 +2,15 @@
 //   night 深色模式下盖夜色（source-atop：只染已有的像素，不改透明度）
 //   lit   夜色在灯旁边变淡，染上灯的颜色（光照图）
 //   fade  自下而上淡出
-//   调色  轻轻往当前群系的色调偏
+//   调色  轻轻往当前群系的色调偏；再按 frame.wgsl 的 look 调成胶片感的色调（除了天空每组都调，几张画布颜色接得上；
+//         天空的底色是透出来的页面底色，调不到，日月星星也就不调，免得和底色对不上）
+//   暗角  前景画布自己压暗边上（世界画布的暗角在 overlay.wgsl 里整张一起压）
 // 画布可以比逻辑分辨率大（世界画布按屏幕像素画）：清晰的层按最近邻取像素，景深模糊过的层线性插值。
 
 struct Group {
   a: vec4f, // 层数, 淡出, 盖夜色, 被灯照亮
   b: vec4f, // 三层各自是否用模糊过的纹理, 画布像素 / 逻辑像素
-  c: vec4f, // 调色强度, 整组的不透明度
+  c: vec4f, // 往群系色调偏多少, 整组的不透明度, 调色, 压暗角
   d: vec4f, // 三层各自往右挪的亚像素（逻辑像素，drawlist.ts 的 shift）
 };
 @group(0) @binding(1) var<uniform> G: Group;
@@ -53,6 +55,12 @@ fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
   }
   if (G.c.x > 0.0) {
     c = vec4f(c.rgb * mix(vec3f(1.0), F.tint.rgb, G.c.x), c.a);
+  }
+  if (G.c.z > 0.5) {
+    c = vec4f(look(c.rgb / c.a) * c.a, c.a);
+  }
+  if (G.c.w > 0.5) {
+    c = vec4f(c.rgb * (1.0 - vignette(lp / F.size.xy)), c.a);
   }
   if (G.a.y > 0.5) { c *= fadeAt(lp.y / F.size.y); }
   return c * G.c.y;
