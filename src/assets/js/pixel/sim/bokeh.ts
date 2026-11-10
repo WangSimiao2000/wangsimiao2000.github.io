@@ -1,7 +1,7 @@
 /**
  * 镜头光斑：太阳 / 月亮照进镜头，在镜片间反射出一串六边形（光圈的形状）的光斑。
  * 光斑排在「太阳 -> 画面中心」这条线上，并越过中心到另一边，所以太阳在哪、光斑就朝哪个方向排开；
- * 颜色跟着光源走（白天暖黄、夜里月光的冷白），每个光斑再往不同色相偏一点，像镜片镀膜反出来的颜色。
+ * 颜色跟着光源走（daytime.ts 的 light：正午淡黄、日落橘红、月光冷白），每个光斑再往不同色相偏一点，像镜片镀膜反出来的颜色。
  * 太阳随镜头视差慢慢挪动时，光斑跟着在画面上滑动。
  * 画在 over 层后面（世界画布最上面、卡片下面），透过毛玻璃也能隐约看到。只有 WebGPU 渲染器画。
  */
@@ -17,7 +17,7 @@ const GHOSTS: readonly (readonly [number, number, number, string, number])[] = [
   [1.8, 4, 0.6, '#ffffff', 0.1],
   [2.15, 13, 0.25, '#c9a0ff', 0.3],
 ];
-const SOURCE = { day: { color: '#ffd27e', alpha: 0.2 }, night: { color: '#c9d3ee', alpha: 0.12 } };
+const ALPHA = { day: 0.2, night: 0.12 };
 
 export function drawBokeh(fr: Frame) {
   const { dl, W, H } = fr;
@@ -25,8 +25,8 @@ export function drawBokeh(fr: Frame) {
   const [sx, sy] = dl.sun;
   const cx = W / 2;
   const cy = H - vis / 2;
-  const src = fr.dark ? SOURCE.night : SOURCE.day;
-  const base = rgb(src.color);
+  const alpha = fr.dark ? ALPHA.night : ALPHA.day;
+  const base = rgb(dl.env.light);
   for (const [t, r, k, tint, mix] of GHOSTS) {
     dl.bokeh.push({
       layer: 'over',
@@ -34,7 +34,7 @@ export function drawBokeh(fr: Frame) {
       y: sy + (cy - sy) * t,
       r,
       color: css(mixRGB(base, rgb(tint), mix)),
-      alpha: src.alpha * k,
+      alpha: alpha * k,
     });
   }
 }

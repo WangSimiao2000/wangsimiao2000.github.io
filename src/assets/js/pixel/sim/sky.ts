@@ -3,6 +3,8 @@
  */
 import type { DrawList } from '../drawlist.js';
 import type { Frame } from './frame.js';
+import { GROUND } from './biomes.js';
+import { mix } from './util.js';
 
 interface Star {
   x: number;
@@ -32,6 +34,7 @@ export function makeStars(W: number, H: number): Star[] {
  * 逐个像素算球面法线和光的夹角，量化成 4 档
  */
 const SUN = ['#f0a04a', '#ffc35c', '#ffdb86', '#fff1c2'];
+const SUNSET = ['#c4472a', '#e8693a', '#ff9250', '#ffc884']; // 日出日落：贴着山的时候偏橘红
 const MOON = ['#98a3c2', '#c3cce2', '#e2e7f3', '#fbfcff'];
 const CRATERS: readonly [number, number, number][] = [[-2, 1, 1], [2, -2, 0], [1, 3, 0], [-3, -2, 0]]; // dx, dy, 大坑 = 1
 const LIGHT_DIR = (() => {
@@ -60,16 +63,29 @@ function orb(dl: DrawList, cx: number, cy: number, r: number, tones: string[], a
   }
 }
 
-export function drawSky(fr: Frame, stars: Star[]) {
-  const { dl, W, H } = fr;
+/**
+ * 日月的位置：按 daytime.ts 的 arc 从左边地平线升起、越过天顶、落到右边地平线（贴着远山，会被山挡住一部分）。
+ * 画布贴底、可能比视口高（手机地址栏展开时顶上一截在屏幕外），高度按屏幕上实际看得到的部分算
+ */
+function orbAt(fr: Frame): [number, number] {
+  const { W, H, day } = fr;
   const drift = fr.camX * 0.012; // 极慢的视差：天上的东西几乎不动
-  const cx = Math.round(W * 0.87 - drift);
-  // 画布贴底、可能比视口高（手机地址栏展开时顶上一截在屏幕外），日月按屏幕上实际看得到的部分定位
   const vis = Math.min(H, fr.visH);
-  const cy = H - vis + Math.round(Math.max(12, vis * 0.15));
+  const low = H - GROUND - 34;
+  const high = H - vis + Math.round(Math.max(12, vis * 0.12));
+  const x = W * (0.1 + 0.8 * day.arc) - drift;
+  const y = low - Math.sin(Math.PI * day.arc) * (low - high);
+  return [Math.round(x), Math.round(y)];
+}
+
+export function drawSky(fr: Frame, stars: Star[]) {
+  const { dl, W } = fr;
+  const drift = fr.camX * 0.012;
+  const [cx, cy] = orbAt(fr);
   dl.sun = [cx, cy];
   if (!fr.dark) {
-    orb(dl, cx, cy, 7, SUN, 0.95);
+    const g = fr.day.golden;
+    orb(dl, cx, cy, 7, g > 0 ? SUN.map((c, i) => mix(c, SUNSET[i], g)) : SUN, 0.95);
     return;
   }
   for (const st of stars) {

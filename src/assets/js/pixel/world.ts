@@ -38,6 +38,7 @@ import { drawFront } from './sim/front.js';
 import { drawBackRow } from './sim/backrow.js';
 import { drawBokeh } from './sim/bokeh.js';
 import { drawTumbleweeds } from './sim/tumbleweed.js';
+import { daytime } from './sim/daytime.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
 
@@ -90,7 +91,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   const fr: Frame = {
     dl, W: 0, H: 0, S: 4, HALF: 0, camX: 0, camLeft: 0, frac: 0, p: 0,
-    dark: false, bg: '#eef1f5', time: 0, reduced: reducedMq.matches, running: false, visH: 0,
+    dark: false, bg: '#eef1f5', time: 0, reduced: reducedMq.matches, running: false, visH: 0, day: daytime(12, false),
+  };
+  // 时刻：网址带 ?tod=小时（0-24）时固定在那个时刻（预览、截图用），不然跟着系统时钟
+  const todParam = new URLSearchParams(location.search).get('tod');
+  const clockHour = () => {
+    if (todParam !== null && todParam !== '' && Number.isFinite(+todParam)) return +todParam;
+    const d = new Date();
+    return d.getHours() + d.getMinutes() / 60;
   };
   let stars = makeStars(1, 1);
 
@@ -419,13 +427,20 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       particles.spawn({ x: fr.camX - hero.facing * 4, y: hero.y - 1, vx: -hero.facing * (0.2 + Math.random() * 0.3), vy: -0.2 - Math.random() * 0.2, life: 0, max: 22, color: pal.rim, size: 1, kind: 'dust' });
     }
 
+    fr.day = daytime(clockHour(), fr.dark);
     const [i, j, t] = weights(fr.camX);
-    const tint = mix(BIOMES[i].tint, BIOMES[j].tint, t);
+    const tint = mix(mix(BIOMES[i].tint, BIOMES[j].tint, t), fr.day.horizon, fr.day.golden * 0.45);
     if (tint !== lastTint) {
       lastTint = tint;
       root.style.setProperty('--tint', tint);
     }
-    dl.env = { tint, rays: biomeNum(fr.camX, (b) => b.rays) };
+    dl.env = {
+      tint,
+      rays: biomeNum(fr.camX, (b) => b.rays) * fr.day.rays,
+      light: fr.day.light,
+      ambient: fr.day.ambient,
+      fog: mix(fr.bg, tint, fr.dark ? 0.12 : 0.35),
+    };
   }
 
   /** 写这一帧的绘制清单，交给渲染器（各层怎么合成见 drawlist.ts 的 COMPOSE） */

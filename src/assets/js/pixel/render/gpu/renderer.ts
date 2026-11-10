@@ -5,7 +5,7 @@
  *   2. 光照图    点光源照到哪里、多亮（lightmap.wgsl）
  *   3. 景深      远景三层按离镜头的远近各自模糊（blur.wgsl）
  *   4. 辉光      发光的层叠在一起再模糊（bloom.wgsl + blur.wgsl）
- *   5. 体积光    白天从太阳射过来的光束（rays.wgsl）；夜里灯光洒出来的光束，人物会挡出影子（beams.wgsl）
+ *   5. 体积光    太阳 / 月亮从山脊、树冠缝里漏下来的光束（rays.wgsl）；夜里灯光洒出来的光束，人物会挡出影子（beams.wgsl）
  *   6. 合成      按 COMPOSE 把各组叠到各张画布上（compose.wgsl，顺带调色），失焦的光点紧跟在自己那层后面叠上（bokeh.wgsl），
  *                世界画布再叠辉光和光束（overlay.wgsl）
  *   7. 毛玻璃    天空 + 世界再合成一份逻辑分辨率的、模糊掉，画在卡片后面；打开文章时整个世界换成它（glass.wgsl）
@@ -30,11 +30,13 @@ const FRONT_ALPHA = 0.92; // 前景压在卡片上，留一点点透
 const MAX_LIGHTS = 48;
 const MAX_BOKEH = 64;
 const BOKEH_FLOATS = 8; // 和 bokeh.wgsl 的 Dot 一一对应
-const FRAME_FLOATS = (4 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
-const DOF_SIGMA = 0.5; // 每一级深度模糊多少（逻辑像素的标准差）：远山 5 级 = 2.5，后排 2 级 = 1，前景 6 级 = 3
+const FRAME_FLOATS = (7 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
+const DOF_SIGMA = 0.5; // 每一级深度模糊多少（逻辑像素的标准差）：远山 4 级 = 2，后排 2 级 = 1，前景 6 级 = 3
 const BLOOM_SIGMA = 2.5;
 const BLOOM = { day: 0.3, night: 0.65 };
 const GRADE = 0.12; // 往群系色调偏多少
+/** 空气透视：远景每一级深度往天空的颜色靠多少（开了景深时代替自下而上的淡出，山的轮廓才看得清） */
+const FOG = { day: 0.07, night: 0.04 };
 const LOGICAL = 'rgba8unorm';
 const HDR = 'rgba16float';
 
@@ -146,8 +148,8 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   // 每个合成组一份参数；毛玻璃要把天空和世界再合成一遍（target 'glass'），参数单独一份
   type Target = CanvasName | 'glass';
   const groups = [
-    ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => ({ canvas: k as Target, g, buf: uniform(64) }))),
-    ...[...COMPOSE.sky, ...COMPOSE.world].map((g) => ({ canvas: 'glass' as Target, g, buf: uniform(64) })),
+    ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => ({ canvas: k as Target, g, buf: uniform(80) }))),
+    ...[...COMPOSE.sky, ...COMPOSE.world].map((g) => ({ canvas: 'glass' as Target, g, buf: uniform(80) })),
   ].filter(({ g }) => !g.classicOnly); // 像素光晕这类只给 Canvas 2D 的组不合成
   const glassBuf = uniform((1 + MAX_GLASS * 2) * 16);
 
@@ -233,11 +235,18 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     d.set([dl.sun[0], dl.sun[1], dl.env.rays, dark ? 1 : 0], 4);
     d.set([tint[0] / 255, tint[1] / 255, tint[2] / 255, dark ? BLOOM.night : BLOOM.day], 8);
     d.set([NIGHT[0] / 255, NIGHT[1] / 255, NIGHT[2] / 255, NIGHT[3]], 12);
-    d.set(FADE_STOPS.flat(), 16);
+    const amb = rgb(dl.env.ambient);
+    d.set([amb[0] / 255, amb[1] / 255, amb[2] / 255, 0], 16);
+    const ray = rgb(dl.env.light);
+    d.set([ray[0] / 255, ray[1] / 255, ray[2] / 255, 0], 20);
+    // 空气透视：远景往天空的颜色靠，暗色模式靠得少，不然山就融进黑夜里了
+    const fog = rgb(dl.env.fog);
+    d.set([fog[0] / 255, fog[1] / 255, fog[2] / 255, 0], 24);
+    d.set(FADE_STOPS.flat(), 28);
     lights.forEach((l, i) => {
       const [r, g, b] = rgb(l.color);
       const bm = l.beam;
-      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 24 + i * 12);
+      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 36 + i * 12);
     });
     device.queue.writeBuffer(frameBuf, 0, d);
     for (const { canvas, g, buf } of groups) {
@@ -256,7 +265,12 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       }
       const vignette = canvas === 'front' && effects & FX.vignette ? 1 : 0;
       const look = effects & FX.grade && !g.layers.includes('sky') ? 1 : 0;
-      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, g.fade ? 1 : 0, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise]));
+      // 有景深时远近靠模糊和空气透视区分，远景不再自下而上淡出（山顶淡没了就看不出是山）
+      const aerial = effects & FX.dof && g.fade;
+      const fade = g.fade && !aerial ? 1 : 0;
+      const fog = [0, 1, 2].map((i) => (aerial ? (g.depth?.[i] ?? 0) * (dark ? FOG.night : FOG.day) : 0));
+      const ambient = effects & FX.grade && (g.lit || g.fade) ? 1 : 0;
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient]));
     }
   }
 

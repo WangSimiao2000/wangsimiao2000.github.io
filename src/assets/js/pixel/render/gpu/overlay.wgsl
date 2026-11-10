@@ -1,4 +1,4 @@
-// 叠在世界画布最上面的光：辉光（模糊过的发光层）、白天的体积光、夜里灯光的光束。
+// 叠在世界画布最上面的光：辉光（模糊过的发光层）、日月的体积光、夜里灯光的光束。
 // 都是逻辑分辨率，线性插值放大，所以是柔和的。主角画布在世界画布上面，光束不会盖住主角，只在主角身后留下影子。
 //
 // 光是加上去的，不能把后面的东西压暗：混合方式（renderer.ts 的 light）颜色直接相加，
@@ -15,8 +15,7 @@
 @fragment fn fs(v: V) -> @location(0) vec4f {
   let uv = v.pos.xy / scale.x / F.size.xy;
   let b = textureSampleLevel(bloom, samp, uv, 0.0).rgb * F.tint.a;
-  let r = textureSampleLevel(rays, samp, uv, 0.0).r;
-  let ray = vec3f(1.0, 0.94, 0.8) * r;
+  let ray = textureSampleLevel(rays, samp, uv, 0.0).rgb;
   let beam = textureSampleLevel(beams, samp, uv, 0.0).rgb;
   let c = b + ray + beam;
   let a = clamp(max(c.r, max(c.g, c.b)), 0.0, 1.0);

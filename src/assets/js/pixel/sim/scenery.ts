@@ -31,10 +31,6 @@ export const CAMPFIRE_FLAME = [7, 2] as const;
 export const GLOW_AT: Partial<Record<keyof Scenery, readonly [number, number]>> = {
   lamp: LAMP_BULB,
   campfire: CAMPFIRE_FLAME,
-  torch: [3, 0],
-  stoneLantern: [5, 7],
-  jackOLantern: [5, 5],
-  glowcap: [5, 2],
 };
 
 export interface Scenery {
@@ -71,24 +67,11 @@ export interface Scenery {
   leafPile: Sprite[];
   /** 风滚草滚动的 4 帧（每帧转 90 度），由 tumbleweed.ts 画 */
   tumbleweed: Sprite[];
-  torch: Sprite;
-  stoneLantern: Sprite;
-  jackOLantern: Sprite;
-  glowcap: Sprite;
-  scarecrow: Sprite;
-  tent: Sprite;
-  snowTent: Sprite;
-  crate: Sprite;
-  barrel: Sprite;
-  well: Sprite;
-  mailbox: Sprite;
-  bench: Sprite;
 }
 
 const SETS = ['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush',
   'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile', 'tumbleweed'] as const;
-const SINGLES = ['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay',
-  'torch', 'stoneLantern', 'jackOLantern', 'glowcap', 'scarecrow', 'tent', 'snowTent', 'crate', 'barrel', 'well', 'mailbox', 'bench'] as const;
+const SINGLES = ['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay'] as const;
 
 export function buildScenery(): Scenery {
   const sc = {} as Record<string, Sprite | Sprite[]>;
