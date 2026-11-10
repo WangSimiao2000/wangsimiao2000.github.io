@@ -51,12 +51,26 @@ function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: P
   }
 }
 
+/**
+ * 点光源（照多远、多亮、什么颜色）：夜里把周围的夜色照淡、染上暖色。只有 WebGPU 渲染器用，
+ * 白天不点灯（营火白天也亮，但弱很多）
+ */
+const LIGHT: Record<Glow['kind'], { radius: number; intensity: number; color: string }> = {
+  lamp: { radius: 30, intensity: 0.9, color: '#ffd38a' },
+  window: { radius: 28, intensity: 0.8, color: '#ffc874' },
+  fire: { radius: 44, intensity: 1.2, color: '#ff9a4a' },
+};
+
 /** 光晕和火焰画在夜色之上、角色之下（角色经过会挡光） */
 export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
   const base = fr.dark ? GLOW.night : GLOW.day;
   for (const gl of glows) {
-    if (gl.kind === 'lamp') halo(fr.dl, 'glow', gl.x, gl.y, 11, '#ffd36a', base * (0.92 + 0.08 * Math.sin(fr.time * 3 + gl.wx)));
+    const flicker = gl.kind === 'fire' ? 0.85 + 0.15 * Math.sin(fr.time * 9 + gl.wx) * Math.sin(fr.time * 5.3) : gl.kind === 'lamp' ? 0.92 + 0.08 * Math.sin(fr.time * 3 + gl.wx) : 1;
+    if (gl.kind === 'lamp') halo(fr.dl, 'glow', gl.x, gl.y, 11, '#ffd36a', base * flicker);
     if (gl.kind === 'window') halo(fr.dl, 'glow', gl.x, gl.y, 11, '#ffcf70', base);
     if (gl.kind === 'fire') drawFlame(fr, gl.x, gl.y, gl.wx, particles);
+    const l = LIGHT[gl.kind];
+    const ly = gl.kind === 'fire' ? gl.y - 3 : gl.y;
+    fr.dl.light(gl.x, ly, l.radius, l.intensity * flicker * (fr.dark ? 1 : gl.kind === 'fire' ? 0.25 : 0), l.color);
   }
 }

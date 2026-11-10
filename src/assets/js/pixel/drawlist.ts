@@ -11,7 +11,9 @@ import { rgb } from './sim/util.js';
 /**
  * 图层，按合成顺序排列。每层先单独画好，再合成：
  *   sky      天空画布：日月星、孔明灯、烟花（在世界画布后面）
- *   far      远山、丘陵、近景树线，合成时自下而上淡出
+ *   far      远山 \
+ *   mid      丘陵  > 远景三层，合成时一起自下而上淡出；开了景深时越远越糊
+ *   near     树线 /
  *   fg       布景和地面，深色模式下盖一层夜色
  *   emissive 灯泡、亮着的窗：只在深色模式合成，叠在夜色之上
  *   glow     光晕和营火火焰
@@ -19,33 +21,60 @@ import { rgb } from './sim/util.js';
  *   over     气泡和粒子，不盖夜色
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移，盖夜色
  */
-export const LAYERS = ['sky', 'far', 'fg', 'emissive', 'glow', 'actors', 'over', 'hero'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'fg', 'emissive', 'glow', 'actors', 'over', 'hero'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
-/** 三张画布，以及每张画布由哪些层、按什么规则合成 */
-export interface LayerRule {
-  layer: LayerName;
-  /** 合成时按画布高度自下而上淡出（util.ts 的 FADE_STOPS） */
+/**
+ * 合成组：组里的层按顺序叠好以后，再整体做淡出、盖夜色，然后叠到画布上。
+ * 下面这些开关里，fade / night / darkOnly 两个渲染器都认；lit / depth / bloom 是光效，只有 WebGPU 渲染器认。
+ */
+export interface Group {
+  layers: LayerName[];
+  /** 自下而上淡出（util.ts 的 FADE_STOPS） */
   fade?: boolean;
   /** 深色模式下用 source-atop 盖一层夜色：只染已有的像素，不改透明度 */
   night?: boolean;
   /** 只在深色模式下合成 */
   darkOnly?: boolean;
+  /** 被点光源照亮：夜色在灯旁边变淡，染上灯的颜色 */
+  lit?: boolean;
+  /** 每层离镜头多远（0 = 主平面），开了景深时按这个模糊 */
+  depth?: number[];
+  /** 亮的部分往外泛光（辉光） */
+  bloom?: boolean;
 }
-export const COMPOSE: Record<'sky' | 'world' | 'hero', LayerRule[]> = {
-  sky: [{ layer: 'sky' }],
+export type CanvasName = 'sky' | 'world' | 'hero';
+export const COMPOSE: Record<CanvasName, Group[]> = {
+  sky: [{ layers: ['sky'] }],
   world: [
-    { layer: 'far', fade: true },
-    { layer: 'fg', night: true },
-    { layer: 'emissive', darkOnly: true },
-    { layer: 'glow' },
-    { layer: 'actors', night: true },
-    { layer: 'over' },
+    { layers: ['far', 'mid', 'near'], fade: true, depth: [3, 2, 1] },
+    { layers: ['fg'], night: true, lit: true },
+    { layers: ['emissive'], darkOnly: true, bloom: true },
+    { layers: ['glow'], bloom: true },
+    { layers: ['actors'], night: true, lit: true },
+    { layers: ['over'] },
   ],
-  hero: [{ layer: 'hero', night: true }],
+  hero: [{ layers: ['hero'], night: true, lit: true }],
 };
 /** 夜色：rgba(14, 20, 38, 0.46) */
 export const NIGHT = [14, 20, 38, 0.46] as const;
+
+/** 点光源：屏幕坐标（逻辑像素）、照多远、多亮、什么颜色 */
+export interface Light {
+  x: number;
+  y: number;
+  radius: number;
+  intensity: number;
+  color: string;
+}
+
+/** 这一帧的环境：随相机所在的群系插值，渲染器拿来调光效 */
+export interface Env {
+  /** 群系的地平线色调，调色时轻轻往这个颜色偏 */
+  tint: string;
+  /** 白天体积光的强度（0 = 没有） */
+  rays: number;
+}
 
 /**
  * 一条命令 14 个 float：
@@ -104,9 +133,18 @@ export class Commands {
 
 export class DrawList {
   readonly layers = Object.fromEntries(LAYERS.map((l) => [l, new Commands()])) as Record<LayerName, Commands>;
+  readonly lights: Light[] = [];
+  /** 太阳 / 月亮在天空画布上的位置（逻辑像素），体积光从这里射出 */
+  sun: [number, number] = [0, 0];
+  env: Env = { tint: '#ffffff', rays: 0 };
 
   clear() {
     for (const l of LAYERS) this.layers[l].clear();
+    this.lights.length = 0;
+  }
+
+  light(x: number, y: number, radius: number, intensity: number, color: string) {
+    if (intensity > 0) this.lights.push({ x, y, radius, intensity, color });
   }
 
   /** 画一个精灵（或它的一部分），左上角在 (x, y) */
@@ -138,7 +176,10 @@ export interface Canvases {
 
 /** 渲染器的统一接口：world.ts 每帧交给它一份清单 */
 export interface Renderer {
-  /** 三张画布的逻辑尺寸变了（resize） */
-  resize(W: number, H: number): void;
+  /**
+   * 画布的逻辑尺寸变了（resize）。S 是一个逻辑像素占几个 CSS 像素：画布的 CSS 尺寸由 world.ts 定，
+   * 实际分辨率由渲染器自己定（Canvas 2D 按逻辑像素画再放大；WebGPU 的世界画布按屏幕像素画，模糊和泛光才是平滑的）
+   */
+  resize(W: number, H: number, S: number): void;
   draw(dl: DrawList, dark: boolean): void;
 }

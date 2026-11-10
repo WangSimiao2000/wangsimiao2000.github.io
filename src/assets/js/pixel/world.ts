@@ -16,7 +16,7 @@
  *
  * 每帧写清单的顺序：天空 -> 远景 -> 布景、地面 -> 角色 -> 主角 -> 光晕 -> 气泡、粒子（随机数的取用顺序也按这个）。
  */
-import { BIOMES, GROUND, OFF, SECTION, SLOT, heightAt, paletteAt, setPieces, slotItem, weights, type Item } from './sim/biomes.js';
+import { BIOMES, GROUND, OFF, SECTION, SLOT, biomeNum, heightAt, paletteAt, setPieces, slotItem, weights, type Item } from './sim/biomes.js';
 import { buildScenery, CAMPFIRE_FLAME, COTTAGE, LAMP_BULB } from './sim/scenery.js';
 import { drawGround, drawLayer } from './sim/terrain.js';
 import { drawSky, makeStars } from './sim/sky.js';
@@ -112,15 +112,12 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     fr.HALF = Math.ceil(vw / S) / 2;
     fr.W = Math.ceil(vw / S) + 1; // 比视口多 1 列，亚像素平移时右边缘不露底
     fr.H = Math.ceil(tallH / S);
-    for (const c of all) {
-      c.width = fr.W;
-      c.height = fr.H;
-    }
+    // 画布的 CSS 尺寸在这里定，实际分辨率由渲染器定（见 Renderer.resize）
     for (const c of all) {
       c.style.width = `${fr.W * S}px`;
       c.style.height = `${fr.H * S}px`;
     }
-    renderer.resize(fr.W, fr.H);
+    renderer.resize(fr.W, fr.H, S);
     stars = makeStars(fr.W, fr.H);
     root.style.setProperty('--px', `${S}px`);
     // 大屏上世界的像素按屏高放大，卡片也跟着放大（以 1440x900 为基准），比例才协调
@@ -416,12 +413,13 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       lastTint = tint;
       root.style.setProperty('--tint', tint);
     }
+    dl.env = { tint, rays: biomeNum(fr.camX, (b) => b.rays) };
   }
 
   /** 写这一帧的绘制清单，交给渲染器（各层怎么合成见 drawlist.ts 的 COMPOSE） */
   function render(dt: number) {
     const { dark } = fr;
-    dl.clear();
+    dl.clear(); // 环境（dl.env）在 update 里按相机位置算好，不随清单清掉
     fr.visH = Math.ceil(window.innerHeight / fr.S);
     drawSky(fr, stars);
     lanterns.draw(fr);

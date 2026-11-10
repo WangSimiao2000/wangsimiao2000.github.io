@@ -36,7 +36,21 @@ test('清单会自动扩容，clear 后从头写', () => {
   assert.equal(dl.layers.over.count, 0);
 });
 
-test('每一层都恰好合成一次', () => {
-  const used = Object.values(COMPOSE).flat().map((r) => r.layer);
+test('每一层都恰好合成一次，景深的深度和组里的层一一对应', () => {
+  const groups = Object.values(COMPOSE).flat();
+  const used = groups.flatMap((g) => g.layers);
   assert.deepEqual([...used].sort(), [...LAYERS].sort());
+  for (const g of groups) {
+    if (g.depth) assert.equal(g.depth.length, g.layers.length, g.layers.join());
+    assert.ok(g.layers.length <= 3, '一组最多 3 层（compose.wgsl 只接 3 张纹理）');
+  }
+});
+
+test('点光源：亮度为 0 的不记，clear 时一起清掉', () => {
+  const dl = new DrawList();
+  dl.light(1, 2, 30, 0.8, '#ffcc88');
+  dl.light(1, 2, 30, 0, '#ffcc88');
+  assert.equal(dl.lights.length, 1);
+  dl.clear();
+  assert.equal(dl.lights.length, 0);
 });
