@@ -11,24 +11,13 @@
 }
 /* 大屏：卡片和快捷栏按 --ui（world.ts 按屏幕尺寸算，1440x900 为 1）整体放大，和变粗的像素世界相称 */
 .js .panel > * { zoom: var(--ui, 1); }
-#sky {
-  position: fixed; inset: 0; display: none; pointer-events: none;
-  image-rendering: pixelated; image-rendering: crisp-edges;
-}
-.js #sky { display: block; }
-#world, #hero {
-  position: fixed;
-  inset: 0;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  display: none;
-  /* 远景自下而上的淡出由渲染器合成时做（drawlist.ts 的 COMPOSE），前景树梢、屋顶、角色不受影响 */
-  filter: var(--world-filter);
-  transition: filter 0.3s;
-}
+/* 画布按屏幕像素画（render/gpu/renderer.ts），CSS 只定位置和尺寸 */
+#world, #hero { position: fixed; inset: 0; display: none; }
 .js #world, .js #hero { display: block; }
+/* 浏览器不支持 WebGPU：不画像素世界，只留博客底色和实色卡片 */
+html[data-renderer='none'] :is(#world, #hero, #front) { display: none; }
 /* 画布贴底：可能比视口高（手机地址栏收起时露出顶上一截），地面始终贴着屏幕底边。见 world.ts resize() */
-.js #sky, .js #world, .js #hero { top: auto; bottom: 0; }
+.js #world, .js #hero { top: auto; bottom: 0; }
 #hero { pointer-events: none; }
 .js #world, .js #hero { will-change: transform, translate; }
 html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-behavior-x: none; }
@@ -366,8 +355,9 @@ html.js.reading { overflow: hidden; }
 .reading .hotbar { opacity: 0; pointer-events: none; visibility: hidden; }
 .hotbar { transition: opacity 0.25s, visibility 0.25s; }
 .reading body::before { opacity: 0.5; }
-.js #world, .js #hero { transition: filter 0.3s, transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
-.reading #world, .reading #hero { transform: translateY(var(--sink)); }
+/* 阅读时主角往下沉，只露出一条地面；世界由渲染器跟着主角画布一起沉、天空不动（ui-bridge.ts 量主角画布的位置） */
+.js #hero { transition: transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.reading #hero { transform: translateY(var(--sink)); }
 .stages, .hotbar { transition: opacity 0.25s; }
 
 /*
@@ -763,12 +753,7 @@ html[data-glass] :is(.hotbar, .toplinks > a, .toplinks > .theme-btn) {
   background: color-mix(in srgb, var(--surface) var(--glass-a), transparent);
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
-/* 打开文章时镜头对焦拉近：世界由渲染器糊开、压暗；主角在自己的画布上，用 CSS 跟着糊 */
-html[data-glass].reading #hero { filter: blur(calc(var(--px) * 0.5)) brightness(0.78); }
-/* 天空画进了世界画布（WebGPU）：阅读时世界画布本身不动，由渲染器把世界往下沉、天空留在原地，
-   沉多少跟着主角画布的 CSS 下沉走（ui-bridge.ts 量主角画布的位置），两边同步 */
-html[data-sky].reading #world { transform: none; }
 
-/* 镜头前的前景：压在卡片和快捷栏上面、手机目录和搜索下面，点击穿透（只有 WebGPU 渲染器画，Canvas 2D 下是空的） */
+/* 镜头前的前景：压在卡片和快捷栏上面、手机目录和搜索下面，点击穿透 */
 #front { position: fixed; left: 0; bottom: 0; z-index: 5; display: none; pointer-events: none; }
 .js #front { display: block; }

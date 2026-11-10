@@ -33,14 +33,14 @@ if (!res.error) {
   const px = decodePNG(shot).data;
   t.ok(px[0] > 240 && px[1] < 16 && px[2] < 16, `清屏成红色后截图能看到（${[...px.subarray(0, 3)]}）`);
 
-  // 首页用 WebGPU 渲染器（?gpu）：就位、翻页、切深色都不报错，画面不是空的
+  // 首页用 WebGPU 渲染器：就位、翻页、切深色都不报错，画面不是空的
   const home = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   const errors = [];
   home.on('pageerror', (e) => errors.push(String(e)));
   home.on('console', (m) => m.type() === 'error' && m.text().includes('[world]') && errors.push(m.text()));
-  await home.goto(BASE + '/?gpu', { waitUntil: 'load' });
+  await home.goto(BASE + '/', { waitUntil: 'load' });
   await home.waitForFunction(() => document.documentElement.dataset.renderer, null, { timeout: 30000 });
-  t.ok((await home.evaluate(() => document.documentElement.dataset.renderer)) === 'webgpu', '首页 ?gpu 用的是 WebGPU 渲染器');
+  t.ok((await home.evaluate(() => document.documentElement.dataset.renderer)) === 'webgpu', '首页用的是 WebGPU 渲染器');
   await home.keyboard.press('5');
   await home.waitForTimeout(1500);
   await home.evaluate(() => (document.documentElement.dataset.theme = 'dark'));

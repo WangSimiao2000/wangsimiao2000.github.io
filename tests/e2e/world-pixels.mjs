@@ -3,7 +3,7 @@
 //   node tests/e2e/world-pixels.mjs dump b.json              # 在新版本上
 //   node tests/e2e/world-pixels.mjs compare a.json b.json    # 可选 TOL=2：每个通道差值不超过 2 不算不同
 //   DIFF=<目录> 时 compare 会把每个画面的差异图写成 PNG（不同的像素标红）
-//   QUERY='?gpu' 时 dump 截的是加了这个查询参数的首页（比如换 WebGPU 渲染器）
+//   QUERY='?fx=0' 时 dump 截的是加了这个查询参数的首页（比如关掉全部效果，只比基本画面）
 // 用「减少动态效果」模式（没有粒子、没有亚像素平移、相机直接就位），并由脚本接管动画时钟逐帧推进，
 // 画面完全确定：两次构建画面一致时，每个画面的不同像素数都是 0。
 // 截的是整页合成后的画面，截之前把所有 DOM 藏起来、只留画布，所以不管世界用几张画布、用什么画都能比。

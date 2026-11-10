@@ -10,33 +10,31 @@ import { rgb } from './sim/util.js';
 
 /**
  * 图层，按合成顺序排列。每层先单独画好，再合成：
- *   sky      天空画布：日月星、孔明灯、烟花（在世界画布后面）
+ *   sky      日月星、孔明灯、烟花：贴着屏幕，不跟世界做亚像素平移、阅读时不跟着下沉
  *   far      远山 \
- *   mid      丘陵  > 远景三层，合成时一起自下而上淡出；开了景深时越远越糊
+ *   mid      丘陵  > 远景三层：越远越糊、越往天空的颜色靠（空气透视）
  *   near     树线 /
- *   back     后排树：树线和主平面之间一排真正的树，比主平面走得慢、糊一点；只有 WebGPU 渲染器画
- *   fg       布景和地面，深色模式下盖一层夜色
- *   shadow   布景和主角投在地上的影子（被日月压扁、往背光的一边斜过去）；只有 WebGPU 渲染器画
+ *   back     后排树：树线和主平面之间一排真正的树，比主平面走得慢、糊一点
+ *   fg       布景和地面，深色模式下变暗
+ *   shadow   布景和主角投在地上的影子（被日月压扁、往背光的一边斜过去）
  *   emissive 灯泡、亮着的窗：只在深色模式合成，叠在夜色之上
- *   halo     灯、窗户、营火周围一圈圈的像素光晕：只有 Canvas 2D 画（WebGPU 下由光束和辉光代替）
  *   glow     营火火焰
- *   actors   女孩、猫：画在光晕之后（经过窗前会挡光），盖夜色
- *   over     气泡和粒子，不盖夜色
- *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移，盖夜色
- *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害；只有 WebGPU 渲染器画
+ *   actors   女孩、猫：画在火焰之后（经过窗前会挡光），深色模式下变暗
+ *   over     气泡和粒子，不变暗
+ *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移
+ *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害
  */
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'emissive', 'halo', 'glow', 'actors', 'over', 'hero', 'front'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
-/**
- * 合成组：组里的层按顺序叠好以后，再整体做淡出、盖夜色，然后叠到画布上。
- * 下面这些开关里，fade / night / darkOnly 两个渲染器都认；lit / depth / bloom 是光效，只有 WebGPU 渲染器认。
- */
+/** 合成组：组里的层按顺序叠好以后，再整体处理（变暗、照亮、调色……），然后叠到画布上 */
 export interface Group {
   layers: LayerName[];
-  /** 自下而上淡出（util.ts 的 FADE_STOPS） */
+  /** 贴着屏幕：不跟世界做亚像素平移、阅读时不跟着下沉（天空） */
+  screen?: boolean;
+  /** 远景：关掉景深时自下而上淡出（util.ts 的 FADE_STOPS），开着时按深度往天空的颜色靠 */
   fade?: boolean;
-  /** 深色模式下用 source-atop 盖一层夜色：只染已有的像素，不改透明度 */
+  /** 深色模式下变暗（夜色） */
   night?: boolean;
   /** 只在深色模式下合成 */
   darkOnly?: boolean;
@@ -44,24 +42,17 @@ export interface Group {
   lit?: boolean;
   /** 每层离对焦的主平面多远（0 = 主平面），开了景深时按这个模糊；镜头前的前景也用正数 */
   depth?: number[];
-  /** 亮的部分往外泛光（辉光） */
-  bloom?: boolean;
-  /** 只有 WebGPU 渲染器合成（靠景深区分远近的层，Canvas 2D 下画出来会和主平面混在一起） */
-  gpuOnly?: boolean;
-  /** 只有 Canvas 2D 渲染器合成（WebGPU 下有更好的替代，比如像素光晕换成光束和辉光） */
-  classicOnly?: boolean;
 }
-export type CanvasName = 'sky' | 'world' | 'hero' | 'front';
+export type CanvasName = 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
-  sky: [{ layers: ['sky'] }],
   world: [
+    { layers: ['sky'], screen: true },
     { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3.5, 3] },
-    { layers: ['back'], night: true, lit: true, depth: [2], gpuOnly: true },
+    { layers: ['back'], night: true, lit: true, depth: [2] },
     { layers: ['fg'], night: true, lit: true },
-    { layers: ['shadow'], gpuOnly: true },
-    { layers: ['emissive'], darkOnly: true, bloom: true },
-    { layers: ['halo'], classicOnly: true },
-    { layers: ['glow'], bloom: true },
+    { layers: ['shadow'] },
+    { layers: ['emissive'], darkOnly: true },
+    { layers: ['glow'] },
     { layers: ['actors'], night: true, lit: true },
     { layers: ['over'] },
   ],
@@ -95,7 +86,7 @@ export interface Light {
 
 /**
  * 一个六边形（光圈形状）的光斑，比如镜头光斑、失焦的光点：紧跟在 layer 所在的合成组后面叠上去，
- * 后面的组照常盖住它（放在 back 层就会被主平面挡住，放在 front 层就压在卡片上）。坐标是逻辑像素，r 是外接圆半径。只有 WebGPU 渲染器画
+ * 后面的组照常盖住它（放在 back 层就会被主平面挡住，放在 front 层就压在卡片上）。坐标是逻辑像素，r 是外接圆半径
  */
 export interface Bokeh {
   layer: LayerName;
@@ -189,12 +180,12 @@ export class DrawList {
   readonly layers = Object.fromEntries(LAYERS.map((l) => [l, new Commands()])) as Record<LayerName, Commands>;
   readonly lights: Light[] = [];
   readonly bokeh: Bokeh[] = [];
-  /** 太阳 / 月亮在天空画布上的位置（逻辑像素），体积光从这里射出 */
+  /** 太阳 / 月亮在屏幕上的位置（逻辑像素），体积光、镜头光斑从这里出来 */
   sun: [number, number] = [0, 0];
   env: Env = { tint: '#ffffff', rays: 0, light: '#ffffff', ambient: '#ffffff', skyTop: '#ffffff', skyHorizon: '#ffffff', skyY: [0, 1], shadow: { alpha: 0, squash: 0, shear: 0 } };
   /**
    * 每层整体再往右挪的亚像素（逻辑像素，可以是负数）。远景、后排、前景按整格画，走得比主平面慢或快，
-   * 镜头快停下时会隔几帧才挪一格；渲染器合成时按这个小数偏移取样，移动就是连续的。Canvas 2D 不管它
+   * 镜头快停下时会隔几帧才挪一格；渲染器合成时按这个小数偏移取样，移动就是连续的
    */
   readonly shift: Partial<Record<LayerName, number>> = {};
 
@@ -232,11 +223,10 @@ export class DrawList {
 }
 
 /**
- * 世界的画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中；
- * 前景压在卡片上面（只有 WebGPU 渲染器画）
+ * 世界的画布：天空和世界在卡片后面，跟着相机做亚像素平移（天空在里面反着挪回来，贴着屏幕）；
+ * 主角始终在屏幕正中；前景压在卡片上面
  */
 export interface Canvases {
-  sky: HTMLCanvasElement;
   world: HTMLCanvasElement;
   hero: HTMLCanvasElement;
   front: HTMLCanvasElement;
@@ -258,8 +248,8 @@ export interface View {
   focus: number;
   /**
    * 主角画布相对世界画布的位置（世界画布的像素）。主角画布不做亚像素平移、阅读时跟着 CSS 往下沉：
-   * x 就是世界画布这一帧的亚像素平移，y 就是下沉了多少。WebGPU 渲染器把天空画进世界画布时，
-   * 天空按 x 对齐屏幕、不跟着沉；世界按 y 往下沉（世界画布自己不再用 CSS 下沉，见 home.css）
+   * x 就是世界画布这一帧的亚像素平移，y 就是下沉了多少。渲染器让天空按 x 对齐屏幕、不跟着沉，
+   * 世界按 y 往下沉（世界画布自己不用 CSS 下沉，见 home.css），和主角同步
    */
   hero: [number, number];
 }
@@ -268,13 +258,8 @@ export interface View {
 export interface Renderer {
   /**
    * 画布的逻辑尺寸变了（resize）。S 是一个逻辑像素占几个 CSS 像素：画布的 CSS 尺寸由 world.ts 定，
-   * 实际分辨率由渲染器自己定（Canvas 2D 按逻辑像素画再放大；WebGPU 的世界画布按屏幕像素画，模糊和泛光才是平滑的）
+   * 实际分辨率由渲染器自己定（按屏幕像素画，模糊和泛光才是平滑的）
    */
   resize(W: number, H: number, S: number): void;
   draw(dl: DrawList, dark: boolean, view: View): void;
-  /**
-   * 有没有景深。有景深时远近靠模糊区分，远景不再往雾色靠（sim/terrain.ts 的 haze）；
-   * 没有（Canvas 2D）时远景照旧雾化，不然几层叠在一起分不清
-   */
-  readonly depthOfField: boolean;
 }
