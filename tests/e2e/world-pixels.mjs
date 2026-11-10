@@ -1,16 +1,23 @@
 // 像素世界画面回归：逐像素比较两次构建（比如重构前后）的世界画面。
-//   node tests/e2e/world-pixels.mjs dump a.json      # 在旧版本上
-//   node tests/e2e/world-pixels.mjs dump b.json      # 在新版本上
-//   node tests/e2e/world-pixels.mjs compare a.json b.json
+//   node tests/e2e/world-pixels.mjs dump a.json              # 在旧版本上
+//   node tests/e2e/world-pixels.mjs dump b.json              # 在新版本上
+//   node tests/e2e/world-pixels.mjs compare a.json b.json    # 可选 TOL=2：每个通道差值不超过 2 不算不同
+//   DIFF=<目录> 时 compare 会把每个画面的差异图写成 PNG（不同的像素标红）
 // 用「减少动态效果」模式（没有粒子、没有亚像素平移、相机直接就位），并由脚本接管动画时钟逐帧推进，
 // 画面完全确定：两次构建画面一致时，每个画面的不同像素数都是 0。
-import { readFileSync, writeFileSync } from 'node:fs';
+// 截的是整页合成后的画面，截之前把所有 DOM 藏起来、只留画布，所以不管世界用几张画布、用什么画都能比。
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { launch, BASE } from './browser.mjs';
+import { decodePNG, encodePNG } from '../../build/png.mjs';
 
 const [mode, a, b] = process.argv.slice(2);
+// visibility 会继承，但子元素可以单独设回 visible：这样只有画布留在画面里
+const ONLY_CANVAS = '* { visibility: hidden !important; transition: none !important; } canvas { visibility: visible !important; }';
 
 if (mode === 'dump') {
-  const browser = await launch();
+  // 世界之后用 WebGPU 画，新旧两次都在同一个浏览器里截，才能逐像素比较
+  const browser = await launch({ webgpu: true });
   const out = {};
   for (const theme of ['light', 'dark']) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: theme });
@@ -23,12 +30,13 @@ if (mode === 'dump') {
       let now = 0;
       window.requestAnimationFrame = (cb) => (queue.push(cb), queue.length);
       performance.now = () => now;
-      window.__step = (n) => {
+      window.__step = async (n) => {
         for (let i = 0; i < n; i++) {
           now += 16;
           const q = queue;
           queue = [];
-          q.forEach((cb) => cb(now));
+          // 每帧的回调可能是异步的（等 GPU 提交完成），按顺序等完再推进下一帧
+          for (const cb of q) await cb(now);
         }
       };
     }, theme);
@@ -36,19 +44,12 @@ if (mode === 'dump') {
     await page.goto(BASE + '/', { waitUntil: 'load' });
     await page.waitForTimeout(400); // 图集等图片资源解码完
     await page.evaluate(() => window.__step(30));
+    await page.addStyleTag({ content: ONLY_CANVAS });
     for (let i = 1; i <= 6; i++) {
       await page.keyboard.press(String(i));
       await page.waitForTimeout(150);
       await page.evaluate(() => window.__step(60));
-      out[`${theme}/${i}`] = await page.evaluate(() =>
-        ['#sky', '#world', '#hero'].map((s) => {
-          const c = document.querySelector(s);
-          const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-          let bin = '';
-          for (let k = 0; k < d.length; k += 8192) bin += String.fromCharCode(...d.subarray(k, k + 8192));
-          return btoa(bin);
-        }),
-      );
+      out[`${theme}/${i}`] = (await page.screenshot()).toString('base64');
     }
     await ctx.close();
   }
@@ -58,19 +59,35 @@ if (mode === 'dump') {
 } else if (mode === 'compare') {
   const A = JSON.parse(readFileSync(a, 'utf8'));
   const B = JSON.parse(readFileSync(b, 'utf8'));
+  const tol = Number(process.env.TOL || 0);
+  const diffDir = process.env.DIFF;
+  if (diffDir) mkdirSync(diffDir, { recursive: true });
   let worst = 0;
   for (const key of Object.keys(A)) {
-    const diffs = A[key].map((layer, li) => {
-      const x = Buffer.from(layer, 'base64');
-      const y = Buffer.from(B[key]?.[li] ?? '', 'base64');
-      if (x.length !== y.length) return Infinity;
-      let n = 0;
-      for (let k = 0; k < x.length; k += 4) if (x[k] !== y[k] || x[k + 1] !== y[k + 1] || x[k + 2] !== y[k + 2] || x[k + 3] !== y[k + 3]) n++;
-      return n;
-    });
-    const total = x => x.reduce((s, v) => s + v, 0);
-    worst = Math.max(worst, total(diffs));
-    console.log(`${key.padEnd(8)} 天空 ${diffs[0]}  世界 ${diffs[1]}  主角 ${diffs[2]}  （不同像素数）`);
+    const x = decodePNG(Buffer.from(A[key], 'base64'), `${a}:${key}`);
+    const y = B[key] ? decodePNG(Buffer.from(B[key], 'base64'), `${b}:${key}`) : null;
+    if (!y || x.width !== y.width || x.height !== y.height) {
+      console.log(`${key.padEnd(8)} 尺寸不同或缺失`);
+      worst = Infinity;
+      continue;
+    }
+    let n = 0;
+    let max = 0;
+    const diff = diffDir ? new Uint8Array(x.data.length) : null;
+    for (let k = 0; k < x.data.length; k += 4) {
+      const d = Math.max(Math.abs(x.data[k] - y.data[k]), Math.abs(x.data[k + 1] - y.data[k + 1]), Math.abs(x.data[k + 2] - y.data[k + 2]));
+      max = Math.max(max, d);
+      const bad = d > tol;
+      if (bad) n++;
+      if (diff) {
+        // 差异图：不同的像素标红，其余画成淡灰的原图
+        const g = (x.data[k] + x.data[k + 1] + x.data[k + 2]) / 9 + 170;
+        diff.set(bad ? [255, 0, 0, 255] : [g, g, g, 255], k);
+      }
+    }
+    if (diff) writeFileSync(join(diffDir, key.replace('/', '-') + '.png'), encodePNG(x.width, x.height, diff));
+    worst = Math.max(worst, n);
+    console.log(`${key.padEnd(8)} 不同像素 ${n}（${((n / (x.width * x.height)) * 100).toFixed(3)}%），最大通道差 ${max}`);
   }
   process.exitCode = worst === 0 ? 0 : 1;
 } else {
