@@ -2,7 +2,7 @@
  * 场景精灵：树、灌木、石头、小屋……源图在 src/art/scenery/，构建时打包进图集（见 atlas.ts）。
  *
  * 画风：现代独立游戏的像素插画——有机的形状、统一的左上光源、每个形状 4 档明暗、
- * 档位之间用噪声打散成像素簇、不描黑边。改素材直接改 src/art/ 下对应的 PNG。
+ * 档位之间用噪声打散成像素簇、描边用相邻颜色压暗（不用纯黑）。改素材直接改 src/art/ 下对应的 PNG。
  */
 import { sprite, sprites, type Sprite } from '../atlas.js';
 
@@ -23,6 +23,19 @@ export const COTTAGE = {
 /** 路灯灯泡、营火火焰的中心（相对精灵左上角） */
 export const LAMP_BULB = [4, 5] as const;
 export const CAMPFIRE_FLAME = [7, 2] as const;
+
+/**
+ * 会发光的布景，光从哪里出来（相对精灵左上角）：灯泡、火焰、纸窗、南瓜刻出来的脸……
+ * 小屋的窗户和门口的灯另算（见 COTTAGE）。新加一种发光的布景，在这里写上位置、在 biomes.ts 里给它 glow 就行
+ */
+export const GLOW_AT: Partial<Record<keyof Scenery, readonly [number, number]>> = {
+  lamp: LAMP_BULB,
+  campfire: CAMPFIRE_FLAME,
+  torch: [3, 0],
+  stoneLantern: [5, 7],
+  jackOLantern: [5, 5],
+  glowcap: [5, 2],
+};
 
 export interface Scenery {
   oak: Sprite[];
@@ -50,10 +63,32 @@ export interface Scenery {
   stump: Sprite[];
   log: Sprite[];
   berryBush: Sprite[];
+  pebbles: Sprite[];
+  fern: Sprite[];
+  reeds: Sprite[];
+  pumpkin: Sprite[];
+  snowPile: Sprite[];
+  leafPile: Sprite[];
+  /** 风滚草滚动的 4 帧（每帧转 90 度），由 tumbleweed.ts 画 */
+  tumbleweed: Sprite[];
+  torch: Sprite;
+  stoneLantern: Sprite;
+  jackOLantern: Sprite;
+  glowcap: Sprite;
+  scarecrow: Sprite;
+  tent: Sprite;
+  snowTent: Sprite;
+  crate: Sprite;
+  barrel: Sprite;
+  well: Sprite;
+  mailbox: Sprite;
+  bench: Sprite;
 }
 
-const SETS = ['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush'] as const;
-const SINGLES = ['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay'] as const;
+const SETS = ['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush',
+  'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile', 'tumbleweed'] as const;
+const SINGLES = ['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay',
+  'torch', 'stoneLantern', 'jackOLantern', 'glowcap', 'scarecrow', 'tent', 'snowTent', 'crate', 'barrel', 'well', 'mailbox', 'bench'] as const;
 
 export function buildScenery(): Scenery {
   const sc = {} as Record<string, Sprite | Sprite[]>;

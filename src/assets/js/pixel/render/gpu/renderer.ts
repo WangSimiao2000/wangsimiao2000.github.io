@@ -248,9 +248,15 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const grade = effects & FX.grade && (g.lit || g.fade) ? GRADE : 0;
       // 亚像素偏移只对模糊过的层有意义（线性插值取样）；清晰的层按最近邻取，偏移了也还是跳格
       const shift = [0, 1, 2].map((i) => (soft[i] ? (dl.shift[g.layers[i]] ?? 0) : 0));
+      // 毛玻璃里的天空：天空画布和世界画布不一起动（亚像素平移、阅读时下沉），按两张画布的相对位置对齐
+      let rise = 0;
+      if (canvas === 'glass' && g.layers.includes('sky')) {
+        shift[0] = view.sky[0] / scale;
+        rise = view.sky[1] / scale;
+      }
       const vignette = canvas === 'front' && effects & FX.vignette ? 1 : 0;
       const look = effects & FX.grade && !g.layers.includes('sky') ? 1 : 0;
-      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, g.fade ? 1 : 0, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, 0]));
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, g.fade ? 1 : 0, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise]));
     }
   }
 

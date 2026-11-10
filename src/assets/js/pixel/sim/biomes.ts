@@ -12,7 +12,8 @@ import { clamp, css, mix, mixRGB, noise1, rgb, smooth, type RGB } from './util.j
 export type FloraKind = { [K in keyof Scenery]: Scenery[K] extends Sprite[] ? K : never }[keyof Scenery];
 /** Scenery 里「单个精灵」的键（小屋、路灯、营火……） */
 export type PieceKind = { [K in keyof Scenery]: Scenery[K] extends Sprite[] ? never : K }[keyof Scenery];
-export type GlowKind = 'lamp' | 'window' | 'fire';
+/** 发光的种类：决定光的颜色、范围、闪不闪（lights.ts 的 LIGHT），光从哪出来写在 scenery.ts 的 GLOW_AT */
+export type GlowKind = 'lamp' | 'window' | 'fire' | 'torch' | 'lantern' | 'pumpkin' | 'glowcap';
 /** 可交互的彩蛋，由 eggs.ts 按这个标记接管绘制和点击 */
 export type EggKind = 'sign' | 'hay' | 'door';
 
@@ -62,6 +63,8 @@ export interface Biome {
   weather?: { kind: WeatherKind; rate: number };
   /** 深色模式下萤火虫的生成概率 */
   fireflies?: number;
+  /** 每一屏有几团风滚草在地上滚（tumbleweed.ts） */
+  tumbleweeds?: number;
   /** 白天体积光的强度：树多、林子密的地方光束更明显（只有 WebGPU 渲染器用） */
   rays: number;
 }
@@ -78,7 +81,16 @@ export const BIOMES: Biome[] = [
   {
     name: 'autumn', rays: 0.9, tint: '#ffe0bf', far: '#d9c3b4', mid: '#d9a77a', near: '#c98a5a', treeline: 0.9, spiky: false,
     line: '#6a360d', rim: '#f3dc8e', top: '#d6b45c', shade: '#b48d43', soil: SOIL, amp: 9, blades: true,
-    flora: [{ until: 0.34, kind: 'autumn', z: 0 }, { until: 0.46, kind: 'autumnBush', z: 2 }, { until: 0.62, kind: 'dryTuft', z: 3 }],
+    flora: [
+      { until: 0.34, kind: 'autumn', z: 0 }, { until: 0.46, kind: 'autumnBush', z: 2 }, { until: 0.5, kind: 'pumpkin', z: 2 },
+      { until: 0.62, kind: 'dryTuft', z: 3 }, { until: 0.7, kind: 'leafPile', z: 3 },
+    ],
+    pieces: [
+      { kind: 'jackOLantern', dx: -50, z: 2, glow: 'pumpkin' },
+      { kind: 'jackOLantern', dx: 66, z: 2, glow: 'pumpkin' },
+    ],
+    clear: [[-58, -42], [58, 74]],
+    fireflies: 0.05,
   },
   {
     name: 'plains', rays: 0.45, tint: '#cdebff', far: '#a9c3da', mid: '#a3c99a', near: '#82b76e', treeline: 0.35, spiky: false,
@@ -86,9 +98,15 @@ export const BIOMES: Biome[] = [
     // 蘑菇占 0.26-0.29 这一段：槽位的随机数相邻几个会扎堆，放在 0.73 附近时起点路牌旁会连着长四丛
     flora: [
       { until: 0.1, kind: 'oak', z: 0 }, { until: 0.18, kind: 'bush', z: 2 }, { until: 0.21, kind: 'berryBush', z: 2 },
-      { until: 0.26, kind: 'rock', z: 2 }, { until: 0.29, kind: 'mushroom', z: 2 },
-      { until: 0.53, kind: 'tuft', z: 3 }, { until: 0.73, kind: 'flowers', z: 3 },
+      { until: 0.26, kind: 'rock', z: 2 }, { until: 0.29, kind: 'mushroom', z: 2 }, { until: 0.32, kind: 'pebbles', z: 2 },
+      { until: 0.53, kind: 'tuft', z: 3 }, { until: 0.73, kind: 'flowers', z: 3 }, { until: 0.77, kind: 'reeds', z: 3 },
     ],
+    pieces: [
+      { kind: 'torch', dx: -64, z: 1, glow: 'torch' },
+      { kind: 'scarecrow', dx: 74, z: 1 },
+    ],
+    clear: [[-70, -58], [62, 86]],
+    fireflies: 0.04,
   },
   {
     name: 'forest', rays: 1.0, tint: '#bfe4ff', far: '#93b1c9', mid: '#76a57b', near: '#548a5c', treeline: 1, spiky: false,
@@ -97,10 +115,14 @@ export const BIOMES: Biome[] = [
       { until: 0.3, kind: 'forest', z: 0 }, { until: 0.46, kind: 'oak', z: 0 },
       { until: 0.5, kind: 'stump', z: 1 }, { until: 0.53, kind: 'log', z: 1 },
       { until: 0.6, kind: 'bush', z: 2 }, { until: 0.64, kind: 'berryBush', z: 2 },
-      { until: 0.82, kind: 'tuft', z: 3 }, { until: 0.89, kind: 'mushroom', z: 3 },
+      { until: 0.82, kind: 'tuft', z: 3 }, { until: 0.89, kind: 'mushroom', z: 3 }, { until: 0.94, kind: 'fern', z: 3 },
     ],
-    pieces: [{ kind: 'hay', dx: 46, z: 2, egg: 'hay' }],
-    clear: [[30, 64]], // 草堆周围
+    pieces: [
+      { kind: 'hay', dx: 46, z: 2, egg: 'hay' },
+      { kind: 'glowcap', dx: -72, z: 2, glow: 'glowcap' },
+      { kind: 'glowcap', dx: 104, z: 2, glow: 'glowcap' },
+    ],
+    clear: [[30, 64], [-80, -64], [96, 112]], // 草堆、两丛发光蘑菇周围
     weather: { kind: 'leaf', rate: 0.08 },
     fireflies: 0.06,
   },
@@ -108,12 +130,21 @@ export const BIOMES: Biome[] = [
     name: 'desert', rays: 0.35, tint: '#ffe6b8', far: '#e9d2b3', mid: '#e6c595', near: '#dcb07d', treeline: 0, spiky: false,
     line: '#9a6f42', rim: '#fdebc6', top: '#f2d6a3', shade: '#e2bb86', soil: ['#d7ad78', '#c39667', '#a97e58'], amp: 15, blades: false,
     flora: [{ until: 0.1, kind: 'cactus', z: 1 }, { until: 0.2, kind: 'sandRock', z: 2 }, { until: 0.36, kind: 'dryTuft', z: 3 }],
+    pieces: [
+      { kind: 'torch', dx: 36, z: 1, glow: 'torch' },
+      { kind: 'tent', dx: 60, z: 1 },
+      { kind: 'crate', dx: 82, z: 2 },
+      { kind: 'barrel', dx: 92, z: 2 },
+    ],
+    clear: [[26, 100]], // 帐篷营地
+    tumbleweeds: 3,
   },
   {
     name: 'village', rays: 0.55, tint: '#ffd9ae', far: '#bcbad6', mid: '#a7c792', near: '#87b56c', treeline: 0.45, spiky: false,
     line: '#1e462b', rim: '#d6ec94', top: '#90c664', shade: '#6aa24e', soil: SOIL, amp: 7, blades: true,
     flora: [
       { until: 0.08, kind: 'oak', z: 0 }, { until: 0.17, kind: 'bush', z: 2 }, { until: 0.2, kind: 'berryBush', z: 2 },
+      { until: 0.23, kind: 'pebbles', z: 2 },
       { until: 0.48, kind: 'tuft', z: 3 }, { until: 0.68, kind: 'flowers', z: 3 },
     ],
     pieces: [
@@ -121,25 +152,42 @@ export const BIOMES: Biome[] = [
       { kind: 'fence', dx: 98, z: 2 },
       { kind: 'lamp', dx: -62, z: 1, glow: 'lamp' },
       { kind: 'lamp', dx: 120, z: 1, glow: 'lamp' },
+      { kind: 'mailbox', dx: 20, z: 2 },
+      { kind: 'well', dx: -104, z: 1 },
+      { kind: 'barrel', dx: -86, z: 2 },
+      { kind: 'crate', dx: 140, z: 2 },
     ],
-    clear: [[14, 124]], // 小屋和栅栏
+    clear: [[14, 124], [-116, -78], [132, 150]], // 小屋和栅栏、水井、木箱
     path: 70,
+    fireflies: 0.03,
   },
   {
     name: 'cherry', rays: 0.85, tint: '#ffd0d6', far: '#d8bdd3', mid: '#dcadc6', near: '#c08cab', treeline: 0.9, spiky: false,
     line: '#1e462b', rim: '#dcf0a2', top: '#9bcd6c', shade: '#73aa57', soil: ['#a07b63', '#816150', '#644c42'], amp: 11, blades: true,
     flora: [
       { until: 0.32, kind: 'blossom', z: 0 }, { until: 0.44, kind: 'blossomBush', z: 2 },
+      { until: 0.47, kind: 'pebbles', z: 2 },
       { until: 0.66, kind: 'tuft', z: 3 }, { until: 0.78, kind: 'flowers', z: 3 },
     ],
+    pieces: [
+      { kind: 'stoneLantern', dx: -66, z: 1, glow: 'lantern' },
+      { kind: 'bench', dx: 62, z: 2 },
+      { kind: 'stoneLantern', dx: 96, z: 1, glow: 'lantern' },
+    ],
+    clear: [[-74, -58], [48, 104]],
     weather: { kind: 'petal', rate: 0.35 },
+    fireflies: 0.03,
   },
   {
     name: 'snow', rays: 0.6, tint: '#bccbea', far: '#b6c3dc', mid: '#9fafcd', near: '#8396bb', treeline: 0.85, spiky: true,
     line: '#5e6b8a', rim: '#ffffff', top: '#eef3fb', shade: '#cfd9ea', soil: ['#908c9c', '#716d80', '#565368'], amp: 15, blades: false, sparkle: true,
-    flora: [{ until: 0.38, kind: 'pine', z: 0 }, { until: 0.5, kind: 'snowRock', z: 2 }],
-    pieces: [{ kind: 'campfire', dx: 24, z: 2, glow: 'fire', lift: 1 }],
-    clear: [[10, 40]], // 篝火
+    flora: [{ until: 0.38, kind: 'pine', z: 0 }, { until: 0.5, kind: 'snowRock', z: 2 }, { until: 0.58, kind: 'snowPile', z: 2 }],
+    pieces: [
+      { kind: 'campfire', dx: 24, z: 2, glow: 'fire', lift: 1 },
+      { kind: 'snowTent', dx: 66, z: 1 },
+      { kind: 'torch', dx: 92, z: 1, glow: 'torch' },
+    ],
+    clear: [[10, 100]], // 篝火和帐篷
     weather: { kind: 'snow', rate: 0.8 },
   },
 ];
@@ -243,6 +291,8 @@ export interface Item {
   sprite: Sprite;
   wx: number; // 精灵底边中心的世界坐标
   z: number; // 绘制顺序：小的在前
+  /** 固定布景的种类（植被没有）：发光的布景按它查光从哪出来（scenery.ts 的 GLOW_AT） */
+  kind?: PieceKind;
   glow?: GlowKind;
   egg?: EggKind;
   lift?: number;
@@ -270,6 +320,6 @@ export function slotItem(s: number, sc: Scenery): Item | null {
 export function setPieces(sec: number, sc: Scenery): Item[] {
   const c = sec * SECTION;
   const items: Item[] = [{ sprite: sc.sign, wx: c - 32, z: 1, egg: sec === 0 ? 'sign' : undefined }];
-  for (const pc of biomeOf(sec)?.pieces ?? []) items.push({ sprite: sc[pc.kind], wx: c + pc.dx, z: pc.z, glow: pc.glow, egg: pc.egg, lift: pc.lift });
+  for (const pc of biomeOf(sec)?.pieces ?? []) items.push({ sprite: sc[pc.kind], kind: pc.kind, wx: c + pc.dx, z: pc.z, glow: pc.glow, egg: pc.egg, lift: pc.lift });
   return items;
 }

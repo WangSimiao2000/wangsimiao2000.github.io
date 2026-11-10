@@ -3,6 +3,7 @@
 // 打开文章时镜头对焦拉近：整个世界一起换成模糊的场景、压暗一些（focus 0..1）。
 // 糊得很开，星星、灯这些小亮点会被抹平；另外取一份只糊一点的，比大幅模糊亮出来的部分（亮点）再加回去，
 // 透过玻璃还能看到一点点散开的亮光。
+// 真的毛玻璃看起来不是一层白雾：透过来的颜色更浓（饱和度提高），表面有细细的颗粒。
 
 struct Glass {
   info: vec4f, // 块数, 对焦拉近, 画布宽, 画布高
@@ -45,6 +46,10 @@ fn roundRect(p: vec2f, r: vec4f, rad: f32) -> f32 {
   var c = textureSampleLevel(scene, samp, uv, 0.0);
   let s = textureSampleLevel(sharp, samp, uv, 0.0);
   c = vec4f(c.rgb * 1.06 + max(s.rgb - c.rgb, vec3f(0.0)) * 2.5, c.a);
+  let l = dot(c.rgb, vec3f(0.2126, 0.7152, 0.0722));
+  c = vec4f(max(mix(vec3f(l), c.rgb, 1.35), vec3f(0.0)), c.a);
+  let grain = fract(sin(dot(floor(fp), vec2f(12.9898, 78.233))) * 43758.5453) - 0.5;
+  c = vec4f(c.rgb * (1.0 + grain * 0.06), c.a);
   c.a = clamp(max(c.a, max(c.r, max(c.g, c.b))), 0.0, 1.0);
   // 对焦拉近时整体压暗一些，焦点像是落到了面板上
   c = vec4f(c.rgb * (1.0 - focus * 0.25), c.a);

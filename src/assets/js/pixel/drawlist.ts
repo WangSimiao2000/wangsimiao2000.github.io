@@ -238,6 +238,11 @@ export interface GlassRect {
 export interface View {
   glass: GlassRect[];
   focus: number;
+  /**
+   * 天空画布相对世界画布挪了多少（世界画布的像素）：世界画布有亚像素平移、阅读时往下沉，天空画布不动。
+   * 毛玻璃要把天空也合成进去，按这个对齐，不然阅读时糊开的太阳会比真的太阳低一截，看着像两个太阳
+   */
+  sky: [number, number];
 }
 
 /** 渲染器的统一接口：world.ts 每帧交给它一份清单 */

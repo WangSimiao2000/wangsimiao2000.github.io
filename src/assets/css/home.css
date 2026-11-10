@@ -751,8 +751,11 @@ html.world-hover body { cursor: pointer; }
  * 后面糊开的场景由渲染器按元素的位置和圆角画（render/gpu/glass.wgsl），不用 backdrop-filter。
  * 这里的选择器要和 pixel/ui-bridge.ts 的 GLASS 一致：只有那边量了位置的元素，后面才有毛玻璃。
  */
-html[data-glass] { --glass-a: 66%; }
-html[data-glass][data-theme='dark'] { --glass-a: 62%; }
+/* 表面只盖一层薄薄的底色，后面糊开的场景透得出来（盖厚了就是一层白雾）。阅读面板是大段正文，盖厚一些保证对比度 */
+html[data-glass] { --glass-a: 42%; }
+html[data-glass][data-theme='dark'] { --glass-a: 48%; }
+html[data-glass] .reader-card { --glass-a: 62%; }
+html[data-glass][data-theme='dark'] .reader-card { --glass-a: 64%; }
 html[data-glass] :is(.stages .card, .secret-panel .card, .reader-card, .reader-side) {
   background: linear-gradient(145deg, color-mix(in srgb, var(--surface-hi) var(--glass-a), transparent), color-mix(in srgb, var(--surface-lo) var(--glass-a), transparent));
 }
@@ -762,6 +765,9 @@ html[data-glass] :is(.hotbar, .toplinks > a, .toplinks > .theme-btn) {
 }
 /* 打开文章时镜头对焦拉近：世界由渲染器糊开、压暗；主角在自己的画布上，用 CSS 跟着糊 */
 html[data-glass].reading #hero { filter: blur(calc(var(--px) * 0.5)) brightness(0.78); }
+/* 世界画布阅读时往下沉，顶上露出一截天空画布：跟着一起糊、压暗，接得上 */
+html[data-glass].reading #sky { filter: blur(calc(var(--px) * 1.5)) brightness(0.78); }
+.js #sky { transition: filter 0.3s; }
 
 /* 镜头前的前景：压在卡片和快捷栏上面、手机目录和搜索下面，点击穿透（只有 WebGPU 渲染器画，Canvas 2D 下是空的） */
 #front { position: fixed; left: 0; bottom: 0; z-index: 5; display: none; pointer-events: none; }

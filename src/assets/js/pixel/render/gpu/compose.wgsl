@@ -11,7 +11,7 @@ struct Group {
   a: vec4f, // 层数, 淡出, 盖夜色, 被灯照亮
   b: vec4f, // 三层各自是否用模糊过的纹理, 画布像素 / 逻辑像素
   c: vec4f, // 往群系色调偏多少, 整组的不透明度, 调色, 压暗角
-  d: vec4f, // 三层各自往右挪的亚像素（逻辑像素，drawlist.ts 的 shift）
+  d: vec4f, // 三层各自往右挪的亚像素（逻辑像素，drawlist.ts 的 shift）, 整组往下挪多少（毛玻璃里对齐天空用）
 };
 @group(0) @binding(1) var<uniform> G: Group;
 @group(0) @binding(2) var t0: texture_2d<f32>;
@@ -31,6 +31,8 @@ fn fadeAt(t: f32) -> f32 {
 
 fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
   if (soft > 0.5) { return textureSampleLevel(t, samp, lp / F.size.xy, 0.0); }
+  // 挪出纹理范围的地方是空的（越界的 textureLoad 结果不确定）
+  if (any(lp < vec2f(0.0)) || any(lp >= F.size.xy)) { return vec4f(0.0); }
   return textureLoad(t, vec2i(lp), 0);
 }
 
@@ -38,9 +40,9 @@ fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
   let lp = v.pos.xy / G.b.w; // 逻辑像素坐标
   let n = i32(G.a.x);
   // 三个分支要写开：纹理不能放进数组里按下标取
-  var c = pick(t0, G.b.x, lp - vec2f(G.d.x, 0.0));
-  if (n > 1) { let s = pick(t1, G.b.y, lp - vec2f(G.d.y, 0.0)); c = s + c * (1.0 - s.a); }
-  if (n > 2) { let s = pick(t2, G.b.z, lp - vec2f(G.d.z, 0.0)); c = s + c * (1.0 - s.a); }
+  var c = pick(t0, G.b.x, lp - vec2f(G.d.x, G.d.w));
+  if (n > 1) { let s = pick(t1, G.b.y, lp - vec2f(G.d.y, G.d.w)); c = s + c * (1.0 - s.a); }
+  if (n > 2) { let s = pick(t2, G.b.z, lp - vec2f(G.d.z, G.d.w)); c = s + c * (1.0 - s.a); }
   if (c.a <= 0.0) { return vec4f(0.0); }
 
   let dark = isDark();

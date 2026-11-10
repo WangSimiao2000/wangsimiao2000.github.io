@@ -28,10 +28,12 @@ export class UiBridge {
   private focus = 0;
   private readonly root = document.documentElement;
   private readonly canvas: HTMLCanvasElement;
+  private readonly sky: HTMLCanvasElement;
 
-  /** canvas：世界画布，毛玻璃画在它上面 */
-  constructor(canvas: HTMLCanvasElement) {
+  /** canvas：世界画布，毛玻璃画在它上面；sky：天空画布（毛玻璃按它对齐天空） */
+  constructor(canvas: HTMLCanvasElement, sky: HTMLCanvasElement) {
     this.canvas = canvas;
+    this.sky = sky;
   }
 
   /** dt：距上一帧的秒数；reduced：减少动态效果时对焦直接到位 */
@@ -41,9 +43,12 @@ export class UiBridge {
     this.focus = target > this.focus ? Math.min(target, this.focus + step) : Math.max(target, this.focus - step);
     const cv = this.canvas.getBoundingClientRect();
     const glass: GlassRect[] = [];
+    let sky: [number, number] = [0, 0];
     if (cv.width > 0 && cv.height > 0) {
       const kx = this.canvas.width / cv.width;
       const ky = this.canvas.height / cv.height;
+      const sk = this.sky.getBoundingClientRect();
+      sky = [(sk.left - cv.left) * kx, (sk.top - cv.top) * ky];
       for (const el of document.querySelectorAll(GLASS)) {
         if (glass.length >= MAX) break;
         const r = el.getBoundingClientRect();
@@ -56,6 +61,6 @@ export class UiBridge {
     }
     // 对焦的缓动：开头和结尾都慢一点
     const f = this.focus;
-    return { glass, focus: f * f * (3 - 2 * f) };
+    return { glass, focus: f * f * (3 - 2 * f), sky };
   }
 }
