@@ -3,6 +3,7 @@
 //   node tests/e2e/world-pixels.mjs dump b.json              # 在新版本上
 //   node tests/e2e/world-pixels.mjs compare a.json b.json    # 可选 TOL=2：每个通道差值不超过 2 不算不同
 //   DIFF=<目录> 时 compare 会把每个画面的差异图写成 PNG（不同的像素标红）
+//   QUERY='?gpu' 时 dump 截的是加了这个查询参数的首页（比如换 WebGPU 渲染器）
 // 用「减少动态效果」模式（没有粒子、没有亚像素平移、相机直接就位），并由脚本接管动画时钟逐帧推进，
 // 画面完全确定：两次构建画面一致时，每个画面的不同像素数都是 0。
 // 截的是整页合成后的画面，截之前把所有 DOM 藏起来、只留画布，所以不管世界用几张画布、用什么画都能比。
@@ -41,7 +42,9 @@ if (mode === 'dump') {
       };
     }, theme);
     const page = await ctx.newPage();
-    await page.goto(BASE + '/', { waitUntil: 'load' });
+    await page.goto(BASE + '/' + (process.env.QUERY ?? ''), { waitUntil: 'load' });
+    // 渲染器就位（WebGPU 要等适配器和图集）。默认的轮询走 requestAnimationFrame，上面已经接管了，改成定时轮询
+    await page.waitForFunction(() => document.documentElement.dataset.renderer, null, { timeout: 30000, polling: 100 });
     await page.waitForTimeout(400); // 图集等图片资源解码完
     await page.evaluate(() => window.__step(30));
     await page.addStyleTag({ content: ONLY_CANVAS });

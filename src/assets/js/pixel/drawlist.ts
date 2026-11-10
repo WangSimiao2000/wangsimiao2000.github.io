@@ -129,6 +129,13 @@ export class DrawList {
   }
 }
 
+/** 世界的三张画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中 */
+export interface Canvases {
+  sky: HTMLCanvasElement;
+  world: HTMLCanvasElement;
+  hero: HTMLCanvasElement;
+}
+
 /** 渲染器的统一接口：world.ts 每帧交给它一份清单 */
 export interface Renderer {
   /** 三张画布的逻辑尺寸变了（resize） */

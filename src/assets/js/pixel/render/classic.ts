@@ -3,14 +3,8 @@
  * 只在迁移到 WebGPU 期间保留，用来证明 sim/ 的拆分没有改变画面；WebGPU 渲染器默认启用后删掉。
  */
 import { loadAtlas } from '../atlas.js';
-import { COMPOSE, ERASE, FLIP, NIGHT, SOLID, STRIDE, type Commands, type DrawList, type LayerRule, type Renderer } from '../drawlist.js';
+import { COMPOSE, ERASE, FLIP, NIGHT, SOLID, STRIDE, type Canvases, type Commands, type DrawList, type LayerRule, type Renderer } from '../drawlist.js';
 import { FADE_STOPS } from '../sim/util.js';
-
-export interface Canvases {
-  sky: HTMLCanvasElement;
-  world: HTMLCanvasElement;
-  hero: HTMLCanvasElement;
-}
 
 const NIGHT_CSS = `rgba(${NIGHT[0]}, ${NIGHT[1]}, ${NIGHT[2]}, ${NIGHT[3]})`;
 

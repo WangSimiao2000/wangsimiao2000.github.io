@@ -29,7 +29,7 @@ import { Lanterns } from './sim/lanterns.js';
 import { clamp, easeInOut, mix } from './sim/util.js';
 import type { Frame } from './sim/frame.js';
 import { DrawList, type Renderer } from './drawlist.js';
-import { createClassicRenderer } from './render/classic.js';
+import { pickRenderer } from './render/index.js';
 import { bindInput } from './input.js';
 
 const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
@@ -61,7 +61,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   canvas.before(skyCanvas);
   canvas.after(heroCanvas);
   const all = [canvas, skyCanvas, heroCanvas];
-  const renderer: Renderer = createClassicRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas });
+  const renderer: Renderer = pickRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas });
   const dl = new DrawList();
   const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;

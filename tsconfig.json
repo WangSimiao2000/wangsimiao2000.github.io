@@ -5,6 +5,8 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "lib": ["es2023", "dom", "dom.iterable"],
+    // WebGPU 的类型（TypeScript 自带的 dom 库里还没有），只有类型声明，不进页面
+    "types": ["@webgpu/types"],
     "strict": true,
     "noEmit": true,
     "erasableSyntaxOnly": true,
