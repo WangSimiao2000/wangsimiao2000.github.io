@@ -35,8 +35,10 @@ const WIDTH = 256;
  * 同一行里的帧尺寸必须一致（角色动作）：写在 SAME_SIZE 里。
  */
 const REQUIRED = [
-  ...['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush'].map((k) => `scenery.${k}.*`),
-  ...['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay'].map((k) => `scenery.${k}`),
+  ...['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush',
+    'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile', 'tumbleweed'].map((k) => `scenery.${k}.*`),
+  ...['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay',
+    'torch', 'stoneLantern', 'jackOLantern', 'glowcap', 'scarecrow', 'tent', 'snowTent', 'crate', 'barrel', 'well', 'mailbox', 'bench'].map((k) => `scenery.${k}`),
   ...['r', 'l'].flatMap((s) => [`hero.${s}.idle.0`, `hero.${s}.idle.1`, `hero.${s}.run.*`, `hero.${s}.sit.0`, `hero.${s}.sit.1`, `hero.${s}.sit.2`]),
   ...['r', 'l'].flatMap((s) => [`girl.${s}.idle`, `girl.${s}.walk.*`, `girl.${s}.wave.0`]),
   'cat.l.idle.*', 'cat.l.blink', 'cat.l.jump',

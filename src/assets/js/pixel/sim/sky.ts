@@ -1,7 +1,7 @@
 /**
- * 天空：不抢内容，只是淡淡的一层。白天一轮太阳，夜里一轮月亮和一片固定的星空；日月都是纯色的像素圆。
+ * 天空：不抢内容，只是淡淡的一层。白天一轮太阳，夜里一轮月亮和一片固定的星空；日月是带明暗的像素圆球。
  */
-import type { DrawList, LayerName } from '../drawlist.js';
+import type { DrawList } from '../drawlist.js';
 import type { Frame } from './frame.js';
 
 interface Star {
@@ -27,12 +27,36 @@ export function makeStars(W: number, H: number): Star[] {
   return out;
 }
 
-/** 像素圆盘：逐行一条横线。按半径 r + 0.5 取宽度，顶上和底下是一段平边，不会冒出单独一个像素的尖 */
-export function disc(dl: DrawList, layer: LayerName, cx: number, cy: number, r: number, col: string, alpha = 1) {
+/**
+ * 日月：像素圆球，按左上来的光分 4 档明暗（和布景一个光向），月亮再点几个坑。
+ * 逐个像素算球面法线和光的夹角，量化成 4 档
+ */
+const SUN = ['#f0a04a', '#ffc35c', '#ffdb86', '#fff1c2'];
+const MOON = ['#98a3c2', '#c3cce2', '#e2e7f3', '#fbfcff'];
+const CRATERS: readonly [number, number, number][] = [[-2, 1, 1], [2, -2, 0], [1, 3, 0], [-3, -2, 0]]; // dx, dy, 大坑 = 1
+const LIGHT_DIR = (() => {
+  const v = [-0.55, -0.6, 0.58];
+  const l = Math.hypot(...v);
+  return v.map((c) => c / l);
+})();
+
+function orb(dl: DrawList, cx: number, cy: number, r: number, tones: string[], alpha: number, craters = false) {
   const R = r + 0.5;
   for (let y = -r; y <= r; y++) {
     const w = Math.floor(Math.sqrt(R * R - y * y));
-    dl.rect(layer, cx - w, cy + y, w * 2 + 1, 1, col, alpha);
+    for (let x = -w; x <= w; x++) {
+      const nx = x / R;
+      const ny = y / R;
+      const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      const d = nx * LIGHT_DIR[0] + ny * LIGHT_DIR[1] + nz * LIGHT_DIR[2];
+      const k = d > 0.85 ? 3 : d > 0.55 ? 2 : d > 0.2 ? 1 : 0;
+      dl.rect('sky', cx + x, cy + y, 1, 1, tones[k], alpha);
+    }
+  }
+  if (!craters) return;
+  for (const [dx, dy, big] of CRATERS) {
+    dl.rect('sky', cx + dx, cy + dy, 1 + big, 1 + big, tones[1], alpha);
+    if (big) dl.rect('sky', cx + dx, cy + dy, 1, 1, tones[0], alpha);
   }
 }
 
@@ -45,7 +69,7 @@ export function drawSky(fr: Frame, stars: Star[]) {
   const cy = H - vis + Math.round(Math.max(12, vis * 0.15));
   dl.sun = [cx, cy];
   if (!fr.dark) {
-    disc(dl, 'sky', cx, cy, 7, '#ffd98a', 0.95);
+    orb(dl, cx, cy, 7, SUN, 0.95);
     return;
   }
   for (const st of stars) {
@@ -65,5 +89,5 @@ export function drawSky(fr: Frame, stars: Star[]) {
       dl.rect('sky', px, py + 1, 1, 1, col, b);
     }
   }
-  disc(dl, 'sky', cx, cy, 6, '#eef1f8', 0.95);
+  orb(dl, cx, cy, 6, MOON, 0.95, true);
 }

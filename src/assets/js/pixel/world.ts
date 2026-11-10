@@ -13,6 +13,7 @@
  *     backrow.ts   后排树（只有 WebGPU 画）
  *     front.ts     镜头前的前景（只有 WebGPU 画）
  *     bokeh.ts     太阳 / 月亮的镜头光斑（只有 WebGPU 画）
+ *     tumbleweed.ts 沙漠里滚的风滚草
  *   drawlist.ts  模拟和渲染器之间的约定：图层、命令格式、各层怎么合成
  *   render/      渲染器：只读绘制清单
  *   input.ts     滚轮、触屏、键盘、点击
@@ -20,7 +21,7 @@
  * 每帧写清单的顺序：天空 -> 远景 -> 布景、地面 -> 角色 -> 主角 -> 光晕 -> 气泡、粒子（随机数的取用顺序也按这个）。
  */
 import { BIOMES, GROUND, OFF, SECTION, SLOT, biomeNum, heightAt, paletteAt, setPieces, slotItem, weights, type Item } from './sim/biomes.js';
-import { buildScenery, CAMPFIRE_FLAME, COTTAGE, LAMP_BULB } from './sim/scenery.js';
+import { buildScenery, COTTAGE, GLOW_AT } from './sim/scenery.js';
 import { drawGround, drawLayer } from './sim/terrain.js';
 import { drawSky, makeStars } from './sim/sky.js';
 import { Particles } from './sim/particles.js';
@@ -36,6 +37,7 @@ import { pickRenderer } from './render/index.js';
 import { drawFront } from './sim/front.js';
 import { drawBackRow } from './sim/backrow.js';
 import { drawBokeh } from './sim/bokeh.js';
+import { drawTumbleweeds } from './sim/tumbleweed.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
 
@@ -71,7 +73,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   document.body.append(frontCanvas); // 压在卡片上面（home.css 里 z-index 最高、点击穿透）
   const all = [canvas, skyCanvas, heroCanvas, frontCanvas];
   const renderer: Renderer = pickRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas, front: frontCanvas });
-  const ui = new UiBridge(canvas);
+  const ui = new UiBridge(canvas, skyCanvas);
   const dl = new DrawList();
   const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
@@ -364,8 +366,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
         dl.sprite('fg', sp, x, y);
         emit(fr, sp, x, y);
       }
-      if (it.glow === 'lamp') glows.push({ x: x + LAMP_BULB[0], y: y + LAMP_BULB[1], kind: 'lamp', wx: it.wx });
-      if (it.glow === 'fire') glows.push({ x: x + CAMPFIRE_FLAME[0], y: y + CAMPFIRE_FLAME[1], kind: 'fire', wx: it.wx });
+      const at = it.kind && GLOW_AT[it.kind];
+      if (it.glow && it.glow !== 'window' && at) glows.push({ x: x + at[0], y: y + at[1], kind: it.glow, wx: it.wx });
       if (it.glow === 'window') {
         glows.push({ x: x + COTTAGE.window[0], y: y + COTTAGE.window[1], kind: 'window', wx: it.wx });
         glows.push({ x: x + COTTAGE.lantern[0], y: y + COTTAGE.lantern[1], kind: 'lamp', wx: it.wx + 7 });
@@ -442,6 +444,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawBackRow(fr, sc);
     eggs.beginFrame();
     drawItems();
+    drawTumbleweeds(fr, sc);
     drawGround(fr);
     eggs.drawActors(fr, dt);
     hero.draw(fr, fr.running, reading && !fr.running && Math.abs(camTarget() - fr.camX) < 1.5);
