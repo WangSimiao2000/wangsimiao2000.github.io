@@ -83,17 +83,21 @@ export const BIOMES: Biome[] = [
   {
     name: 'plains', rays: 0.45, tint: '#cdebff', far: '#a9c3da', mid: '#a3c99a', near: '#82b76e', treeline: 0.35, spiky: false,
     line: '#1e462b', rim: '#d2ee95', top: '#8cc762', shade: '#68a44d', soil: SOIL, amp: 9, blades: true,
+    // 蘑菇占 0.26-0.29 这一段：槽位的随机数相邻几个会扎堆，放在 0.73 附近时起点路牌旁会连着长四丛
     flora: [
-      { until: 0.1, kind: 'oak', z: 0 }, { until: 0.2, kind: 'bush', z: 2 }, { until: 0.26, kind: 'rock', z: 2 },
-      { until: 0.55, kind: 'tuft', z: 3 }, { until: 0.75, kind: 'flowers', z: 3 },
+      { until: 0.1, kind: 'oak', z: 0 }, { until: 0.18, kind: 'bush', z: 2 }, { until: 0.21, kind: 'berryBush', z: 2 },
+      { until: 0.26, kind: 'rock', z: 2 }, { until: 0.29, kind: 'mushroom', z: 2 },
+      { until: 0.53, kind: 'tuft', z: 3 }, { until: 0.73, kind: 'flowers', z: 3 },
     ],
   },
   {
     name: 'forest', rays: 1.0, tint: '#bfe4ff', far: '#93b1c9', mid: '#76a57b', near: '#548a5c', treeline: 1, spiky: false,
     line: '#1e462b', rim: '#b4de80', top: '#64a854', shade: '#468345', soil: ['#8e6c4e', '#6f533f', '#534034'], amp: 13, blades: true,
     flora: [
-      { until: 0.3, kind: 'forest', z: 0 }, { until: 0.48, kind: 'oak', z: 0 },
-      { until: 0.62, kind: 'bush', z: 2 }, { until: 0.85, kind: 'tuft', z: 3 },
+      { until: 0.3, kind: 'forest', z: 0 }, { until: 0.46, kind: 'oak', z: 0 },
+      { until: 0.5, kind: 'stump', z: 1 }, { until: 0.53, kind: 'log', z: 1 },
+      { until: 0.6, kind: 'bush', z: 2 }, { until: 0.64, kind: 'berryBush', z: 2 },
+      { until: 0.82, kind: 'tuft', z: 3 }, { until: 0.89, kind: 'mushroom', z: 3 },
     ],
     pieces: [{ kind: 'hay', dx: 46, z: 2, egg: 'hay' }],
     clear: [[30, 64]], // 草堆周围
@@ -109,7 +113,7 @@ export const BIOMES: Biome[] = [
     name: 'village', rays: 0.55, tint: '#ffd9ae', far: '#bcbad6', mid: '#a7c792', near: '#87b56c', treeline: 0.45, spiky: false,
     line: '#1e462b', rim: '#d6ec94', top: '#90c664', shade: '#6aa24e', soil: SOIL, amp: 7, blades: true,
     flora: [
-      { until: 0.08, kind: 'oak', z: 0 }, { until: 0.2, kind: 'bush', z: 2 },
+      { until: 0.08, kind: 'oak', z: 0 }, { until: 0.17, kind: 'bush', z: 2 }, { until: 0.2, kind: 'berryBush', z: 2 },
       { until: 0.48, kind: 'tuft', z: 3 }, { until: 0.68, kind: 'flowers', z: 3 },
     ],
     pieces: [
