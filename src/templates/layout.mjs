@@ -8,8 +8,11 @@ import { site } from '../site.mjs';
  */
 export const BUILT = Date.now();
 
-/** 首帧前确定主题，避免亮 -> 暗闪一下 */
-const THEME_INIT = `(()=>{const d=document.documentElement;d.classList.add('js');let t=null;try{t=localStorage.getItem('theme')}catch{}if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.dataset.theme=t})();`;
+/**
+ * 首帧前定下时刻和深浅色，避免亮 -> 暗闪一下。规则和 js/theme.ts 一致：网址 ?tod=小时 > localStorage 的 tod > 系统时钟；
+ * 6 点到 18 点是白天（浅色），其余是夜里（深色）
+ */
+const THEME_INIT = `(()=>{const d=document.documentElement;d.classList.add('js');const ok=(h)=>h>=0&&h<=24;let h=parseFloat(new URLSearchParams(location.search).get('tod'));if(!ok(h)){try{h=parseFloat(localStorage.getItem('tod'))}catch{}}if(!ok(h)){const n=new Date;h=n.getHours()+n.getMinutes()/60}d.dataset.hour=h.toFixed(2);d.dataset.theme=h>=6&&h<18?'light':'dark'})();`;
 
 export const topbar = () => html`
   <header class="topbar">
@@ -25,10 +28,20 @@ export const topbar = () => html`
         <svg class="i-fs-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
         <svg class="i-fs-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" /></svg>
       </button>
-      <button type="button" class="theme-btn" data-theme-toggle aria-label="切换深色模式">
-        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" /></svg>
-        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>
-      </button>
+      <div class="time-wrap">
+        <button type="button" class="theme-btn" data-time-toggle aria-expanded="false" aria-controls="time-pop" aria-label="调整时间（白天 / 夜晚）" title="调整时间">
+          <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" /></svg>
+          <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" /></svg>
+        </button>
+        <div class="time-pop" id="time-pop" hidden>
+          <div class="time-row">
+            <output class="time-out" data-time-out>12:00</output>
+            <button type="button" class="time-now" data-time-now>回到现在</button>
+          </div>
+          <input class="time-range" type="range" min="0" max="24" step="0.25" value="12" data-time-range aria-label="一天里的时刻">
+          <div class="time-ticks" aria-hidden="true"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+        </div>
+      </div>
     </nav>
   </header>`;
 

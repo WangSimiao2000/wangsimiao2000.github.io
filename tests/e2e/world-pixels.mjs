@@ -23,7 +23,8 @@ if (mode === 'dump') {
   for (const theme of ['light', 'dark']) {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', colorScheme: theme });
     await ctx.addInitScript((th) => {
-      localStorage.setItem('theme', th);
+      // 深浅色跟着时刻走（js/theme.ts）：亮色截上午 10 点，暗色截晚上 10 点
+      localStorage.setItem('tod', th === 'dark' ? '22' : '10');
       localStorage.setItem('fs-hint', '1');
       Math.random = () => 0.42; // 眨眼、翻页之类的随机时刻也固定下来
       // 日月的位置跟着系统时钟走（sim/daytime.ts）：钟也固定在一个时刻

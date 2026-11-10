@@ -92,12 +92,10 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     dl, W: 0, H: 0, S: 4, HALF: 0, camX: 0, camLeft: 0, frac: 0, p: 0,
     dark: false, time: 0, reduced: reducedMq.matches, running: false, visH: 0, day: daytime(12, false),
   };
-  // 时刻：网址带 ?tod=小时（0-24）时固定在那个时刻（预览、截图用），不然跟着系统时钟
-  const todParam = new URLSearchParams(location.search).get('tod');
+  // 时刻由 theme.ts 维护在 <html data-hour> 上（跟着系统时钟，或者右上角拖动条拖到的时刻）
   const clockHour = () => {
-    if (todParam !== null && todParam !== '' && Number.isFinite(+todParam)) return +todParam;
-    const d = new Date();
-    return d.getHours() + d.getMinutes() / 60;
+    const h = parseFloat(root.dataset.hour ?? '');
+    return Number.isFinite(h) ? h : 12;
   };
   let stars = makeStars(1, 1);
 

@@ -102,6 +102,21 @@ a { color: inherit; }
 .theme-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .theme-btn .i-moon { fill: currentColor; stroke: none; }
 [data-theme='light'] .i-moon, [data-theme='dark'] .i-sun { display: none; }
+/* 时间按钮点开的拖动条：拖到几点，世界就是几点，6 到 18 点是白天（js/theme.ts） */
+.time-wrap { position: relative; display: inline-grid; }
+.time-pop {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 6; width: 230px; padding: 10px 14px 8px;
+  border-radius: var(--r-md); background: var(--surface); box-shadow: var(--e3); color: var(--text);
+}
+.time-pop[hidden] { display: none; }
+.time-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.time-out { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.time-now {
+  font: inherit; font-size: 12px; color: var(--accent); background: none; border: 0; padding: 2px 4px; cursor: pointer;
+}
+.time-now[hidden] { display: none; }
+.time-range { width: 100%; margin: 4px 0 0; accent-color: var(--accent); cursor: pointer; }
+.time-ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* 全屏按钮：方头线端、直角折线，和像素世界一个调性；不支持的浏览器（iPhone）保持 hidden */
 .fs-btn[hidden], .scenic-btn[hidden] { display: none; }
 .scenic-btn svg { stroke-linecap: square; stroke-linejoin: miter; stroke-width: 2; }

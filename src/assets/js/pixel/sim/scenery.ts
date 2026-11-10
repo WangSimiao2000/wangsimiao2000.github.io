@@ -49,6 +49,7 @@ export interface Scenery {
   flowers: Sprite[];
   cottage: Sprite;
   fence: Sprite;
+  reeds: Sprite;
   lamp: Sprite;
   sign: Sprite;
   campfire: Sprite;
@@ -61,15 +62,14 @@ export interface Scenery {
   berryBush: Sprite[];
   pebbles: Sprite[];
   fern: Sprite[];
-  reeds: Sprite[];
   pumpkin: Sprite[];
   snowPile: Sprite[];
   leafPile: Sprite[];
 }
 
 const SETS = ['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush',
-  'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile'] as const;
-const SINGLES = ['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay'] as const;
+  'pebbles', 'fern', 'pumpkin', 'snowPile', 'leafPile'] as const;
+const SINGLES = ['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay', 'reeds'] as const;
 
 export function buildScenery(): Scenery {
   const sc = {} as Record<string, Sprite | Sprite[]>;

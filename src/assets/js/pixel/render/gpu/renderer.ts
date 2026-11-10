@@ -224,7 +224,12 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       layerBind: device.createBindGroup({ layout: layerLayout, entries: [{ binding: 0, resource: { buffer: sizeBuf } }, { binding: 1, resource: atlas.createView() }] }),
       lightBind: bind(lightPipe, [F]),
       dofBinds: Object.fromEntries(Object.keys(blurred).map((l) => [l, blurBinds(layers[l as LayerName], t.scratch, blurPipe[LOGICAL], depthOf(l as LayerName) * DOF_SIGMA)])) as Partial<Record<LayerName, { h: GPUBindGroup; v: GPUBindGroup }>>,
-      bloomSrcBind: bind(bloomPipe, [F, layers.emissive, layers.glow, layers.sky]),
+      bloomSrcBind: device.createBindGroup({
+        layout: bloomPipe.getBindGroupLayout(0),
+        entries: [F, layers.emissive, layers.glow, layers.sky, null, null, layers.far, layers.mid, layers.near, layers.back, layers.fg]
+          .map((r, i) => r && { binding: i, resource: r instanceof GPUTexture ? r.createView() : r })
+          .filter((e) => e !== null),
+      }),
       // 往下：原图 -> 第 0 级 -> 第 1 级……；往上：第 n 级叠回第 n-1 级
       bloomDown: [t.bloomSrc, ...t.bloom.slice(0, -1)].map((from) => device.createBindGroup({ layout: bloomDownPipe.getBindGroupLayout(0), entries: [{ binding: 4, resource: from.createView() }, { binding: 5, resource: linear }] })),
       bloomUp: t.bloom.slice(1).map((from) => device.createBindGroup({ layout: bloomUpPipe.getBindGroupLayout(0), entries: [{ binding: 4, resource: from.createView() }, { binding: 5, resource: linear }] })),

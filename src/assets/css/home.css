@@ -749,7 +749,7 @@ html[data-glass][data-theme='dark'] .reader-card { --glass-a: 64%; }
 html[data-glass] :is(.stages .card, .secret-panel .card, .reader-card, .reader-side) {
   background: linear-gradient(145deg, color-mix(in srgb, var(--surface-hi) var(--glass-a), transparent), color-mix(in srgb, var(--surface-lo) var(--glass-a), transparent));
 }
-html[data-glass] :is(.hotbar, .toplinks > a, .toplinks > .theme-btn) {
+html[data-glass] :is(.hotbar, .toplinks > a, .toplinks .theme-btn, .time-pop) {
   background: color-mix(in srgb, var(--surface) var(--glass-a), transparent);
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }

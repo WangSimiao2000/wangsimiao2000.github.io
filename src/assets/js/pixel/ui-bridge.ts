@@ -8,7 +8,7 @@
 import type { GlassRect, View } from './drawlist.js';
 
 /** 半透明的表面（见 home.css 里 data-renderer='webgpu' 那段）：卡片、阅读面板、快捷栏、顶栏按钮 */
-const GLASS = '.stages .card, .secret-panel .card, .reader-card, .reader-side, .hotbar, .toplinks > a, .toplinks > .theme-btn';
+const GLASS = '.stages .card, .secret-panel .card, .reader-card, .reader-side, .hotbar, .toplinks > a, .toplinks .theme-btn, .time-pop';
 const MAX = 16;
 const FOCUS_TIME = 0.4; // 对焦拉近用多久（秒）
 

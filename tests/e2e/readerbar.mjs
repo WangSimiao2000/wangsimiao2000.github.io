@@ -61,7 +61,7 @@ await page.waitForTimeout(1200);
 let s = await bar(page);
 t.ok(!s.hidden && s.visible && s.readerTop === 60, `手机打开文章时顶栏在、面板从 60px 开始（${s.readerTop}）`);
 t.ok(!(await page.isVisible('[data-fullscreen-toggle]')), '手机上看文章不显示全屏按钮');
-t.ok(await page.isVisible('[data-search-open]') && (await page.isVisible('[data-theme-toggle]')), '搜索和深色模式按钮还在');
+t.ok(await page.isVisible('[data-search-open]') && (await page.isVisible('[data-time-toggle]')), '搜索和时间按钮还在');
 
 await scrollBy(page, 15, 1);
 await page.waitForTimeout(400);

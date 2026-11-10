@@ -30,11 +30,10 @@ export function makeStars(W: number, H: number): Star[] {
 }
 
 /**
- * 日月：像素圆球，按左上来的光分 4 档明暗（和布景一个光向），月亮再点几个坑。
- * 逐个像素算球面法线和光的夹角，量化成 4 档
+ * 太阳自己发光，是一整个亮的像素圆（正午淡黄、贴着山的时候橘红），光晕由渲染器的辉光加上；
+ * 月亮靠反光，是像素圆球：按左上来的光分 4 档明暗（和布景一个光向），再点几个坑
  */
-const SUN = ['#f0a04a', '#ffc35c', '#ffdb86', '#fff1c2'];
-const SUNSET = ['#c4472a', '#e8693a', '#ff9250', '#ffc884']; // 日出日落：贴着山的时候偏橘红
+const SUN = { noon: '#fff3c8', low: '#ffa760' };
 const MOON = ['#98a3c2', '#c3cce2', '#e2e7f3', '#fbfcff'];
 const CRATERS: readonly [number, number, number][] = [[-2, 1, 1], [2, -2, 0], [1, 3, 0], [-3, -2, 0]]; // dx, dy, 大坑 = 1
 const LIGHT_DIR = (() => {
@@ -43,6 +42,16 @@ const LIGHT_DIR = (() => {
   return v.map((c) => c / l);
 })();
 
+/** 像素圆盘：逐行一条横线。按半径 r + 0.5 取宽度，顶上和底下是一段平边，不会冒出单独一个像素的尖 */
+function disc(dl: DrawList, cx: number, cy: number, r: number, color: string) {
+  const R = r + 0.5;
+  for (let y = -r; y <= r; y++) {
+    const w = Math.floor(Math.sqrt(R * R - y * y));
+    dl.rect('sky', cx - w, cy + y, w * 2 + 1, 1, color);
+  }
+}
+
+/** 逐个像素算球面法线和光的夹角，量化成 4 档 */
 function orb(dl: DrawList, cx: number, cy: number, r: number, tones: string[], alpha: number, craters = false) {
   const R = r + 0.5;
   for (let y = -r; y <= r; y++) {
@@ -84,8 +93,7 @@ export function drawSky(fr: Frame, stars: Star[]) {
   const [cx, cy] = orbAt(fr);
   dl.sun = [cx, cy];
   if (!fr.dark) {
-    const g = fr.day.golden;
-    orb(dl, cx, cy, 7, g > 0 ? SUN.map((c, i) => mix(c, SUNSET[i], g)) : SUN, 1);
+    disc(dl, cx, cy, 7, mix(SUN.noon, SUN.low, fr.day.golden));
     return;
   }
   for (const st of stars) {
