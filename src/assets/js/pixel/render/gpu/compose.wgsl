@@ -8,7 +8,7 @@
 struct Group {
   a: vec4f, // 层数, 淡出, 盖夜色, 被灯照亮
   b: vec4f, // 三层各自是否用模糊过的纹理, 画布像素 / 逻辑像素
-  c: vec4f, // 调色强度
+  c: vec4f, // 调色强度, 整组的不透明度
 };
 @group(0) @binding(1) var<uniform> G: Group;
 @group(0) @binding(2) var t0: texture_2d<f32>;
@@ -54,5 +54,5 @@ fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
     c = vec4f(c.rgb * mix(vec3f(1.0), F.tint.rgb, G.c.x), c.a);
   }
   if (G.a.y > 0.5) { c *= fadeAt(lp.y / F.size.y); }
-  return c;
+  return c * G.c.y;
 }

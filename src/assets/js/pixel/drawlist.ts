@@ -20,8 +20,9 @@ import { rgb } from './sim/util.js';
  *   actors   女孩、猫：画在光晕之后（经过窗前会挡光），盖夜色
  *   over     气泡和粒子，不盖夜色
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移，盖夜色
+ *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害；只有 WebGPU 渲染器画
  */
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'fg', 'emissive', 'glow', 'actors', 'over', 'hero'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'fg', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
 /**
@@ -38,12 +39,12 @@ export interface Group {
   darkOnly?: boolean;
   /** 被点光源照亮：夜色在灯旁边变淡，染上灯的颜色 */
   lit?: boolean;
-  /** 每层离镜头多远（0 = 主平面），开了景深时按这个模糊 */
+  /** 每层离对焦的主平面多远（0 = 主平面），开了景深时按这个模糊；镜头前的前景也用正数 */
   depth?: number[];
   /** 亮的部分往外泛光（辉光） */
   bloom?: boolean;
 }
-export type CanvasName = 'sky' | 'world' | 'hero';
+export type CanvasName = 'sky' | 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
   sky: [{ layers: ['sky'] }],
   world: [
@@ -55,6 +56,7 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
     { layers: ['over'] },
   ],
   hero: [{ layers: ['hero'], night: true, lit: true }],
+  front: [{ layers: ['front'], night: true, lit: true, depth: [3] }],
 };
 /** 夜色：rgba(14, 20, 38, 0.46) */
 export const NIGHT = [14, 20, 38, 0.46] as const;
@@ -180,11 +182,31 @@ export class DrawList {
   }
 }
 
-/** 世界的三张画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中 */
+/**
+ * 世界的画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中；
+ * 前景压在卡片上面（只有 WebGPU 渲染器画）
+ */
 export interface Canvases {
   sky: HTMLCanvasElement;
   world: HTMLCanvasElement;
   hero: HTMLCanvasElement;
+  front: HTMLCanvasElement;
+}
+
+/** 一块毛玻璃：在世界画布上的位置（画布像素）、圆角、不透明度（卡片淡入淡出时跟着变） */
+export interface GlassRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  radius: number;
+  alpha: number;
+}
+
+/** 页面 UI 传给渲染器的东西（见 ui-bridge.ts）：哪些地方要画毛玻璃、镜头对焦拉近了多少（0..1） */
+export interface View {
+  glass: GlassRect[];
+  focus: number;
 }
 
 /** 渲染器的统一接口：world.ts 每帧交给它一份清单 */
@@ -194,5 +216,5 @@ export interface Renderer {
    * 实际分辨率由渲染器自己定（Canvas 2D 按逻辑像素画再放大；WebGPU 的世界画布按屏幕像素画，模糊和泛光才是平滑的）
    */
   resize(W: number, H: number, S: number): void;
-  draw(dl: DrawList, dark: boolean): void;
+  draw(dl: DrawList, dark: boolean, view: View): void;
 }

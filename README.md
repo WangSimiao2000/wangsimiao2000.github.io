@@ -69,6 +69,7 @@ pixel/
 ├── world.ts     # 编排：画布尺寸、滚动和相机、面板、隐藏页；每帧调用 sim/ 写清单，再交给渲染器
 ├── input.ts     # 滚轮、触屏、键盘、点击
 ├── drawlist.ts  # 模拟和渲染器之间的约定：图层、命令格式、各层怎么合成（COMPOSE）
+├── ui-bridge.ts # 每帧量一次要画毛玻璃的元素（位置、圆角、不透明度）和对焦拉近的进度，交给渲染器
 ├── atlas.ts     # 精灵 = 图集里的一块坐标（不含像素）
 ├── sim/         # 模拟：群系、地形、天空、灯光、粒子、彩蛋、主角……只算状态、写清单，不碰画布，可以在 Node 里测
 └── render/      # 渲染器：只读清单
@@ -78,7 +79,8 @@ pixel/
 ```
 
 现在默认还是 Canvas 2D，网址加 `?gpu` 用 WebGPU（带光效）。`?gpu&fx=0` 关掉全部光效，`?gpu&fx=lights,bloom` 只开其中几项
-（lights 点光源、dof 景深、bloom 辉光、rays 白天体积光、beams 夜里灯光的光束和人物遮挡、grade 按群系调色）。两个渲染器读同一份清单，`tests/e2e/world-pixels.mjs` 用来对比画面：
+（lights 点光源、dof 景深、bloom 辉光、rays 白天体积光、beams 夜里灯光的光束和人物遮挡、grade 按群系调色、
+glass 卡片后面的毛玻璃和打开文章时的对焦拉近、front 压在卡片上的前景）。两个渲染器读同一份清单，`tests/e2e/world-pixels.mjs` 用来对比画面：
 Canvas 2D 和改造前逐像素一致，WebGPU 关掉光效后和它每个颜色通道的差不超过 3（混合时的舍入不同）。
 
 光效的参数：光源的半径、亮度、颜色和光束（方向、张角、长度）在 `sim/lights.ts` 的 `LIGHT`；每个群系白天体积光的强弱是 `sim/biomes.ts` 里的 `rays`；

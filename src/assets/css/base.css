@@ -51,12 +51,12 @@
   --world-filter: none; /* 夜色由 world.ts 绘制 */
   --danger: #e57373;
 }
-/* 高度：凸起 e1-e4，凹陷 i1-i3。光从左上来，暗影永远在右下 */
+/* 高度：凸起 e1-e4，凹陷 i1-i3。暗影在右下；凸起的白色亮影在正下方（放在像素场景前面，左上的亮影会成一圈白雾） */
 :root {
-  --e1: 3px 3px 8px var(--sh-dark), -3px -3px 8px var(--sh-light);
-  --e2: 5px 5px 12px var(--sh-dark), -5px -5px 12px var(--sh-light);
-  --e3: 8px 8px 20px var(--sh-dark), -8px -8px 18px var(--sh-light);
-  --e4: 14px 14px 32px var(--sh-dark), -12px -12px 28px var(--sh-light);
+  --e1: 3px 3px 8px var(--sh-dark), 0 3px 8px var(--sh-light);
+  --e2: 5px 5px 12px var(--sh-dark), 0 5px 12px var(--sh-light);
+  --e3: 8px 8px 20px var(--sh-dark), 0 8px 18px var(--sh-light);
+  --e4: 14px 14px 32px var(--sh-dark), 0 12px 28px var(--sh-light);
   --i1: inset 2px 2px 5px var(--sh-dark), inset -2px -2px 5px var(--sh-light);
   --i2: inset 3px 3px 8px var(--sh-dark), inset -3px -3px 8px var(--sh-light);
   --i3: inset 5px 5px 12px var(--sh-dark), inset -5px -5px 12px var(--sh-light);

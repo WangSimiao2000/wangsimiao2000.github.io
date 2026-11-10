@@ -30,6 +30,8 @@ import { clamp, easeInOut, mix } from './sim/util.js';
 import type { Frame } from './sim/frame.js';
 import { DrawList, type Renderer } from './drawlist.js';
 import { pickRenderer } from './render/index.js';
+import { drawFront } from './sim/front.js';
+import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
 
 const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
@@ -53,15 +55,18 @@ function overlayCanvas(id: string): HTMLCanvasElement {
 }
 
 /**
- * 三张画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中、不做平移。
+ * 四张画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中、不做平移；前景压在卡片上面。
  */
 export function startWorld({ canvas, sections, panels, slots, secretPanel }: WorldOptions) {
   const skyCanvas = overlayCanvas('sky');
   const heroCanvas = overlayCanvas('hero');
+  const frontCanvas = overlayCanvas('front');
   canvas.before(skyCanvas);
   canvas.after(heroCanvas);
-  const all = [canvas, skyCanvas, heroCanvas];
-  const renderer: Renderer = pickRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas });
+  document.body.append(frontCanvas); // 压在卡片上面（home.css 里 z-index 最高、点击穿透）
+  const all = [canvas, skyCanvas, heroCanvas, frontCanvas];
+  const renderer: Renderer = pickRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas, front: frontCanvas });
+  const ui = new UiBridge(canvas);
   const dl = new DrawList();
   const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
@@ -436,7 +441,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     eggs.drawBubbles(fr, dt);
     particles.weather(fr, dt);
     particles.draw(fr, dt);
-    renderer.draw(dl, dark);
+    drawFront(fr, sc);
+    // 毛玻璃要量卡片这一帧的位置，所以面板先摆好（frame 里 updatePanels 在 render 之前）
+    renderer.draw(dl, dark, ui.view(dt, fr.reduced));
   }
 
   /**
@@ -460,11 +467,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     lastDraw = now;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    guard(() => {
-      update(dt);
-      render(dt);
-    });
+    guard(() => update(dt));
     guard(updatePanels);
+    guard(() => render(dt));
   }
   requestAnimationFrame(frame);
   updatePanels();

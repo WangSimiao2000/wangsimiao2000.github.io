@@ -291,7 +291,7 @@ html:not(.js) .play-tabs { display: none; }
   border-radius: calc(19px * var(--ui, 1)); /* 格子圆角 13 + 底座内边距 6，同心 */
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  box-shadow: 8px 8px 20px rgb(0 0 0 / 0.22), -4px -4px 12px var(--sh-light), inset 1px 1px 0 var(--edge);
+  box-shadow: 8px 8px 20px rgb(0 0 0 / 0.22), 0 4px 12px var(--sh-light), inset 1px 1px 0 var(--edge);
 }
 .hb-slot {
   position: relative; min-width: calc(62px * var(--ui, 1)); height: calc(40px * var(--ui, 1)); padding: 0 calc(12px * var(--ui, 1)); display: grid; place-items: center;
@@ -745,3 +745,24 @@ html.world-hover body { cursor: pointer; }
 .panel .tool .tool-tags { margin-top: 6px; }
 @media (max-height: 760px) { .panel .grid.tools li:nth-child(n + 3) { display: none; } }
 @media (max-width: 640px) and (max-height: 740px) { .panel .grid.tools li:nth-child(n + 2) { display: none; } }
+
+/*
+ * 毛玻璃（WebGPU 渲染器开着毛玻璃时 <html data-glass>）：这些表面改成半透明的同色系渐变，
+ * 后面糊开的场景由渲染器按元素的位置和圆角画（render/gpu/glass.wgsl），不用 backdrop-filter。
+ * 这里的选择器要和 pixel/ui-bridge.ts 的 GLASS 一致：只有那边量了位置的元素，后面才有毛玻璃。
+ */
+html[data-glass] { --glass-a: 66%; }
+html[data-glass][data-theme='dark'] { --glass-a: 62%; }
+html[data-glass] :is(.stages .card, .secret-panel .card, .reader-card, .reader-side) {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--surface-hi) var(--glass-a), transparent), color-mix(in srgb, var(--surface-lo) var(--glass-a), transparent));
+}
+html[data-glass] :is(.hotbar, .toplinks > a, .toplinks > .theme-btn) {
+  background: color-mix(in srgb, var(--surface) var(--glass-a), transparent);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+/* 打开文章时镜头对焦拉近：世界由渲染器糊开、压暗；主角在自己的画布上，用 CSS 跟着糊 */
+html[data-glass].reading #hero { filter: blur(calc(var(--px) * 0.5)) brightness(0.78); }
+
+/* 镜头前的前景：压在卡片和快捷栏上面、手机目录和搜索下面，点击穿透（只有 WebGPU 渲染器画，Canvas 2D 下是空的） */
+#front { position: fixed; left: 0; bottom: 0; z-index: 5; display: none; pointer-events: none; }
+.js #front { display: block; }

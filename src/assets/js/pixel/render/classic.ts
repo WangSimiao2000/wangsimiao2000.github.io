@@ -1,6 +1,6 @@
 /**
  * Canvas 2D 渲染器：按 COMPOSE 把绘制清单合成到三张画布上，和改用绘制清单之前的画法逐像素一致。
- * 只认 fade / night / darkOnly，光效开关（lit / depth / bloom）不管。
+ * 只认 fade / night / darkOnly，光效开关（lit / depth / bloom）、前景画布、毛玻璃都不管。
  * 只在迁移到 WebGPU 期间保留，用来证明 sim/ 的改动没有改变画面；WebGPU 渲染器默认启用后删掉。
  */
 import { loadAtlas } from '../atlas.js';
