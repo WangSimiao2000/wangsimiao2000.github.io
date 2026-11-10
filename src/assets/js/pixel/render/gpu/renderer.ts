@@ -21,7 +21,7 @@ export const FX_ALL = Object.values(FX).reduce((a, b) => a | b, 0);
 const CANVASES: CanvasName[] = ['sky', 'world', 'hero'];
 const MAX_LIGHTS = 48;
 const FRAME_FLOATS = (4 + 2 + MAX_LIGHTS * 2) * 4;
-const DOF_SIGMA = 0.55; // 每一级深度模糊多少（逻辑像素的标准差）
+const DOF_SIGMA = 0.8; // 每一级深度模糊多少（逻辑像素的标准差）
 const BLOOM_SIGMA = 2.5;
 const BLOOM = { day: 0.35, night: 0.9 };
 const GRADE = 0.12; // 往群系色调偏多少
