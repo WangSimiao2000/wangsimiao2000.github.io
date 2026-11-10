@@ -3,6 +3,7 @@
  * 其他模块（地形、天空、粒子、灯光、彩蛋）只读它，往 dl 里写，不互相引用，也不碰画布。
  */
 import type { DrawList } from '../drawlist.js';
+import type { Daytime } from './daytime.js';
 
 export interface Frame {
   /** 这一帧的绘制清单 */
@@ -31,4 +32,6 @@ export interface Frame {
   running: boolean;
   /** 屏幕上实际看得到的高度（逻辑像素）：手机地址栏展开时画布顶上一截在屏幕外 */
   visH: number;
+  /** 一天里的时刻：日月在哪、光是什么颜色（daytime.ts） */
+  day: Daytime;
 }

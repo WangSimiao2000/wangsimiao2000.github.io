@@ -54,7 +54,7 @@ export type CanvasName = 'sky' | 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
   sky: [{ layers: ['sky'] }],
   world: [
-    { layers: ['far', 'mid', 'near'], fade: true, depth: [5, 4, 3] },
+    { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3.5, 3] },
     { layers: ['back'], night: true, lit: true, depth: [2], gpuOnly: true },
     { layers: ['fg'], night: true, lit: true },
     { layers: ['emissive'], darkOnly: true, bloom: true },
@@ -106,10 +106,16 @@ export interface Bokeh {
 
 /** 这一帧的环境：随相机所在的群系插值，渲染器拿来调光效 */
 export interface Env {
-  /** 群系的地平线色调，调色时轻轻往这个颜色偏 */
+  /** 群系的地平线色调（日出日落时偏暖），调色时轻轻往这个颜色偏 */
   tint: string;
-  /** 白天体积光的强度（0 = 没有） */
+  /** 日月体积光的强度（0 = 没有） */
   rays: number;
+  /** 日月光的颜色：体积光、镜头光斑用 */
+  light: string;
+  /** 环境光：场景整体乘上这个颜色（日落时偏暖偏暗） */
+  ambient: string;
+  /** 天空的颜色（页面底色混一点地平线色调）：远景往它靠，做空气透视 */
+  fog: string;
 }
 
 /**
@@ -173,7 +179,7 @@ export class DrawList {
   readonly bokeh: Bokeh[] = [];
   /** 太阳 / 月亮在天空画布上的位置（逻辑像素），体积光从这里射出 */
   sun: [number, number] = [0, 0];
-  env: Env = { tint: '#ffffff', rays: 0 };
+  env: Env = { tint: '#ffffff', rays: 0, light: '#ffffff', ambient: '#ffffff', fog: '#ffffff' };
   /**
    * 每层整体再往右挪的亚像素（逻辑像素，可以是负数）。远景、后排、前景按整格画，走得比主平面慢或快，
    * 镜头快停下时会隔几帧才挪一格；渲染器合成时按这个小数偏移取样，移动就是连续的。Canvas 2D 不管它

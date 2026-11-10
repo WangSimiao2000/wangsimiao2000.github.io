@@ -13,7 +13,7 @@ export type FloraKind = { [K in keyof Scenery]: Scenery[K] extends Sprite[] ? K 
 /** Scenery 里「单个精灵」的键（小屋、路灯、营火……） */
 export type PieceKind = { [K in keyof Scenery]: Scenery[K] extends Sprite[] ? never : K }[keyof Scenery];
 /** 发光的种类：决定光的颜色、范围、闪不闪（lights.ts 的 LIGHT），光从哪出来写在 scenery.ts 的 GLOW_AT */
-export type GlowKind = 'lamp' | 'window' | 'fire' | 'torch' | 'lantern' | 'pumpkin' | 'glowcap';
+export type GlowKind = 'lamp' | 'window' | 'fire';
 /** 可交互的彩蛋，由 eggs.ts 按这个标记接管绘制和点击 */
 export type EggKind = 'sign' | 'hay' | 'door';
 
@@ -85,11 +85,6 @@ export const BIOMES: Biome[] = [
       { until: 0.34, kind: 'autumn', z: 0 }, { until: 0.46, kind: 'autumnBush', z: 2 }, { until: 0.5, kind: 'pumpkin', z: 2 },
       { until: 0.62, kind: 'dryTuft', z: 3 }, { until: 0.7, kind: 'leafPile', z: 3 },
     ],
-    pieces: [
-      { kind: 'jackOLantern', dx: -50, z: 2, glow: 'pumpkin' },
-      { kind: 'jackOLantern', dx: 66, z: 2, glow: 'pumpkin' },
-    ],
-    clear: [[-58, -42], [58, 74]],
     fireflies: 0.05,
   },
   {
@@ -101,11 +96,6 @@ export const BIOMES: Biome[] = [
       { until: 0.26, kind: 'rock', z: 2 }, { until: 0.29, kind: 'mushroom', z: 2 }, { until: 0.32, kind: 'pebbles', z: 2 },
       { until: 0.53, kind: 'tuft', z: 3 }, { until: 0.73, kind: 'flowers', z: 3 }, { until: 0.77, kind: 'reeds', z: 3 },
     ],
-    pieces: [
-      { kind: 'torch', dx: -64, z: 1, glow: 'torch' },
-      { kind: 'scarecrow', dx: 74, z: 1 },
-    ],
-    clear: [[-70, -58], [62, 86]],
     fireflies: 0.04,
   },
   {
@@ -117,12 +107,8 @@ export const BIOMES: Biome[] = [
       { until: 0.6, kind: 'bush', z: 2 }, { until: 0.64, kind: 'berryBush', z: 2 },
       { until: 0.82, kind: 'tuft', z: 3 }, { until: 0.89, kind: 'mushroom', z: 3 }, { until: 0.94, kind: 'fern', z: 3 },
     ],
-    pieces: [
-      { kind: 'hay', dx: 46, z: 2, egg: 'hay' },
-      { kind: 'glowcap', dx: -72, z: 2, glow: 'glowcap' },
-      { kind: 'glowcap', dx: 104, z: 2, glow: 'glowcap' },
-    ],
-    clear: [[30, 64], [-80, -64], [96, 112]], // 草堆、两丛发光蘑菇周围
+    pieces: [{ kind: 'hay', dx: 46, z: 2, egg: 'hay' }],
+    clear: [[30, 64]], // 草堆周围
     weather: { kind: 'leaf', rate: 0.08 },
     fireflies: 0.06,
   },
@@ -130,13 +116,6 @@ export const BIOMES: Biome[] = [
     name: 'desert', rays: 0.35, tint: '#ffe6b8', far: '#e9d2b3', mid: '#e6c595', near: '#dcb07d', treeline: 0, spiky: false,
     line: '#9a6f42', rim: '#fdebc6', top: '#f2d6a3', shade: '#e2bb86', soil: ['#d7ad78', '#c39667', '#a97e58'], amp: 15, blades: false,
     flora: [{ until: 0.1, kind: 'cactus', z: 1 }, { until: 0.2, kind: 'sandRock', z: 2 }, { until: 0.36, kind: 'dryTuft', z: 3 }],
-    pieces: [
-      { kind: 'torch', dx: 36, z: 1, glow: 'torch' },
-      { kind: 'tent', dx: 60, z: 1 },
-      { kind: 'crate', dx: 82, z: 2 },
-      { kind: 'barrel', dx: 92, z: 2 },
-    ],
-    clear: [[26, 100]], // 帐篷营地
     tumbleweeds: 3,
   },
   {
@@ -152,12 +131,8 @@ export const BIOMES: Biome[] = [
       { kind: 'fence', dx: 98, z: 2 },
       { kind: 'lamp', dx: -62, z: 1, glow: 'lamp' },
       { kind: 'lamp', dx: 120, z: 1, glow: 'lamp' },
-      { kind: 'mailbox', dx: 20, z: 2 },
-      { kind: 'well', dx: -104, z: 1 },
-      { kind: 'barrel', dx: -86, z: 2 },
-      { kind: 'crate', dx: 140, z: 2 },
     ],
-    clear: [[14, 124], [-116, -78], [132, 150]], // 小屋和栅栏、水井、木箱
+    clear: [[14, 124]], // 小屋和栅栏
     path: 70,
     fireflies: 0.03,
   },
@@ -169,12 +144,6 @@ export const BIOMES: Biome[] = [
       { until: 0.47, kind: 'pebbles', z: 2 },
       { until: 0.66, kind: 'tuft', z: 3 }, { until: 0.78, kind: 'flowers', z: 3 },
     ],
-    pieces: [
-      { kind: 'stoneLantern', dx: -66, z: 1, glow: 'lantern' },
-      { kind: 'bench', dx: 62, z: 2 },
-      { kind: 'stoneLantern', dx: 96, z: 1, glow: 'lantern' },
-    ],
-    clear: [[-74, -58], [48, 104]],
     weather: { kind: 'petal', rate: 0.35 },
     fireflies: 0.03,
   },
@@ -182,12 +151,8 @@ export const BIOMES: Biome[] = [
     name: 'snow', rays: 0.6, tint: '#bccbea', far: '#b6c3dc', mid: '#9fafcd', near: '#8396bb', treeline: 0.85, spiky: true,
     line: '#5e6b8a', rim: '#ffffff', top: '#eef3fb', shade: '#cfd9ea', soil: ['#908c9c', '#716d80', '#565368'], amp: 15, blades: false, sparkle: true,
     flora: [{ until: 0.38, kind: 'pine', z: 0 }, { until: 0.5, kind: 'snowRock', z: 2 }, { until: 0.58, kind: 'snowPile', z: 2 }],
-    pieces: [
-      { kind: 'campfire', dx: 24, z: 2, glow: 'fire', lift: 1 },
-      { kind: 'snowTent', dx: 66, z: 1 },
-      { kind: 'torch', dx: 92, z: 1, glow: 'torch' },
-    ],
-    clear: [[10, 100]], // 篝火和帐篷
+    pieces: [{ kind: 'campfire', dx: 24, z: 2, glow: 'fire', lift: 1 }],
+    clear: [[10, 40]], // 篝火
     weather: { kind: 'snow', rate: 0.8 },
   },
 ];

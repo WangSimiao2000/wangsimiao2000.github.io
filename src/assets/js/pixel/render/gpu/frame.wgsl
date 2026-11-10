@@ -6,6 +6,9 @@ struct Frame {
   sun: vec4f,    // 太阳 x, y（逻辑像素）, 体积光强度, 1 = 深色模式
   tint: vec4f,   // 群系色调 rgb（0-1）, 辉光强度
   night: vec4f,  // 夜色 rgb（0-1）和不透明度
+  ambient: vec4f, // 环境光 rgb（0-1，场景整体乘上它）, -
+  rayColor: vec4f, // 日月体积光的颜色 rgb, -
+  fog: vec4f,    // 远景往这个颜色靠（空气透视）rgb, -（靠多少按层的深度算，在合成组参数里）
   stops: array<vec4f, 2>,   // 淡出的四个控制点 (t, a)，两两一组
   // 每个光源三项：(x, y, 半径, 强度), (r, g, b, 光束停在哪一行), (光束方向 x, y, 半张角余弦, 光束长度；长度 0 = 没有光束)
   lights: array<vec4f, 144>,

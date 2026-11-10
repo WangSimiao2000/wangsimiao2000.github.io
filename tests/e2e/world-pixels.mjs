@@ -26,6 +26,17 @@ if (mode === 'dump') {
       localStorage.setItem('theme', th);
       localStorage.setItem('fs-hint', '1');
       Math.random = () => 0.42; // 眨眼、翻页之类的随机时刻也固定下来
+      // 日月的位置跟着系统时钟走（sim/daytime.ts）：钟也固定在一个时刻
+      const RealDate = Date;
+      const FIXED = new RealDate(2026, 5, 1, 10, 0, 0).getTime();
+      window.Date = class extends RealDate {
+        constructor(...args) {
+          super(...(args.length ? args : [FIXED]));
+        }
+        static now() {
+          return FIXED;
+        }
+      };
       // 接管 requestAnimationFrame：由脚本按固定 16ms 一步推进，帧数和时钟都确定，灯光闪烁也就确定了
       let queue = [];
       let now = 0;
