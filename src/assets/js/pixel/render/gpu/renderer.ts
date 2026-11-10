@@ -28,7 +28,7 @@ const MAX_LIGHTS = 48;
 const FRAME_FLOATS = (4 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
 const DOF_SIGMA = 0.4; // 每一级深度模糊多少（逻辑像素的标准差）：远山 5 级 = 2，后排 2 级 = 0.8，前景 6 级 = 2.4
 const BLOOM_SIGMA = 2.5;
-const BLOOM = { day: 0.35, night: 0.9 };
+const BLOOM = { day: 0.3, night: 0.65 };
 const GRADE = 0.12; // 往群系色调偏多少
 const LOGICAL = 'rgba8unorm';
 const HDR = 'rgba16float';
@@ -121,9 +121,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   // 每个合成组一份参数；毛玻璃要把天空和世界再合成一遍（target 'glass'），参数单独一份
   type Target = CanvasName | 'glass';
   const groups = [
-    ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => ({ canvas: k as Target, g, buf: uniform(48) }))),
-    ...[...COMPOSE.sky, ...COMPOSE.world].map((g) => ({ canvas: 'glass' as Target, g, buf: uniform(48) })),
-  ];
+    ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => ({ canvas: k as Target, g, buf: uniform(64) }))),
+    ...[...COMPOSE.sky, ...COMPOSE.world].map((g) => ({ canvas: 'glass' as Target, g, buf: uniform(64) })),
+  ].filter(({ g }) => !g.classicOnly); // 像素光晕这类只给 Canvas 2D 的组不合成
   const glassBuf = uniform((1 + MAX_GLASS * 2) * 16);
 
   // 图集加载好才算就位：截图测试等 <html data-renderer> 出现再截，不会截到没有精灵的画面
@@ -177,7 +177,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       bloomSrcBind: bind(bloomPipe, [F, layers.emissive, layers.glow]),
       bloomBlur: blurBinds(t.bloom, t.scratchHdr, blurPipe[HDR], BLOOM_SIGMA),
       raysBind: bind(raysPipe, [F, layers.far, layers.mid, layers.near, layers.fg]),
-      beamsBind: bind(beamsPipe, [F, layers.actors, layers.hero]),
+      beamsBind: bind(beamsPipe, [F, layers.actors, layers.hero, layers.fg]),
       glassBlurBinds: blurBinds(t.glassSrc, t.scratch, blurPipe[LOGICAL], GLASS_SIGMA),
       glassBind: bind(glassPipe, [{ buffer: glassBuf }, t.glassBlur, linear]),
       composeBinds: groups.map(({ canvas, g, buf }) => {
@@ -216,7 +216,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const opacity = canvas === 'front' ? FRONT_ALPHA * (1 - view.focus) : 1;
       const soft = [0, 1, 2].map((i) => (effects & FX.dof && (g.depth?.[i] ?? 0) > 0 ? 1 : 0));
       const grade = effects & FX.grade && (g.lit || g.fade) ? GRADE : 0;
-      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, g.fade ? 1 : 0, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, 0, 0]));
+      // 亚像素偏移只对模糊过的层有意义（线性插值取样）；清晰的层按最近邻取，偏移了也还是跳格
+      const shift = [0, 1, 2].map((i) => (soft[i] ? (dl.shift[g.layers[i]] ?? 0) : 0));
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, g.fade ? 1 : 0, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, 0, 0, ...shift, 0]));
     }
   }
 

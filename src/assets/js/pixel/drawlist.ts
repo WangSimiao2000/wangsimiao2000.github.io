@@ -17,13 +17,14 @@ import { rgb } from './sim/util.js';
  *   back     后排树：树线和主平面之间一排真正的树，比主平面走得慢、糊一点；只有 WebGPU 渲染器画
  *   fg       布景和地面，深色模式下盖一层夜色
  *   emissive 灯泡、亮着的窗：只在深色模式合成，叠在夜色之上
- *   glow     光晕和营火火焰
+ *   halo     灯、窗户、营火周围一圈圈的像素光晕：只有 Canvas 2D 画（WebGPU 下由光束和辉光代替）
+ *   glow     营火火焰
  *   actors   女孩、猫：画在光晕之后（经过窗前会挡光），盖夜色
  *   over     气泡和粒子，不盖夜色
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移，盖夜色
  *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害；只有 WebGPU 渲染器画
  */
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'emissive', 'halo', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
 /**
@@ -46,6 +47,8 @@ export interface Group {
   bloom?: boolean;
   /** 只有 WebGPU 渲染器合成（靠景深区分远近的层，Canvas 2D 下画出来会和主平面混在一起） */
   gpuOnly?: boolean;
+  /** 只有 Canvas 2D 渲染器合成（WebGPU 下有更好的替代，比如像素光晕换成光束和辉光） */
+  classicOnly?: boolean;
 }
 export type CanvasName = 'sky' | 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
@@ -55,6 +58,7 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
     { layers: ['back'], night: true, lit: true, depth: [2], gpuOnly: true },
     { layers: ['fg'], night: true, lit: true },
     { layers: ['emissive'], darkOnly: true, bloom: true },
+    { layers: ['halo'], classicOnly: true },
     { layers: ['glow'], bloom: true },
     { layers: ['actors'], night: true, lit: true },
     { layers: ['over'] },
@@ -156,9 +160,17 @@ export class DrawList {
   /** 太阳 / 月亮在天空画布上的位置（逻辑像素），体积光从这里射出 */
   sun: [number, number] = [0, 0];
   env: Env = { tint: '#ffffff', rays: 0 };
+  /**
+   * 每层整体再往右挪的亚像素（逻辑像素，可以是负数）。远景、后排、前景按整格画，走得比主平面慢或快，
+   * 镜头快停下时会隔几帧才挪一格；渲染器合成时按这个小数偏移取样，移动就是连续的。Canvas 2D 不管它
+   */
+  readonly shift: Partial<Record<LayerName, number>> = {};
 
   clear() {
-    for (const l of LAYERS) this.layers[l].clear();
+    for (const l of LAYERS) {
+      this.layers[l].clear();
+      delete this.shift[l];
+    }
     this.lights.length = 0;
   }
 

@@ -26,7 +26,9 @@ function treelineAt(lx: number, wx: number, freq: number, size: number): number 
 export function drawLayer(fr: Frame, which: Layer, factor: number, haze: number) {
   const { dl, W, H } = fr;
   const base = H - GROUND;
-  const off = Math.round(fr.camX * factor - fr.frac) - Math.floor(fr.HALF);
+  const exact = fr.camX * factor - fr.frac - Math.floor(fr.HALF);
+  const off = Math.round(exact);
+  dl.shift[which] = off - exact; // 按整格画，剩下的小数交给渲染器（见 DrawList.shift）
   for (let x = 0; x < W; x++) {
     const lx = off + x;
     const wx = fr.camLeft + x;

@@ -9,6 +9,7 @@ struct Group {
   a: vec4f, // 层数, 淡出, 盖夜色, 被灯照亮
   b: vec4f, // 三层各自是否用模糊过的纹理, 画布像素 / 逻辑像素
   c: vec4f, // 调色强度, 整组的不透明度
+  d: vec4f, // 三层各自往右挪的亚像素（逻辑像素，drawlist.ts 的 shift）
 };
 @group(0) @binding(1) var<uniform> G: Group;
 @group(0) @binding(2) var t0: texture_2d<f32>;
@@ -35,9 +36,9 @@ fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
   let lp = v.pos.xy / G.b.w; // 逻辑像素坐标
   let n = i32(G.a.x);
   // 三个分支要写开：纹理不能放进数组里按下标取
-  var c = pick(t0, G.b.x, lp);
-  if (n > 1) { let s = pick(t1, G.b.y, lp); c = s + c * (1.0 - s.a); }
-  if (n > 2) { let s = pick(t2, G.b.z, lp); c = s + c * (1.0 - s.a); }
+  var c = pick(t0, G.b.x, lp - vec2f(G.d.x, 0.0));
+  if (n > 1) { let s = pick(t1, G.b.y, lp - vec2f(G.d.y, 0.0)); c = s + c * (1.0 - s.a); }
+  if (n > 2) { let s = pick(t2, G.b.z, lp - vec2f(G.d.z, 0.0)); c = s + c * (1.0 - s.a); }
   if (c.a <= 0.0) { return vec4f(0.0); }
 
   let dark = isDark();
