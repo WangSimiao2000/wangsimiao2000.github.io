@@ -51,8 +51,8 @@ export type CanvasName = 'sky' | 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
   sky: [{ layers: ['sky'] }],
   world: [
-    { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3, 2] },
-    { layers: ['back'], night: true, lit: true, depth: [1.6], gpuOnly: true },
+    { layers: ['far', 'mid', 'near'], fade: true, depth: [5, 4, 3] },
+    { layers: ['back'], night: true, lit: true, depth: [2], gpuOnly: true },
     { layers: ['fg'], night: true, lit: true },
     { layers: ['emissive'], darkOnly: true, bloom: true },
     { layers: ['glow'], bloom: true },
@@ -60,7 +60,7 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
     { layers: ['over'] },
   ],
   hero: [{ layers: ['hero'], night: true, lit: true }],
-  front: [{ layers: ['front'], night: true, lit: true, depth: [8] }],
+  front: [{ layers: ['front'], night: true, lit: true, depth: [6] }],
 };
 /** 夜色：rgba(14, 20, 38, 0.46) */
 export const NIGHT = [14, 20, 38, 0.46] as const;
