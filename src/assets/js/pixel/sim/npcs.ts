@@ -2,7 +2,7 @@
  * 彩蛋角色：小屋里的女孩、草堆里的彩狸猫。精灵来自图集 atlas.png。
  * 女孩源图只画了朝右的一套，朝左的由打包脚本翻转生成。
  */
-import { sprite, sprites } from './atlas.js';
+import { sprite, sprites } from '../atlas.js';
 import type { Sprite } from './sprites.js';
 
 export interface GirlFrames {

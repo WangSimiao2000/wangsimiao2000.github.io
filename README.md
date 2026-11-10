@@ -37,6 +37,8 @@ PLAYWRIGHT_CORE=~/pw node tests/e2e/flow.mjs
 | highlight.js | 代码高亮（构建时着色） |
 | yaml | front matter 与数据文件 |
 
+开发依赖只有 `@webgpu/types`：WebGPU 的类型声明，给编辑器和类型检查用，不进页面。
+
 ## 目录
 
 ```
@@ -58,6 +60,28 @@ public/            # 原样复制的静态文件（配图、头像、简历、CN
 tools/             # 旧站的工具页，待迁移
 ```
 
+## 像素世界
+
+代码在 `src/assets/js/pixel/`，分三块，只通过绘制清单（`drawlist.ts`）连在一起：
+
+```
+pixel/
+├── world.ts     # 编排：画布尺寸、滚动和相机、面板、隐藏页；每帧调用 sim/ 写清单，再交给渲染器
+├── input.ts     # 滚轮、触屏、键盘、点击
+├── drawlist.ts  # 模拟和渲染器之间的约定：图层、命令格式、各层怎么合成（COMPOSE）
+├── atlas.ts     # 精灵 = 图集里的一块坐标（不含像素）
+├── sim/         # 模拟：群系、地形、天空、灯光、粒子、彩蛋、主角……只算状态、写清单，不碰画布，可以在 Node 里测
+└── render/      # 渲染器：只读清单
+    ├── index.ts     # 选渲染器
+    ├── gpu/         # WebGPU：每层画到纹理（layer.wgsl），再按 COMPOSE 合成到画布（compose.wgsl）
+    └── classic.ts   # Canvas 2D：迁移到 WebGPU 期间保留，用来对照画面
+```
+
+现在默认还是 Canvas 2D，网址加 `?gpu` 用 WebGPU。两个渲染器读同一份清单，`tests/e2e/world-pixels.mjs` 用来对比画面：
+Canvas 2D 和改造前逐像素一致，WebGPU 和它每个颜色通道的差不超过 3（混合时的舍入不同）。
+
+加新的画面元素：在 `sim/` 里往清单写命令；要新的合成规则（比如新的一层）改 `drawlist.ts` 的 `LAYERS` 和 `COMPOSE`，两个渲染器都会跟上。
+
 ## 像素素材
 
 首页世界里固定的精灵（主角、女孩、猫、树、房子、路牌、营火、孔明灯、生日帽……）每个一张 PNG，放在 `src/art/`，
@@ -68,11 +92,11 @@ tools/             # 旧站的工具页，待迁移
 `src/assets/js/pixel/atlas-map.ts`，都是生成文件、不进 git），访客只加载这一张图。打包时会检查：代码要用的精灵缺了、
 角色同一动作的各帧尺寸不一致、自发光遮罩尺寸不对，都会直接报错，CI 也就停在部署之前。
 
-注意：小屋（窗户光晕、门洞、门的点击区域、烟囱）、路灯灯泡、营火火焰的位置是写在 `src/assets/js/pixel/scenery.ts`
+注意：小屋（窗户光晕、门洞、门的点击区域、烟囱）、路灯灯泡、营火火焰的位置是写在 `src/assets/js/pixel/sim/scenery.ts`
 里的像素坐标（`COTTAGE`、`LAMP_BULB`、`CAMPFIRE_FLAME`），挪动这几张图里的门窗灯火时要同步改这些数字。
 主角、女孩只画朝右一套（`hero/r/...`、`girl/r/...`），朝左的由打包脚本水平翻转生成；哪一帧翻过去别扭，
 就在 `l/` 下放一张手画的同名图，会优先用它。同一个角色的所有帧画布尺寸要一样、脚底贴最下面一行。
-生日帽戴在哪儿写在 `src/assets/js/pixel/hero.ts` 的 `HAT` 里（每帧一个偏移），改了主角的头部位置要跟着改。
+生日帽戴在哪儿写在 `src/assets/js/pixel/sim/hero.ts` 的 `HAT` 里（每帧一个偏移），改了主角的头部位置要跟着改。
 地形、天空、粒子、烟花是按坐标实时算的，仍在代码里。
 
 ## 游戏板块（Steam 游戏库）

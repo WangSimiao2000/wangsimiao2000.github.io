@@ -4,7 +4,7 @@
  * 画风：现代独立游戏的像素插画——有机的形状、统一的左上光源、每个形状 4 档明暗、
  * 档位之间用噪声打散成像素簇、不描黑边。改素材直接改 src/art/ 下对应的 PNG。
  */
-import { sprite, sprites, type Sprite } from './atlas.js';
+import { sprite, sprites, type Sprite } from '../atlas.js';
 
 export type { Sprite };
 

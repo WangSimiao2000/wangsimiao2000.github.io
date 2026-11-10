@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { clamp, easeInOut, fadeAt, mix, noise1, parseColor, smooth } from '../../src/assets/js/pixel/util.ts';
+import { clamp, easeInOut, fadeAt, mix, noise1, parseColor, smooth } from '../../src/assets/js/pixel/sim/util.ts';
 
 test('clamp / smooth / easeInOut 的边界', () => {
   assert.equal(clamp(-1), 0);

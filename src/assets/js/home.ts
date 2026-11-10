@@ -7,7 +7,7 @@ import './readerbar.js';
 import { paintStatus } from './status.js';
 import { startPlayTabs } from './play-tabs.js';
 import { removeLegacyServiceWorker } from './legacy-sw.js';
-import { isBirthday } from './pixel/festive.js';
+import { isBirthday } from './pixel/sim/festive.js';
 
 void removeLegacyServiceWorker();
 

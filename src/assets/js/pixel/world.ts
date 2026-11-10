@@ -1,34 +1,38 @@
 /**
  * 像素世界：页面纵向滚动 -> 世界横向前进。这个文件只做编排：
- * 画布与尺寸、主题、滚动进度和相机、内容面板、隐藏页，以及每帧按顺序调用各模块。
+ * 画布与尺寸、主题、滚动进度和相机、内容面板、隐藏页，以及每帧按顺序调用各模块，再把绘制清单交给渲染器。
  *
- *   biomes.ts    群系数据表、地形高度、配色、布景生成（纯函数）
- *   terrain.ts   远景三层和前景地面
- *   sky.ts       太阳、月亮、星星
- *   lights.ts    自发光像素、光晕、营火
- *   particles.ts 天气、灰尘、火星
- *   eggs.ts      路牌 / 女孩 / 彩狸猫三个彩蛋
- *   hero.ts      主角
+ *   sim/         模拟：只算状态、往绘制清单里写，不碰画布（可以在 Node 里测）
+ *     biomes.ts    群系数据表、地形高度、配色、布景生成（纯函数）
+ *     terrain.ts   远景三层和前景地面
+ *     sky.ts       太阳、月亮、星星
+ *     lights.ts    自发光像素、光晕、营火
+ *     particles.ts 天气、灰尘、火星
+ *     eggs.ts      路牌 / 女孩 / 彩狸猫三个彩蛋
+ *     hero.ts      主角
+ *   drawlist.ts  模拟和渲染器之间的约定：图层、命令格式、各层怎么合成
+ *   render/      渲染器：只读绘制清单
  *   input.ts     滚轮、触屏、键盘、点击
  *
- * 绘制顺序（一帧）：天空 -> 远景 -> 前景（布景、地面）-> 角色 -> 夜色 -> 自发光 -> 光晕 -> 角色层 -> 气泡、粒子。
+ * 每帧写清单的顺序：天空 -> 远景 -> 布景、地面 -> 角色 -> 主角 -> 光晕 -> 气泡、粒子（随机数的取用顺序也按这个）。
  */
-import { BIOMES, GROUND, OFF, SECTION, SLOT, heightAt, paletteAt, setPieces, slotItem, weights, type Item } from './biomes.js';
-import { buildScenery, CAMPFIRE_FLAME, COTTAGE, LAMP_BULB } from './scenery.js';
-import { drawGround, drawLayer, fadeFar } from './terrain.js';
-import { drawSky, makeStars } from './sky.js';
-import { Particles } from './particles.js';
-import { drawGlows, emit, type Glow } from './lights.js';
-import { Eggs, inside } from './eggs.js';
-import { CHAR_H, Hero } from './hero.js';
-import { Fireworks, isBirthday } from './festive.js';
-import { Lanterns } from './lanterns.js';
+import { BIOMES, GROUND, OFF, SECTION, SLOT, heightAt, paletteAt, setPieces, slotItem, weights, type Item } from './sim/biomes.js';
+import { buildScenery, CAMPFIRE_FLAME, COTTAGE, LAMP_BULB } from './sim/scenery.js';
+import { drawGround, drawLayer } from './sim/terrain.js';
+import { drawSky, makeStars } from './sim/sky.js';
+import { Particles } from './sim/particles.js';
+import { drawGlows, emit, type Glow } from './sim/lights.js';
+import { Eggs, inside } from './sim/eggs.js';
+import { CHAR_H, Hero } from './sim/hero.js';
+import { Fireworks, isBirthday } from './sim/festive.js';
+import { Lanterns } from './sim/lanterns.js';
+import { clamp, easeInOut, mix } from './sim/util.js';
+import type { Frame } from './sim/frame.js';
+import { DrawList, type Renderer } from './drawlist.js';
+import { pickRenderer } from './render/index.js';
 import { bindInput } from './input.js';
-import { clamp, easeInOut, mix } from './util.js';
-import type { Frame } from './frame.js';
 
 const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
-const NIGHT = 'rgba(14, 20, 38, 0.46)';
 const SECRET_DUR = 0.55; // 进出隐藏页的时长，和浏览器平滑滚动一致
 const MIN_RUN = 15; // 相机速度（逻辑像素/秒）低于这个就算停下
 
@@ -41,24 +45,24 @@ export interface WorldOptions {
   secretPanel?: HTMLElement | null;
 }
 
-function layer(id?: string): [HTMLCanvasElement, CanvasRenderingContext2D] {
+function overlayCanvas(id: string): HTMLCanvasElement {
   const c = document.createElement('canvas');
-  if (id) {
-    c.id = id;
-    c.setAttribute('aria-hidden', 'true');
-  }
-  return [c, c.getContext('2d')!];
+  c.id = id;
+  c.setAttribute('aria-hidden', 'true');
+  return c;
 }
 
+/**
+ * 三张画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中、不做平移。
+ */
 export function startWorld({ canvas, sections, panels, slots, secretPanel }: WorldOptions) {
-  const [fgCanvas, f] = layer();
-  const [actorCanvas, a] = layer();
-  const [emCanvas, e] = layer();
-  const [skyCanvas, sk] = layer('sky');
-  const [heroCanvas, hc] = layer('hero');
+  const skyCanvas = overlayCanvas('sky');
+  const heroCanvas = overlayCanvas('hero');
   canvas.before(skyCanvas);
   canvas.after(heroCanvas);
-  const all = [canvas, fgCanvas, actorCanvas, emCanvas, skyCanvas, heroCanvas];
+  const all = [canvas, skyCanvas, heroCanvas];
+  const renderer: Renderer = pickRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas });
+  const dl = new DrawList();
   const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
   const N = sections.length;
@@ -73,9 +77,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   let fireX: number | null = null; // 画面里营火的世界坐标（烟花从这里升起）
 
   const fr: Frame = {
-    g: canvas.getContext('2d')!, f, a, e, sk, hc,
-    W: 0, H: 0, S: 4, HALF: 0, camX: 0, camLeft: 0, frac: 0, p: 0,
-    dark: false, bg: '#eef1f5', time: 0, reduced: reducedMq.matches, running: false,
+    dl, W: 0, H: 0, S: 4, HALF: 0, camX: 0, camLeft: 0, frac: 0, p: 0,
+    dark: false, bg: '#eef1f5', time: 0, reduced: reducedMq.matches, running: false, visH: 0,
   };
   let stars = makeStars(1, 1);
 
@@ -113,12 +116,11 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       c.width = fr.W;
       c.height = fr.H;
     }
-    for (const c of [canvas, skyCanvas, heroCanvas]) {
+    for (const c of all) {
       c.style.width = `${fr.W * S}px`;
       c.style.height = `${fr.H * S}px`;
     }
-    fr.g.imageSmoothingEnabled = false;
-    hc.imageSmoothingEnabled = false;
+    renderer.resize(fr.W, fr.H);
     stars = makeStars(fr.W, fr.H);
     root.style.setProperty('--px', `${S}px`);
     // 大屏上世界的像素按屏高放大，卡片也跟着放大（以 1440x900 为基准），比例才协调
@@ -352,7 +354,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       const base = H - Math.round(Math.min(ground, heightAt(it.wx))) + (it.z === 0 ? 2 : 1) - (it.lift ?? 0);
       const y = base - sp.height;
       if (!it.egg || !eggs.drawItem(fr, it, x, y, base)) {
-        f.drawImage(sp, x, y);
+        dl.sprite('fg', sp, x, y);
         emit(fr, sp, x, y);
       }
       if (it.glow === 'lamp') glows.push({ x: x + LAMP_BULB[0], y: y + LAMP_BULB[1], kind: 'lamp', wx: it.wx });
@@ -416,45 +418,31 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     }
   }
 
+  /** 写这一帧的绘制清单，交给渲染器（各层怎么合成见 drawlist.ts 的 COMPOSE） */
   function render(dt: number) {
-    const { g, W, H, dark } = fr;
+    const { dark } = fr;
+    dl.clear();
+    fr.visH = Math.ceil(window.innerHeight / fr.S);
     drawSky(fr, stars);
     lanterns.draw(fr);
     fireworks?.draw(fr, dt, fireX);
-    g.clearRect(0, 0, W, H);
     drawLayer(fr, 'far', 0.18, dark ? 0.55 : 0.62);
     drawLayer(fr, 'mid', 0.42, dark ? 0.32 : 0.36);
     drawLayer(fr, 'near', 0.7, 0.14);
-    fadeFar(g, W, H);
-
-    f.clearRect(0, 0, W, H);
-    e.clearRect(0, 0, W, H);
     eggs.beginFrame();
     drawItems();
     drawGround(fr);
-    a.clearRect(0, 0, W, H);
     eggs.drawActors(fr, dt);
     hero.draw(fr, fr.running, reading && !fr.running && Math.abs(camTarget() - fr.camX) < 1.5);
-    if (dark) {
-      // 前景和角色用同一层夜色，主角不再比周围亮一截
-      for (const ctx of [f, a, hc]) {
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillStyle = NIGHT;
-        ctx.fillRect(0, 0, W, H);
-        ctx.globalCompositeOperation = 'source-over';
-      }
-    }
-    g.drawImage(fgCanvas, 0, 0);
-    if (dark) g.drawImage(emCanvas, 0, 0); // 灯泡和窗格不吃夜色
     drawGlows(fr, glows, particles);
-    g.drawImage(actorCanvas, 0, 0);
     eggs.drawBubbles(fr, dt);
     particles.weather(fr, dt);
     particles.draw(fr, dt);
+    renderer.draw(dl, dark);
   }
 
   /**
-   * 一帧出错（比如某个模块的边界情况）不能让整个世界冻住：记一次日志，把画布状态复位，下一帧照常。
+   * 一帧出错（比如某个模块的边界情况）不能让整个世界冻住：记一次日志，下一帧照常（清单每帧重写）。
    * 同一个错误反复出现时只在控制台报前几次。
    */
   let errors = 0;
@@ -463,11 +451,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       fn();
     } catch (err) {
       if (errors++ < 3) console.error('[world] frame error', err);
-      for (const ctx of [fr.g, f, a, e, sk, hc]) {
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-      }
     }
   }
 
