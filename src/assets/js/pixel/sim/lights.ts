@@ -40,7 +40,7 @@ export function halo(dl: DrawList, layer: LayerName, x: number, y: number, r: nu
 function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: Particles) {
   const { dl } = fr;
   const flick = fr.reduced ? 0 : Math.floor(fr.time * 10) % 3;
-  halo(dl, 'glow', x, y - 3, 13, '#ffb55a', fr.dark ? GLOW.night : GLOW.day);
+  halo(dl, 'halo', x, y - 3, 13, '#ffb55a', fr.dark ? GLOW.night : GLOW.day);
   dl.rect('glow', x - 3, y - 5 + flick, 6, 5 - flick, '#ff7a2a');
   dl.rect('glow', x - 1, y - 8 + flick, 3, 3, '#ff7a2a');
   dl.rect('glow', x - 2, y - 4 + (flick === 1 ? 1 : 0), 4, 4, '#ffc14d');
@@ -62,13 +62,13 @@ const LIGHT: Record<Glow['kind'], { radius: number; intensity: number; color: st
   fire: { radius: 44, intensity: 1.2, color: '#ff9a4a', beam: { dir: [0, -1], cos: -1, length: 42 } },
 };
 
-/** 光晕和火焰画在夜色之上、角色之下（角色经过会挡光） */
+/** 光晕和火焰画在夜色之上、角色之下（角色经过会挡光）。光晕单独一层，WebGPU 下不画 */
 export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
   const base = fr.dark ? GLOW.night : GLOW.day;
   for (const gl of glows) {
     const flicker = gl.kind === 'fire' ? 0.85 + 0.15 * Math.sin(fr.time * 9 + gl.wx) * Math.sin(fr.time * 5.3) : gl.kind === 'lamp' ? 0.92 + 0.08 * Math.sin(fr.time * 3 + gl.wx) : 1;
-    if (gl.kind === 'lamp') halo(fr.dl, 'glow', gl.x, gl.y, 11, '#ffd36a', base * flicker);
-    if (gl.kind === 'window') halo(fr.dl, 'glow', gl.x, gl.y, 11, '#ffcf70', base);
+    if (gl.kind === 'lamp') halo(fr.dl, 'halo', gl.x, gl.y, 11, '#ffd36a', base * flicker);
+    if (gl.kind === 'window') halo(fr.dl, 'halo', gl.x, gl.y, 11, '#ffcf70', base);
     if (gl.kind === 'fire') drawFlame(fr, gl.x, gl.y, gl.wx, particles);
     const l = LIGHT[gl.kind];
     const ly = gl.kind === 'fire' ? gl.y - 3 : gl.y;

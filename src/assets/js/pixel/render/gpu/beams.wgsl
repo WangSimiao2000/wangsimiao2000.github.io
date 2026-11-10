@@ -2,9 +2,11 @@
 // 每个像素对每束光：在光束的张角里、长度以内才有光；再从这个像素往灯的方向走一段，
 // 路上碰到人物（女孩、猫、主角）就被挡掉一部分，于是人从光里走过时身后会留下一道跟着走的影子。
 // 布景和地面不挡光：窗户本身就画在小屋上，拿小屋挡光的话光一出来就被挡死了。
+// 光束叠在整个世界上面，所以灯泡附近几格要淡掉，落在布景本身上也弱一些，不然灯和小屋的像素图案会被罩住。
 
 @group(0) @binding(1) var actors: texture_2d<f32>;
 @group(0) @binding(2) var hero: texture_2d<f32>;
+@group(0) @binding(3) var fg: texture_2d<f32>;
 
 fn occluder(q: vec2f) -> f32 {
   let p = vec2i(clamp(q, vec2f(0.0), F.size.xy - 1.0));
@@ -37,9 +39,11 @@ fn occluder(q: vec2f) -> f32 {
       through *= 1.0 - occluder(p - d * (f32(s) / f32(STEPS))) * 0.7;
     }
     let fall = 1.0 - dist / beam.w;
-    acc += l1.rgb * fall * fall * cone * through * floorFade * l0.w;
+    let nearSource = smoothstep(2.0, 9.0, dist); // 灯泡旁边留给灯本身的像素
+    acc += l1.rgb * fall * fall * nearSource * cone * through * floorFade * l0.w;
   }
-  // 人物自己身上不再罩一层光雾，轮廓清楚
-  let onBody = occluder(p);
-  return vec4f(acc * 0.85 * (1.0 - onBody * 0.7), 1.0);
+  // 人物和布景自己身上不再罩一层光雾，轮廓清楚（它们已经被点光源照亮了）
+  let q = vec2i(clamp(p, vec2f(0.0), F.size.xy - 1.0));
+  let onBody = max(occluder(p), textureLoad(fg, q, 0).a * 0.8);
+  return vec4f(acc * 0.6 * (1.0 - onBody * 0.75), 1.0);
 }

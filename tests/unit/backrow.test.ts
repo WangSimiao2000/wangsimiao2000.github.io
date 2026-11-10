@@ -53,3 +53,31 @@ test('后排有自己的地面：每一列都有，树站在地面上', () => {
   for (let i = 0; i < c.count; i++) if (c.data[i * STRIDE] & 1) cols.add(c.data[i * STRIDE + 2]);
   assert.equal(cols.size, 300);
 });
+
+/** 第一个精灵命令画在哪（画布 x）加上这一层的亚像素偏移 = 实际显示的位置 */
+function shown(layer: 'back' | 'front', camX: number, draw: (fr: Frame) => void) {
+  const fr = frame(camX);
+  draw(fr);
+  const c = fr.dl.layers[layer];
+  for (let i = 0; i < c.count; i++) {
+    const d = c.data.subarray(i * STRIDE, (i + 1) * STRIDE);
+    if (!(d[0] & 1)) return { key: d[6], x: d[2] + (fr.dl.shift[layer] ?? 0) };
+  }
+  throw new Error('没画精灵');
+}
+
+test('后排和前景按整格画、小数交给 shift：镜头慢慢挪时，显示位置连续地跟着走（翻页结尾不卡）', async () => {
+  const { drawFront } = await import('../../src/assets/js/pixel/sim/front.ts');
+  for (const [layer, speed, draw] of [
+    ['back', 0.85, (fr: Frame) => drawBackRow(fr, sc)],
+    ['front', 1.4, (fr: Frame) => drawFront(fr, sc)],
+  ] as const) {
+    let prev = shown(layer, SECTION, draw);
+    for (let k = 1; k <= 12; k++) {
+      const cur = shown(layer, SECTION + k * 0.07, draw);
+      if (cur.key !== prev.key) break; // 换了一个精灵打头，不比
+      assert.ok(Math.abs(cur.x - prev.x + 0.07 * speed) < 1e-6, `${layer} 第 ${k} 步跳了：${prev.x} -> ${cur.x}`);
+      prev = cur;
+    }
+  }
+});
