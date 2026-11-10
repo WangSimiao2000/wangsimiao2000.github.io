@@ -45,6 +45,9 @@ export function pickRenderer(c: Canvases): Renderer {
     },
   );
   return {
+    get depthOfField() {
+      return active?.depthOfField ?? false;
+    },
     resize(w, h, S) {
       size = [w, h, S];
       active?.resize(w, h, S);

@@ -62,7 +62,7 @@ export function createClassicRenderer(c: Canvases): Renderer {
   function compose(target: CanvasRenderingContext2D, groups: Group[], dl: DrawList, dark: boolean) {
     target.clearRect(0, 0, W, H);
     groups.forEach((gr, i) => {
-      if (gr.darkOnly && !dark) return;
+      if ((gr.darkOnly && !dark) || gr.gpuOnly) return;
       const night = gr.night && dark;
       const own = gr.fade || gr.night || gr.darkOnly;
       const ctx = own && i > 0 ? scratch : target;
@@ -75,6 +75,7 @@ export function createClassicRenderer(c: Canvases): Renderer {
   }
 
   return {
+    depthOfField: false,
     resize(w, h) {
       W = w;
       H = h;

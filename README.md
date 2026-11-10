@@ -84,7 +84,8 @@ glass 卡片后面的毛玻璃和打开文章时的对焦拉近、front 压在�
 Canvas 2D 和改造前逐像素一致，WebGPU 关掉光效后和它每个颜色通道的差不超过 3（混合时的舍入不同）。
 
 光效的参数：光源的半径、亮度、颜色和光束（方向、张角、长度）在 `sim/lights.ts` 的 `LIGHT`；每个群系白天体积光的强弱是 `sim/biomes.ts` 里的 `rays`；
-远景三层离镜头多远（景深模糊多少）是 `drawlist.ts` 里 `COMPOSE` 的 `depth`。
+远景三层、后排树、前景离对焦的主平面多远（景深模糊多少）是 `drawlist.ts` 里 `COMPOSE` 的 `depth`。
+开了景深时远景不再往雾色靠，远近靠模糊和视差区分；后排树（`sim/backrow.ts`）和前景（`sim/front.ts`）只有 WebGPU 渲染器画。
 
 加新的画面元素：在 `sim/` 里往清单写命令；要新的合成规则（比如新的一层）改 `drawlist.ts` 的 `LAYERS` 和 `COMPOSE`，两个渲染器都会跟上。
 

@@ -26,7 +26,7 @@ const GLASS_SIGMA = 5; // 毛玻璃糊多少（逻辑像素的标准差）
 const FRONT_ALPHA = 0.92; // 前景压在卡片上，留一点点透
 const MAX_LIGHTS = 48;
 const FRAME_FLOATS = (4 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
-const DOF_SIGMA = 0.8; // 每一级深度模糊多少（逻辑像素的标准差）
+const DOF_SIGMA = 0.3; // 每一级深度模糊多少（逻辑像素的标准差）：远山 4 级 = 1.2，后排树 1.6 级 ≈ 0.5
 const BLOOM_SIGMA = 2.5;
 const BLOOM = { day: 0.35, night: 0.9 };
 const GRADE = 0.12; // 往群系色调偏多少
@@ -313,6 +313,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   }
 
   return {
+    depthOfField: (effects & FX.dof) !== 0,
     resize(w, h, S) {
       W = w;
       H = h;

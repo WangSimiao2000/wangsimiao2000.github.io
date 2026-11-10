@@ -54,11 +54,11 @@ function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: P
 /**
  * 点光源（照多远、多亮、什么颜色）：夜里把周围的夜色照淡、染上暖色。只有 WebGPU 渲染器用，
  * 白天不点灯（营火白天也亮，但弱很多）。
- * beam 是夜里洒出来的一束体积光：路灯往下照成一个锥形，窗户的光斜着洒到屋前的地上，营火往四周散开
+ * beam 是夜里洒出来的体积光：灯泡、窗户、营火都是露在外面的光源，往四周散开（照到地面为止）
  */
 const LIGHT: Record<Glow['kind'], { radius: number; intensity: number; color: string; beam: Beam }> = {
-  lamp: { radius: 30, intensity: 0.9, color: '#ffd38a', beam: { dir: [0, 1], cos: Math.cos(0.5), length: 42 } },
-  window: { radius: 28, intensity: 0.8, color: '#ffc874', beam: { dir: [-0.45, 0.89], cos: Math.cos(0.7), length: 44 } },
+  lamp: { radius: 30, intensity: 0.9, color: '#ffd38a', beam: { dir: [0, 1], cos: -1, length: 36 } },
+  window: { radius: 28, intensity: 0.8, color: '#ffc874', beam: { dir: [0, 1], cos: -1, length: 34 } },
   fire: { radius: 44, intensity: 1.2, color: '#ff9a4a', beam: { dir: [0, -1], cos: -1, length: 42 } },
 };
 

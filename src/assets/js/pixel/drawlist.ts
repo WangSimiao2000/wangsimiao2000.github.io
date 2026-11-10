@@ -14,6 +14,7 @@ import { rgb } from './sim/util.js';
  *   far      远山 \
  *   mid      丘陵  > 远景三层，合成时一起自下而上淡出；开了景深时越远越糊
  *   near     树线 /
+ *   back     后排树：树线和主平面之间一排真正的树，比主平面走得慢、糊一点；只有 WebGPU 渲染器画
  *   fg       布景和地面，深色模式下盖一层夜色
  *   emissive 灯泡、亮着的窗：只在深色模式合成，叠在夜色之上
  *   glow     光晕和营火火焰
@@ -22,7 +23,7 @@ import { rgb } from './sim/util.js';
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移，盖夜色
  *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害；只有 WebGPU 渲染器画
  */
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'fg', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
 /**
@@ -43,12 +44,15 @@ export interface Group {
   depth?: number[];
   /** 亮的部分往外泛光（辉光） */
   bloom?: boolean;
+  /** 只有 WebGPU 渲染器合成（靠景深区分远近的层，Canvas 2D 下画出来会和主平面混在一起） */
+  gpuOnly?: boolean;
 }
 export type CanvasName = 'sky' | 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
   sky: [{ layers: ['sky'] }],
   world: [
-    { layers: ['far', 'mid', 'near'], fade: true, depth: [3, 2, 1] },
+    { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3, 2] },
+    { layers: ['back'], night: true, lit: true, depth: [1.6], gpuOnly: true },
     { layers: ['fg'], night: true, lit: true },
     { layers: ['emissive'], darkOnly: true, bloom: true },
     { layers: ['glow'], bloom: true },
@@ -56,7 +60,7 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
     { layers: ['over'] },
   ],
   hero: [{ layers: ['hero'], night: true, lit: true }],
-  front: [{ layers: ['front'], night: true, lit: true, depth: [3] }],
+  front: [{ layers: ['front'], night: true, lit: true, depth: [8] }],
 };
 /** 夜色：rgba(14, 20, 38, 0.46) */
 export const NIGHT = [14, 20, 38, 0.46] as const;
@@ -217,4 +221,9 @@ export interface Renderer {
    */
   resize(W: number, H: number, S: number): void;
   draw(dl: DrawList, dark: boolean, view: View): void;
+  /**
+   * 有没有景深。有景深时远近靠模糊区分，远景不再往雾色靠（sim/terrain.ts 的 haze）；
+   * 没有（Canvas 2D）时远景照旧雾化，不然几层叠在一起分不清
+   */
+  readonly depthOfField: boolean;
 }
