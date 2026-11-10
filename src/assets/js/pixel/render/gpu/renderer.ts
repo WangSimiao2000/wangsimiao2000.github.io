@@ -5,8 +5,8 @@
  *   2. 光照图    点光源照到哪里、多亮（lightmap.wgsl）
  *   3. 景深      远景三层按离镜头的远近各自模糊（blur.wgsl）
  *   4. 辉光      发光的层叠在一起再模糊（bloom.wgsl + blur.wgsl）
- *   5. 体积光    白天从太阳射过来的光束（rays.wgsl）
- *   6. 合成      按 COMPOSE 把各组叠到三张画布上（compose.wgsl），世界画布最后叠辉光和体积光（overlay.wgsl）
+ *   5. 体积光    白天从太阳射过来的光束（rays.wgsl）；夜里灯光洒出来的光束，人物会挡出影子（beams.wgsl）
+ *   6. 合成      按 COMPOSE 把各组叠到三张画布上（compose.wgsl），世界画布最后叠辉光和光束（overlay.wgsl）
  *
  * 2-5 是光效，按 effects 开关跳过；全关时画面和 Canvas 2D 渲染器一致（网址 ?gpu&fx=0，画面回归测试用）。
  * 世界画布按屏幕像素画（模糊和泛光才是平滑的），天空和主角画布按逻辑像素画、由 CSS 放大。
@@ -15,12 +15,12 @@ import { loadAtlas } from '../../atlas.js';
 import { COMPOSE, ERASE, LAYERS, NIGHT, STRIDE, type CanvasName, type Canvases, type DrawList, type LayerName, type Renderer } from '../../drawlist.js';
 import { FADE_STOPS, rgb } from '../../sim/util.js';
 
-export const FX = { lights: 1, dof: 2, bloom: 4, rays: 8, grade: 16 } as const;
+export const FX = { lights: 1, dof: 2, bloom: 4, rays: 8, grade: 16, beams: 32 } as const;
 export const FX_ALL = Object.values(FX).reduce((a, b) => a | b, 0);
 
 const CANVASES: CanvasName[] = ['sky', 'world', 'hero'];
 const MAX_LIGHTS = 48;
-const FRAME_FLOATS = (4 + 2 + MAX_LIGHTS * 2) * 4;
+const FRAME_FLOATS = (4 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
 const DOF_SIGMA = 0.8; // 每一级深度模糊多少（逻辑像素的标准差）
 const BLOOM_SIGMA = 2.5;
 const BLOOM = { day: 0.35, night: 0.9 };
@@ -37,7 +37,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   if (!adapter) throw new Error('拿不到 WebGPU 适配器');
   const device = await adapter.requestDevice();
   device.lost.then((info) => console.error('[world] WebGPU 设备丢失', info.message));
-  const names = ['frame', 'layer', 'lightmap', 'blur', 'bloom', 'rays', 'compose', 'overlay'] as const;
+  const names = ['frame', 'layer', 'lightmap', 'blur', 'bloom', 'rays', 'beams', 'compose', 'overlay'] as const;
   const src = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await shader(n)]))) as Record<(typeof names)[number], string>;
   const format = navigator.gpu.getPreferredCanvasFormat();
   const contexts = Object.fromEntries(
@@ -93,6 +93,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   const blurPipe = { [LOGICAL]: fullPipe(blurModule, LOGICAL), [HDR]: fullPipe(blurModule, HDR) } as Record<string, GPURenderPipeline>;
   const bloomPipe = fullPipe(module('bloom'), HDR);
   const raysPipe = fullPipe(module('rays'), HDR);
+  const beamsPipe = fullPipe(module('beams'), HDR);
   const composePipe = fullPipe(module('compose'), format, over);
   const overlayPipe = fullPipe(module('overlay'), format, over);
 
@@ -138,6 +139,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       lightmap: tex('lightmap', HDR),
       bloom: tex('bloom', HDR),
       rays: tex('rays', HDR),
+      beams: tex('beams', HDR),
     };
     const bind = (pipe: GPURenderPipeline, entries: (GPUBindingResource | GPUTexture)[]) =>
       device.createBindGroup({
@@ -159,6 +161,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       bloomSrcBind: bind(bloomPipe, [F, layers.emissive, layers.glow]),
       bloomBlur: blurBinds(t.bloom, t.scratchHdr, blurPipe[HDR], BLOOM_SIGMA),
       raysBind: bind(raysPipe, [F, layers.far, layers.mid, layers.near, layers.fg]),
+      beamsBind: bind(beamsPipe, [F, layers.actors, layers.hero]),
       composeBinds: groups.map(({ g, buf }) => {
         const tx = [0, 1, 2].map((i) => {
           const l = g.layers[i];
@@ -167,7 +170,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         });
         return bind(composePipe, [F, { buffer: buf }, ...tx, linear, t.lightmap]);
       }),
-      overlayBind: bind(overlayPipe, [F, t.bloom, t.rays, linear, { buffer: scaleBuf }]),
+      overlayBind: bind(overlayPipe, [F, t.bloom, t.rays, linear, { buffer: scaleBuf }, t.beams]),
     };
   }
 
@@ -185,7 +188,8 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     d.set(FADE_STOPS.flat(), 16);
     lights.forEach((l, i) => {
       const [r, g, b] = rgb(l.color);
-      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, 0], 24 + i * 8);
+      const bm = l.beam;
+      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 24 + i * 12);
     });
     device.queue.writeBuffer(frameBuf, 0, d);
     for (const { canvas, g, buf } of groups) {
@@ -260,7 +264,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       p.setBindGroup(0, T!.composeBinds[i]);
       p.draw(3);
     });
-    if (k === 'world' && effects & (FX.bloom | FX.rays)) {
+    if (k === 'world' && effects & (FX.bloom | FX.rays | FX.beams)) {
       p.setPipeline(overlayPipe);
       p.setBindGroup(0, T!.overlayBind);
       p.draw(3);
@@ -280,7 +284,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         cv.width = w;
         cv.height = h;
       }
-      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.scratchHdr, T.lightmap, T.bloom, T.rays]) v!.destroy();
+      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.scratchHdr, T.lightmap, T.bloom, T.rays, T.beams]) v!.destroy();
       device.queue.writeBuffer(sizeBuf, 0, new Float32Array([w, h, 0, 0]));
       device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, 0, 0, 0]));
       T = makeTargets();
@@ -305,6 +309,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         blur(enc, T.bloomBlur, T.scratchHdr, T.bloom, HDR);
       }
       if (effects & FX.rays) full(enc, T.rays, raysPipe, T.raysBind);
+      if (effects & FX.beams) full(enc, T.beams, beamsPipe, T.beamsBind);
       for (const k of CANVASES) composeCanvas(enc, k, dark);
       device.queue.submit([enc.finish()]);
     },

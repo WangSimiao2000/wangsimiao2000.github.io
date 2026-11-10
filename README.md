@@ -78,10 +78,10 @@ pixel/
 ```
 
 现在默认还是 Canvas 2D，网址加 `?gpu` 用 WebGPU（带光效）。`?gpu&fx=0` 关掉全部光效，`?gpu&fx=lights,bloom` 只开其中几项
-（lights 点光源、dof 景深、bloom 辉光、rays 体积光、grade 按群系调色）。两个渲染器读同一份清单，`tests/e2e/world-pixels.mjs` 用来对比画面：
+（lights 点光源、dof 景深、bloom 辉光、rays 白天体积光、beams 夜里灯光的光束和人物遮挡、grade 按群系调色）。两个渲染器读同一份清单，`tests/e2e/world-pixels.mjs` 用来对比画面：
 Canvas 2D 和改造前逐像素一致，WebGPU 关掉光效后和它每个颜色通道的差不超过 3（混合时的舍入不同）。
 
-光效的参数：光源的半径、亮度、颜色在 `sim/lights.ts` 的 `LIGHT`；每个群系白天体积光的强弱是 `sim/biomes.ts` 里的 `rays`；
+光效的参数：光源的半径、亮度、颜色和光束（方向、张角、长度）在 `sim/lights.ts` 的 `LIGHT`；每个群系白天体积光的强弱是 `sim/biomes.ts` 里的 `rays`；
 远景三层离镜头多远（景深模糊多少）是 `drawlist.ts` 里 `COMPOSE` 的 `depth`。
 
 加新的画面元素：在 `sim/` 里往清单写命令；要新的合成规则（比如新的一层）改 `drawlist.ts` 的 `LAYERS` 和 `COMPOSE`，两个渲染器都会跟上。
