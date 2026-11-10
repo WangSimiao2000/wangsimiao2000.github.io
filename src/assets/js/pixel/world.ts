@@ -12,7 +12,7 @@
  *     hero.ts      主角
  *     backrow.ts   后排树（只有 WebGPU 画）
  *     front.ts     镜头前的前景（只有 WebGPU 画）
- *     bokeh.ts     失焦的光点（只有 WebGPU 画）
+ *     bokeh.ts     太阳 / 月亮的镜头光斑（只有 WebGPU 画）
  *   drawlist.ts  模拟和渲染器之间的约定：图层、命令格式、各层怎么合成
  *   render/      渲染器：只读绘制清单
  *   input.ts     滚轮、触屏、键盘、点击

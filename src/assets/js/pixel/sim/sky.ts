@@ -1,5 +1,5 @@
 /**
- * 天空：不抢内容，只是淡淡的一层。白天一轮太阳，夜里月亮和一片固定的星空。
+ * 天空：不抢内容，只是淡淡的一层。白天一轮太阳，夜里一轮月亮和一片固定的星空；日月都是纯色的像素圆。
  */
 import type { DrawList, LayerName } from '../drawlist.js';
 import type { Frame } from './frame.js';
@@ -27,17 +27,13 @@ export function makeStars(W: number, H: number): Star[] {
   return out;
 }
 
-/** 像素圆盘：逐行一条横线 */
-export function disc(dl: DrawList, layer: LayerName, cx: number, cy: number, r: number, col: string, alpha = 1, erase = false) {
+/** 像素圆盘：逐行一条横线。按半径 r + 0.5 取宽度，顶上和底下是一段平边，不会冒出单独一个像素的尖 */
+export function disc(dl: DrawList, layer: LayerName, cx: number, cy: number, r: number, col: string, alpha = 1) {
+  const R = r + 0.5;
   for (let y = -r; y <= r; y++) {
-    const w = Math.round(Math.sqrt(r * r - y * y));
-    dl.rect(layer, cx - w, cy + y, w * 2 + 1, 1, col, alpha, erase);
+    const w = Math.floor(Math.sqrt(R * R - y * y));
+    dl.rect(layer, cx - w, cy + y, w * 2 + 1, 1, col, alpha);
   }
-}
-
-/** 光晕：几圈逐级变淡的像素圆，台阶状的边缘和世界的像素颗粒一致 */
-function skyHalo(dl: DrawList, cx: number, cy: number, r: number, col: string, base: number) {
-  for (let i = 3; i >= 1; i--) disc(dl, 'sky', cx, cy, r + i * 2, col, base * (0.1 + (3 - i) * 0.07));
 }
 
 export function drawSky(fr: Frame, stars: Star[]) {
@@ -49,10 +45,7 @@ export function drawSky(fr: Frame, stars: Star[]) {
   const cy = H - vis + Math.round(Math.max(12, vis * 0.15));
   dl.sun = [cx, cy];
   if (!fr.dark) {
-    skyHalo(dl, cx, cy, 7, '#ffd58a', 0.6);
-    disc(dl, 'sky', cx, cy, 7, '#ffd27e', 0.5);
-    disc(dl, 'sky', cx - 1, cy - 1, 5, '#ffe2a2', 0.5);
-    disc(dl, 'sky', cx - 2, cy - 2, 2, '#fff0c8', 0.5);
+    disc(dl, 'sky', cx, cy, 7, '#ffd98a', 0.95);
     return;
   }
   for (const st of stars) {
@@ -72,9 +65,5 @@ export function drawSky(fr: Frame, stars: Star[]) {
       dl.rect('sky', px, py + 1, 1, 1, col, b);
     }
   }
-  // 弯月：亮盘减去偏右上的一块
-  skyHalo(dl, cx, cy, 6, '#c9d3ee', 0.35);
-  disc(dl, 'sky', cx, cy, 6, '#eef1f8', 0.55);
-  disc(dl, 'sky', cx - 1, cy - 1, 3, '#ffffff', 0.55);
-  disc(dl, 'sky', cx + 3, cy - 2, 5, '#000', 1, true);
+  disc(dl, 'sky', cx, cy, 6, '#eef1f8', 0.95);
 }
