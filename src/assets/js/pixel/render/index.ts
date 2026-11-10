@@ -3,16 +3,18 @@
  * ?gpu&fx=0 关掉全部光效（画面和 Canvas 2D 一致，画面回归测试用），?gpu&fx=lights,bloom 只开其中几项。
  * WebGPU 初始化是异步的，这期间返回的渲染器什么都不画（世界照常跑，卡片照常显示）。
  * 渲染器真正就位后在 <html data-renderer> 上标出用的是哪个（webgpu / canvas2d），调试和测试看这个；
- * 毛玻璃开着时再标 <html data-glass>，卡片这些表面才改成半透明（home.css）。
+ * 毛玻璃开着时再标 <html data-glass>，卡片这些表面才改成半透明（home.css）；
+ * 天空画进世界画布时标 <html data-sky>，阅读时世界画布不再用 CSS 往下沉（渲染器自己沉）。
  */
 import type { Canvases, Renderer } from '../drawlist.js';
 import { createClassicRenderer } from './classic.js';
 import { createGpuRenderer, FX, FX_ALL } from './gpu/renderer.js';
 
-function mark(kind: 'webgpu' | 'canvas2d', glass = false) {
+function mark(kind: 'webgpu' | 'canvas2d', glass = false, sky = false) {
   const root = document.documentElement;
   root.dataset.renderer = kind;
   root.toggleAttribute('data-glass', glass);
+  root.toggleAttribute('data-sky', sky);
 }
 
 /** fx 参数：没有 = 全开，0 = 全关，逗号分隔的名字 = 只开这几项 */
@@ -35,7 +37,7 @@ export function pickRenderer(c: Canvases): Renderer {
     (r) => {
       r.resize(...size);
       active = r;
-      mark('webgpu', (effects & FX.glass) !== 0);
+      mark('webgpu', (effects & FX.glass) !== 0, (effects & FX.sky) !== 0);
     },
     (err) => {
       console.error('[world] WebGPU 用不了，退回 Canvas 2D：', err);

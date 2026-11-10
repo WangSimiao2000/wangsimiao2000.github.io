@@ -9,6 +9,8 @@ struct Frame {
   ambient: vec4f, // 环境光 rgb（0-1，场景整体乘上它）, -
   rayColor: vec4f, // 日月体积光的颜色 rgb, -
   fog: vec4f,    // 远景往这个颜色靠（空气透视）rgb, -（靠多少按层的深度算，在合成组参数里）
+  skyTop: vec4f, // 天空渐变：天顶的颜色, 地平线在哪一行
+  skyHorizon: vec4f, // 地平线的颜色, 屏幕上看得到的顶在哪一行
   stops: array<vec4f, 2>,   // 淡出的四个控制点 (t, a)，两两一组
   // 每个光源三项：(x, y, 半径, 强度), (r, g, b, 光束停在哪一行), (光束方向 x, y, 半张角余弦, 光束长度；长度 0 = 没有光束)
   lights: array<vec4f, 144>,
@@ -23,8 +25,12 @@ const FX_GRADE = 16u;
 const FX_BEAMS = 32u;
 const FX_BOKEH = 256u;
 const FX_VIGNETTE = 512u;
+const FX_SKY = 1024u;
 fn fx(bit: u32) -> bool { return (u32(F.size.z) & bit) != 0u; }
 fn isDark() -> bool { return F.sun.w > 0.5; }
+fn hash2(p: vec2f) -> f32 { return fract(sin(dot(p, vec2f(12.9898, 78.233))) * 43758.5453); }
+/** 抖动：加上不到半档的噪声，渐变和模糊过的地方不会出现一条条色带 */
+fn dither(p: vec2f) -> f32 { return (hash2(floor(p)) - 0.5) / 255.0; }
 
 // ---- 调色（compose.wgsl 按像素调，几张画布用同一套，颜色才接得上） ----
 

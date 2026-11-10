@@ -765,9 +765,9 @@ html[data-glass] :is(.hotbar, .toplinks > a, .toplinks > .theme-btn) {
 }
 /* 打开文章时镜头对焦拉近：世界由渲染器糊开、压暗；主角在自己的画布上，用 CSS 跟着糊 */
 html[data-glass].reading #hero { filter: blur(calc(var(--px) * 0.5)) brightness(0.78); }
-/* 世界画布阅读时往下沉，顶上露出一截天空画布：跟着一起糊、压暗，接得上 */
-html[data-glass].reading #sky { filter: blur(calc(var(--px) * 1.5)) brightness(0.78); }
-.js #sky { transition: filter 0.3s; }
+/* 天空画进了世界画布（WebGPU）：阅读时世界画布本身不动，由渲染器把世界往下沉、天空留在原地，
+   沉多少跟着主角画布的 CSS 下沉走（ui-bridge.ts 量主角画布的位置），两边同步 */
+html[data-sky].reading #world { transform: none; }
 
 /* 镜头前的前景：压在卡片和快捷栏上面、手机目录和搜索下面，点击穿透（只有 WebGPU 渲染器画，Canvas 2D 下是空的） */
 #front { position: fixed; left: 0; bottom: 0; z-index: 5; display: none; pointer-events: none; }

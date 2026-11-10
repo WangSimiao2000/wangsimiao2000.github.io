@@ -1,5 +1,5 @@
 // 合成一组（drawlist.ts 的 COMPOSE）：组里最多 3 层按顺序叠好，再整体处理，输出预乘 alpha 叠到画布上。
-//   night 深色模式下盖夜色（source-atop：只染已有的像素，不改透明度）
+//   night 深色模式下变暗：开了调色时乘偏蓝的夜间环境光，否则（和 Canvas 2D 一样）盖夜色（source-atop：只染已有的像素，不改透明度）
 //   lit   夜色在灯旁边变淡，染上灯的颜色（光照图）
 //   fade  自下而上淡出（开了景深时换成空气透视：每层按深度往天空的颜色靠，山的轮廓看得清）
 //   环境光 场景整体乘上一天里这个时刻的环境光（日落时偏暖偏暗）
@@ -38,27 +38,37 @@ fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
   return textureLoad(t, vec2i(lp), 0);
 }
 
+/** 夜里的环境光（sRGB，场景乘上它）：和 demo 一样偏蓝 */
+const NIGHT_AMBIENT = vec3f(0.42, 0.47, 0.66);
+
 /** 空气透视：预乘的颜色往天空的颜色靠 k */
 fn haze(s: vec4f, k: f32) -> vec4f {
   return vec4f(mix(s.rgb, F.fog.rgb * s.a, k), s.a);
 }
 
 @fragment fn fs(v: V) -> @location(0) vec4f {
-  let lp = v.pos.xy / G.b.w; // 逻辑像素坐标
+  let lp = v.pos.xy / G.b.w; // 画布上的位置（逻辑像素）
+  let q = lp - vec2f(0.0, G.d.w); // 在世界里的位置：阅读时世界往下沉了 G.d.w
   let n = i32(G.a.x);
   // 三个分支要写开：纹理不能放进数组里按下标取
-  var c = haze(pick(t0, G.b.x, lp - vec2f(G.d.x, G.d.w)), G.e.x);
-  if (n > 1) { let s = haze(pick(t1, G.b.y, lp - vec2f(G.d.y, G.d.w)), G.e.y); c = s + c * (1.0 - s.a); }
-  if (n > 2) { let s = haze(pick(t2, G.b.z, lp - vec2f(G.d.z, G.d.w)), G.e.z); c = s + c * (1.0 - s.a); }
+  var c = haze(pick(t0, G.b.x, q - vec2f(G.d.x, 0.0)), G.e.x);
+  if (n > 1) { let s = haze(pick(t1, G.b.y, q - vec2f(G.d.y, 0.0)), G.e.y); c = s + c * (1.0 - s.a); }
+  if (n > 2) { let s = haze(pick(t2, G.b.z, q - vec2f(G.d.z, 0.0)), G.e.z); c = s + c * (1.0 - s.a); }
   if (c.a <= 0.0) { return vec4f(0.0); }
   if (G.e.w > 0.5) { c = vec4f(c.rgb * F.ambient.rgb, c.a); }
 
   let dark = isDark();
   var light = vec4f(0.0);
-  if (G.a.w > 0.5) { light = textureLoad(lightmap, vec2i(clamp(lp, vec2f(0.0), F.size.xy - 1.0)), 0); }
+  if (G.a.w > 0.5) { light = textureLoad(lightmap, vec2i(clamp(q, vec2f(0.0), F.size.xy - 1.0)), 0); }
   if (G.a.z > 0.5 && dark) {
-    let k = F.night.a * (1.0 - min(light.a, 0.85));
-    c = vec4f(F.night.rgb * k * c.a + c.rgb * (1.0 - k), c.a);
+    let lit = min(light.a, 0.85);
+    if (G.e.w > 0.5) {
+      // 夜里的环境光：整体乘上偏蓝的暗光，灯旁边照亮回去（比盖一层半透明夜色通透，暗处不发灰）
+      c = vec4f(c.rgb * mix(NIGHT_AMBIENT, vec3f(1.0), lit), c.a);
+    } else {
+      let k = F.night.a * (1.0 - lit);
+      c = vec4f(F.night.rgb * k * c.a + c.rgb * (1.0 - k), c.a);
+    }
   }
   if (G.a.w > 0.5) {
     c = vec4f(c.rgb + light.rgb * c.a * select(0.12, 0.3, dark), c.a);
@@ -72,6 +82,7 @@ fn haze(s: vec4f, k: f32) -> vec4f {
   if (G.c.w > 0.5) {
     c = vec4f(c.rgb * (1.0 - vignette(lp / F.size.xy)), c.a);
   }
-  if (G.a.y > 0.5) { c *= fadeAt(lp.y / F.size.y); }
+  if (G.a.y > 0.5) { c *= fadeAt(q.y / F.size.y); }
+  if (G.c.z > 0.5) { c = vec4f(c.rgb + dither(v.pos.xy) * c.a, c.a); }
   return c * G.c.y;
 }

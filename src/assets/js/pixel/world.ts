@@ -13,7 +13,8 @@
  *     backrow.ts   后排树（只有 WebGPU 画）
  *     front.ts     镜头前的前景（只有 WebGPU 画）
  *     bokeh.ts     太阳 / 月亮的镜头光斑（只有 WebGPU 画）
- *     tumbleweed.ts 沙漠里滚的风滚草
+ *     daytime.ts   一天里的时刻：日月位置、光色、天空、投影
+ *     shadow.ts    投在地上的影子（只有 WebGPU 画）
  *   drawlist.ts  模拟和渲染器之间的约定：图层、命令格式、各层怎么合成
  *   render/      渲染器：只读绘制清单
  *   input.ts     滚轮、触屏、键盘、点击
@@ -37,8 +38,8 @@ import { pickRenderer } from './render/index.js';
 import { drawFront } from './sim/front.js';
 import { drawBackRow } from './sim/backrow.js';
 import { drawBokeh } from './sim/bokeh.js';
-import { drawTumbleweeds } from './sim/tumbleweed.js';
 import { daytime } from './sim/daytime.js';
+import { blobShadow, castShadow } from './sim/shadow.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
 
@@ -74,7 +75,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   document.body.append(frontCanvas); // 压在卡片上面（home.css 里 z-index 最高、点击穿透）
   const all = [canvas, skyCanvas, heroCanvas, frontCanvas];
   const renderer: Renderer = pickRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas, front: frontCanvas });
-  const ui = new UiBridge(canvas, skyCanvas);
+  const ui = new UiBridge(canvas, heroCanvas);
   const dl = new DrawList();
   const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
@@ -374,6 +375,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
         dl.sprite('fg', sp, x, y);
         emit(fr, sp, x, y);
       }
+      castShadow(fr, sp, x, base);
       const at = it.kind && GLOW_AT[it.kind];
       if (it.glow && it.glow !== 'window' && at) glows.push({ x: x + at[0], y: y + at[1], kind: it.glow, wx: it.wx });
       if (it.glow === 'window') {
@@ -439,7 +441,10 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       rays: biomeNum(fr.camX, (b) => b.rays) * fr.day.rays,
       light: fr.day.light,
       ambient: fr.day.ambient,
-      fog: mix(fr.bg, tint, fr.dark ? 0.12 : 0.35),
+      skyTop: fr.day.skyTop,
+      skyHorizon: mix(fr.day.skyHorizon, tint, fr.dark ? 0.12 : 0.3),
+      skyY: [fr.H - Math.min(fr.H, fr.visH || fr.H), fr.H - GROUND - 6],
+      shadow: fr.day.shadow,
     };
   }
 
@@ -459,10 +464,10 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawBackRow(fr, sc);
     eggs.beginFrame();
     drawItems();
-    drawTumbleweeds(fr, sc);
     drawGround(fr);
     eggs.drawActors(fr, dt);
     hero.draw(fr, fr.running, reading && !fr.running && Math.abs(camTarget() - fr.camX) < 1.5);
+    blobShadow(fr, fr.HALF + fr.frac, Math.round(hero.y), 8);
     drawGlows(fr, glows, particles);
     eggs.drawBubbles(fr, dt);
     particles.weather(fr, dt);

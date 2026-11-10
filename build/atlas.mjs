@@ -36,7 +36,7 @@ const WIDTH = 256;
  */
 const REQUIRED = [
   ...['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush',
-    'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile', 'tumbleweed'].map((k) => `scenery.${k}.*`),
+    'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile'].map((k) => `scenery.${k}.*`),
   ...['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay'].map((k) => `scenery.${k}`),
   ...['r', 'l'].flatMap((s) => [`hero.${s}.idle.0`, `hero.${s}.idle.1`, `hero.${s}.run.*`, `hero.${s}.sit.0`, `hero.${s}.sit.1`, `hero.${s}.sit.2`]),
   ...['r', 'l'].flatMap((s) => [`girl.${s}.idle`, `girl.${s}.walk.*`, `girl.${s}.wave.0`]),

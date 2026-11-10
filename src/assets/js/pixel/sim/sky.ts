@@ -85,7 +85,7 @@ export function drawSky(fr: Frame, stars: Star[]) {
   dl.sun = [cx, cy];
   if (!fr.dark) {
     const g = fr.day.golden;
-    orb(dl, cx, cy, 7, g > 0 ? SUN.map((c, i) => mix(c, SUNSET[i], g)) : SUN, 0.95);
+    orb(dl, cx, cy, 7, g > 0 ? SUN.map((c, i) => mix(c, SUNSET[i], g)) : SUN, 1);
     return;
   }
   for (const st of stars) {
@@ -105,5 +105,5 @@ export function drawSky(fr: Frame, stars: Star[]) {
       dl.rect('sky', px, py + 1, 1, 1, col, b);
     }
   }
-  orb(dl, cx, cy, 6, MOON, 0.95, true);
+  orb(dl, cx, cy, 6, MOON, 1, true);
 }

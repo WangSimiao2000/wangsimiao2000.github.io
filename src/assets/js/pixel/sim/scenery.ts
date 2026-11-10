@@ -65,12 +65,10 @@ export interface Scenery {
   pumpkin: Sprite[];
   snowPile: Sprite[];
   leafPile: Sprite[];
-  /** 风滚草滚动的 4 帧（每帧转 90 度），由 tumbleweed.ts 画 */
-  tumbleweed: Sprite[];
 }
 
 const SETS = ['oak', 'forest', 'blossom', 'pine', 'bush', 'blossomBush', 'rock', 'sandRock', 'snowRock', 'cactus', 'tuft', 'dryTuft', 'flowers', 'autumn', 'autumnBush', 'mushroom', 'stump', 'log', 'berryBush',
-  'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile', 'tumbleweed'] as const;
+  'pebbles', 'fern', 'reeds', 'pumpkin', 'snowPile', 'leafPile'] as const;
 const SINGLES = ['cottage', 'fence', 'lamp', 'sign', 'campfire', 'hay'] as const;
 
 export function buildScenery(): Scenery {

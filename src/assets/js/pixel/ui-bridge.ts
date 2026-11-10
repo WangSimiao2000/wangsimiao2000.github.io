@@ -2,8 +2,8 @@
  * 页面 UI 和渲染器之间的桥：每帧量一次哪些元素要画毛玻璃（位置、圆角、不透明度），
  * 以及阅读时镜头对焦拉近到了哪一步。只读 DOM，不写。
  *
- * 毛玻璃画在世界画布上，所以坐标换算成世界画布的像素：画布有亚像素平移、阅读时会下沉（CSS transform），
- * 用它自己的 getBoundingClientRect 换算，这些变换就都算进去了。
+ * 毛玻璃画在世界画布上，所以坐标换算成世界画布的像素：画布有亚像素平移（CSS translate），
+ * 用它自己的 getBoundingClientRect 换算，平移就算进去了。
  */
 import type { GlassRect, View } from './drawlist.js';
 
@@ -28,12 +28,12 @@ export class UiBridge {
   private focus = 0;
   private readonly root = document.documentElement;
   private readonly canvas: HTMLCanvasElement;
-  private readonly sky: HTMLCanvasElement;
+  private readonly hero: HTMLCanvasElement;
 
-  /** canvas：世界画布，毛玻璃画在它上面；sky：天空画布（毛玻璃按它对齐天空） */
-  constructor(canvas: HTMLCanvasElement, sky: HTMLCanvasElement) {
+  /** canvas：世界画布，毛玻璃画在它上面；hero：主角画布（量世界画布的亚像素平移和阅读时的下沉） */
+  constructor(canvas: HTMLCanvasElement, hero: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.sky = sky;
+    this.hero = hero;
   }
 
   /** dt：距上一帧的秒数；reduced：减少动态效果时对焦直接到位 */
@@ -43,12 +43,12 @@ export class UiBridge {
     this.focus = target > this.focus ? Math.min(target, this.focus + step) : Math.max(target, this.focus - step);
     const cv = this.canvas.getBoundingClientRect();
     const glass: GlassRect[] = [];
-    let sky: [number, number] = [0, 0];
+    let hero: [number, number] = [0, 0];
     if (cv.width > 0 && cv.height > 0) {
       const kx = this.canvas.width / cv.width;
       const ky = this.canvas.height / cv.height;
-      const sk = this.sky.getBoundingClientRect();
-      sky = [(sk.left - cv.left) * kx, (sk.top - cv.top) * ky];
+      const hr = this.hero.getBoundingClientRect();
+      hero = [(hr.left - cv.left) * kx, (hr.top - cv.top) * ky];
       for (const el of document.querySelectorAll(GLASS)) {
         if (glass.length >= MAX) break;
         const r = el.getBoundingClientRect();
@@ -61,6 +61,6 @@ export class UiBridge {
     }
     // 对焦的缓动：开头和结尾都慢一点
     const f = this.focus;
-    return { glass, focus: f * f * (3 - 2 * f), sky };
+    return { glass, focus: f * f * (3 - 2 * f), hero };
   }
 }

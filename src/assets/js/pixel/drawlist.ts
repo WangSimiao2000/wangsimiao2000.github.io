@@ -16,6 +16,7 @@ import { rgb } from './sim/util.js';
  *   near     树线 /
  *   back     后排树：树线和主平面之间一排真正的树，比主平面走得慢、糊一点；只有 WebGPU 渲染器画
  *   fg       布景和地面，深色模式下盖一层夜色
+ *   shadow   布景和主角投在地上的影子（被日月压扁、往背光的一边斜过去）；只有 WebGPU 渲染器画
  *   emissive 灯泡、亮着的窗：只在深色模式合成，叠在夜色之上
  *   halo     灯、窗户、营火周围一圈圈的像素光晕：只有 Canvas 2D 画（WebGPU 下由光束和辉光代替）
  *   glow     营火火焰
@@ -24,7 +25,7 @@ import { rgb } from './sim/util.js';
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移，盖夜色
  *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害；只有 WebGPU 渲染器画
  */
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'emissive', 'halo', 'glow', 'actors', 'over', 'hero', 'front'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'emissive', 'halo', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
 /**
@@ -57,6 +58,7 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
     { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3.5, 3] },
     { layers: ['back'], night: true, lit: true, depth: [2], gpuOnly: true },
     { layers: ['fg'], night: true, lit: true },
+    { layers: ['shadow'], gpuOnly: true },
     { layers: ['emissive'], darkOnly: true, bloom: true },
     { layers: ['halo'], classicOnly: true },
     { layers: ['glow'], bloom: true },
@@ -114,19 +116,26 @@ export interface Env {
   light: string;
   /** 环境光：场景整体乘上这个颜色（日落时偏暖偏暗） */
   ambient: string;
-  /** 天空的颜色（页面底色混一点地平线色调）：远景往它靠，做空气透视 */
-  fog: string;
+  /** 天空：天顶和地平线的颜色（随时刻变）。WebGPU 渲染器自己画天空渐变，远景往地平线的颜色靠，做空气透视 */
+  skyTop: string;
+  skyHorizon: string;
+  /** 天空渐变从哪一行（屏幕上看得到的顶）到哪一行（地平线） */
+  skyY: [number, number];
+  /** 投影：多浓（0 = 没有）、压扁成原来高度的几分之几、往背光一侧斜多少 */
+  shadow: { alpha: number; squash: number; shear: number };
 }
 
 /**
  * 一条命令 14 个 float：
- *   0 flags  1 alpha  2-5 目标 x y w h  6-9 图集里的 x y w h（纯色块时不用）  10-12 颜色 r g b（0-255）  13 留空
+ *   0 flags  1 alpha  2-5 目标 x y w h  6-9 图集里的 x y w h（纯色块时不用）  10-12 颜色 r g b（0-255）
+ *   13 影子往右斜多少（影子的每一行往右挪 斜率 × 离顶边的行数；只有 SHADOW 用）
  * 渲染器可以把这段内存直接当实例数据上传。
  */
 export const STRIDE = 14;
 export const SOLID = 1; // 纯色块（不采样图集）
 export const ERASE = 2; // 擦除：按这块的不透明度把已画的东西擦掉（destination-out）
 export const FLIP = 4; // 水平翻转图集里那块
+export const SHADOW = 8; // 画成影子：上下翻过来、只取轮廓（黑色）、按第 13 位斜过去
 
 export interface SpriteOpts {
   alpha?: number;
@@ -139,13 +148,15 @@ export interface SpriteOpts {
   h?: number;
   /** 用精灵的发光遮罩代替本体 */
   glow?: boolean;
+  /** 画成影子（只有轮廓、上下翻转），值是往右斜的斜率（负数往左） */
+  shadow?: number;
 }
 
 export class Commands {
   data = new Float32Array(STRIDE * 256);
   count = 0;
 
-  push(flags: number, alpha: number, dx: number, dy: number, dw: number, dh: number, sx: number, sy: number, sw: number, sh: number, r: number, g: number, b: number) {
+  push(flags: number, alpha: number, dx: number, dy: number, dw: number, dh: number, sx: number, sy: number, sw: number, sh: number, r: number, g: number, b: number, extra = 0) {
     if ((this.count + 1) * STRIDE > this.data.length) {
       const next = new Float32Array(this.data.length * 2);
       next.set(this.data);
@@ -166,6 +177,7 @@ export class Commands {
     d[o + 10] = r;
     d[o + 11] = g;
     d[o + 12] = b;
+    d[o + 13] = extra;
   }
 
   clear() {
@@ -179,7 +191,7 @@ export class DrawList {
   readonly bokeh: Bokeh[] = [];
   /** 太阳 / 月亮在天空画布上的位置（逻辑像素），体积光从这里射出 */
   sun: [number, number] = [0, 0];
-  env: Env = { tint: '#ffffff', rays: 0, light: '#ffffff', ambient: '#ffffff', fog: '#ffffff' };
+  env: Env = { tint: '#ffffff', rays: 0, light: '#ffffff', ambient: '#ffffff', skyTop: '#ffffff', skyHorizon: '#ffffff', skyY: [0, 1], shadow: { alpha: 0, squash: 0, shear: 0 } };
   /**
    * 每层整体再往右挪的亚像素（逻辑像素，可以是负数）。远景、后排、前景按整格画，走得比主平面慢或快，
    * 镜头快停下时会隔几帧才挪一格；渲染器合成时按这个小数偏移取样，移动就是连续的。Canvas 2D 不管它
@@ -204,8 +216,8 @@ export class DrawList {
     const r = o.glow ? sp.glow : sp.rect;
     if (!r) return;
     const [px, py, pw, ph] = o.part ?? [0, 0, r[2], r[3]];
-    const flags = (o.erase ? ERASE : 0) | (o.flip ? FLIP : 0);
-    this.layers[layer].push(flags, o.alpha ?? 1, x, y, o.w ?? pw, o.h ?? ph, r[0] + px, r[1] + py, pw, ph, 0, 0, 0);
+    const flags = (o.erase ? ERASE : 0) | (o.flip ? FLIP : 0) | (o.shadow !== undefined ? SHADOW : 0);
+    this.layers[layer].push(flags, o.alpha ?? 1, x, y, o.w ?? pw, o.h ?? ph, r[0] + px, r[1] + py, pw, ph, 0, 0, 0, o.shadow ?? 0);
   }
 
   /** 填一个纯色矩形 */
@@ -245,10 +257,11 @@ export interface View {
   glass: GlassRect[];
   focus: number;
   /**
-   * 天空画布相对世界画布挪了多少（世界画布的像素）：世界画布有亚像素平移、阅读时往下沉，天空画布不动。
-   * 毛玻璃要把天空也合成进去，按这个对齐，不然阅读时糊开的太阳会比真的太阳低一截，看着像两个太阳
+   * 主角画布相对世界画布的位置（世界画布的像素）。主角画布不做亚像素平移、阅读时跟着 CSS 往下沉：
+   * x 就是世界画布这一帧的亚像素平移，y 就是下沉了多少。WebGPU 渲染器把天空画进世界画布时，
+   * 天空按 x 对齐屏幕、不跟着沉；世界按 y 往下沉（世界画布自己不再用 CSS 下沉，见 home.css）
    */
-  sky: [number, number];
+  hero: [number, number];
 }
 
 /** 渲染器的统一接口：world.ts 每帧交给它一份清单 */
