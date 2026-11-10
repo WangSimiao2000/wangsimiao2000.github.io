@@ -109,6 +109,10 @@ a { color: inherit; }
   border-radius: var(--r-md); background: var(--surface); box-shadow: var(--e3); color: var(--text);
 }
 .time-pop[hidden] { display: none; }
+/* 顶栏整条点击穿透（只有按钮接点击）：拖动条要自己接，不然点下去落到下面的页面上、拖动条就被当成「点了外面」收起 */
+.time-pop { pointer-events: auto; }
+/* 拖动条展开时顶栏压到阅读面板上面，不被挡住 */
+.topbar:has(.time-pop:not([hidden])) { z-index: 7; }
 .time-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .time-out { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .time-now {

@@ -3,7 +3,7 @@
 //         天空被远山、树、地面挡住的地方不算，太阳落到山后面就不再透过山发光
 //   down  逐级缩小一半（每次取 4 个点的平均）
 //   up    从最小的一级往回放大（3x3 帐篷滤波），叠加到上一级上：几级叠起来就是又大又柔的光晕
-// 叠回画面的是第 0 级（overlay.wgsl）。
+// 叠回画面的是第 0 级（overlay.wgsl）。按画布上的位置算：天空、世界各自换算过去（frame.wgsl 的 view）。
 
 @group(0) @binding(1) var emissive: texture_2d<f32>;
 @group(0) @binding(2) var glow: texture_2d<f32>;
@@ -16,6 +16,9 @@
 @group(0) @binding(9) var back: texture_2d<f32>;
 @group(0) @binding(10) var fg: texture_2d<f32>;
 
+/** 画布上的位置换成世界里的位置（阅读时世界往下沉了 F.view.y） */
+fn world(p: vec2f) -> vec2i { return vec2i(clamp(p - vec2f(0.0, F.view.y), vec2f(0.0), F.size.xy - 1.0)); }
+
 /** 这一格天空被前面的东西挡住了多少 */
 fn covered(p: vec2i) -> f32 {
   let a = max(max(textureLoad(far, p, 0).a, textureLoad(mid, p, 0).a), textureLoad(near, p, 0).a);
@@ -24,12 +27,12 @@ fn covered(p: vec2i) -> f32 {
 
 @fragment fn fs(v: V) -> @location(0) vec4f {
   if (!fx(FX_BLOOM)) { return vec4f(0.0); }
-  let p = vec2i(v.pos.xy);
-  var c = textureLoad(glow, p, 0);
-  if (isDark()) { c += textureLoad(emissive, p, 0); }
+  let w = world(v.pos.xy);
+  var c = textureLoad(glow, w, 0);
+  if (isDark()) { c += textureLoad(emissive, w, 0); }
   // 天空：只取接近白的亮部（日盘、月盘），星星这种暗一点的不算
-  let s = textureLoad(sky, p, 0);
-  let bright = smoothstep(0.7, 0.95, max(s.r, max(s.g, s.b)) / max(s.a, 1e-3)) * s.a * (1.0 - covered(p));
+  let s = textureLoad(sky, vec2i(clamp(v.pos.xy - vec2f(F.view.x, 0.0), vec2f(0.0), F.size.xy - 1.0)), 0);
+  let bright = smoothstep(0.7, 0.95, max(s.r, max(s.g, s.b)) / max(s.a, 1e-3)) * s.a * (1.0 - covered(w));
   c += vec4f(s.rgb * bright * 1.6, 0.0);
   return c;
 }

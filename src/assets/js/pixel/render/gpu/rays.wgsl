@@ -8,21 +8,24 @@
 @group(0) @binding(3) var near: texture_2d<f32>;
 @group(0) @binding(4) var fg: texture_2d<f32>;
 
+// 按画布上的位置算：太阳在天空里，要加上天空的偏移；世界阅读时往下沉，取样时换算回去（frame.wgsl 的 view）
 fn blocked(q: vec2f) -> f32 {
-  let p = vec2i(clamp(q, vec2f(0.0), F.size.xy - 1.0));
+  let p = vec2i(clamp(q - vec2f(0.0, F.view.y), vec2f(0.0), F.size.xy - 1.0));
   return max(max(textureLoad(far, p, 0).a, textureLoad(mid, p, 0).a), max(textureLoad(near, p, 0).a, textureLoad(fg, p, 0).a));
 }
 
 /** 这一点有多少光射出来：是天空（没被挡住）、离光源越近越亮 */
+fn sun() -> vec2f { return F.sun.xy + vec2f(F.view.x, 0.0); }
+
 fn source(q: vec2f) -> f32 {
-  return (1.0 - blocked(q)) * exp(-length(q - F.sun.xy) / 46.0);
+  return (1.0 - blocked(q)) * exp(-length(q - sun()) / 46.0);
 }
 
 @fragment fn fs(v: V) -> @location(0) vec4f {
   if (!fx(FX_RAYS) || F.sun.z <= 0.0) { return vec4f(0.0); }
   let p = v.pos.xy;
   let N = 56;
-  let dstep = (F.sun.xy - p) / f32(N);
+  let dstep = (sun() - p) / f32(N);
   var acc = 0.0;
   var w = 1.0;
   var q = p + dstep * hash2(floor(p));
