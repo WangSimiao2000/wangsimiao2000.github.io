@@ -14,8 +14,16 @@
 /* 画布按屏幕像素画（render/gpu/renderer.ts），CSS 只定位置和尺寸 */
 #world, #hero { position: fixed; inset: 0; display: none; }
 .js #world, .js #hero { display: block; }
-/* 浏览器不支持 WebGPU：不画像素世界，只留博客底色和实色卡片 */
+/* 浏览器不支持 WebGPU：不画像素世界，只留博客底色和实色卡片，原来世界那一条里写一句为什么 */
 html[data-renderer='none'] :is(#world, #hero, #front) { display: none; }
+.no-webgpu { display: none; }
+html[data-renderer='none'] .no-webgpu {
+  display: block; position: fixed; z-index: 2; left: 50%; bottom: calc(var(--stage, 160px) / 2); transform: translateX(-50%);
+  width: min(420px, calc(100vw - 48px)); margin: 0; text-align: center;
+  font-size: 13px; line-height: 1.6; color: var(--muted);
+}
+/* 打开文章时那一条被阅读面板占了 */
+html[data-renderer='none'].reading .no-webgpu { display: none; }
 /* 画布贴底：可能比视口高（手机地址栏收起时露出顶上一截），地面始终贴着屏幕底边。见 world.ts resize() */
 .js #world, .js #hero { top: auto; bottom: 0; }
 #hero { pointer-events: none; }

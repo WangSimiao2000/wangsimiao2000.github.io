@@ -198,6 +198,7 @@ export function shell(ctx, page = {}) {
   const sec = reader ? sectionOf(reader.section) : null;
   const body = html`
   <canvas id="world" aria-hidden="true"></canvas>
+  <p class="no-webgpu" role="note">这个浏览器不支持 WebGPU，像素世界没有显示。换用新版的 Chrome、Edge，或 iOS 26 以上的 Safari 就能看到。</p>
   ${topbar()}
   <div class="panel secret-panel" id="secret" data-secret-panel inert aria-hidden="true">
     <div class="card">
