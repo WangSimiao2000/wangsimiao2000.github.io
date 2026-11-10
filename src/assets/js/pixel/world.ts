@@ -10,11 +10,11 @@
  *     particles.ts 天气、灰尘、火星
  *     eggs.ts      路牌 / 女孩 / 彩狸猫三个彩蛋
  *     hero.ts      主角
- *     backrow.ts   后排树（只有 WebGPU 画）
- *     front.ts     镜头前的前景（只有 WebGPU 画）
- *     bokeh.ts     太阳 / 月亮的镜头光斑（只有 WebGPU 画）
+ *     backrow.ts   后排树
+ *     front.ts     镜头前的前景
+ *     bokeh.ts     太阳 / 月亮的镜头光斑
  *     daytime.ts   一天里的时刻：日月位置、光色、天空、投影
- *     shadow.ts    投在地上的影子（只有 WebGPU 画）
+ *     shadow.ts    投在地上的影子
  *   drawlist.ts  模拟和渲染器之间的约定：图层、命令格式、各层怎么合成
  *   render/      渲染器：只读绘制清单
  *   input.ts     滚轮、触屏、键盘、点击
@@ -34,7 +34,7 @@ import { Lanterns } from './sim/lanterns.js';
 import { clamp, easeInOut, mix } from './sim/util.js';
 import type { Frame } from './sim/frame.js';
 import { DrawList, type Renderer } from './drawlist.js';
-import { pickRenderer } from './render/index.js';
+import { startRenderer } from './render/index.js';
 import { drawFront } from './sim/front.js';
 import { drawBackRow } from './sim/backrow.js';
 import { drawBokeh } from './sim/bokeh.js';
@@ -64,17 +64,15 @@ function overlayCanvas(id: string): HTMLCanvasElement {
 }
 
 /**
- * 四张画布：天空在世界和卡片后面；世界跟着相机做亚像素平移；主角始终在屏幕正中、不做平移；前景压在卡片上面。
+ * 三张画布：天空和世界在卡片后面，跟着相机做亚像素平移；主角始终在屏幕正中、不做平移；前景压在卡片上面。
  */
 export function startWorld({ canvas, sections, panels, slots, secretPanel }: WorldOptions) {
-  const skyCanvas = overlayCanvas('sky');
   const heroCanvas = overlayCanvas('hero');
   const frontCanvas = overlayCanvas('front');
-  canvas.before(skyCanvas);
   canvas.after(heroCanvas);
   document.body.append(frontCanvas); // 压在卡片上面（home.css 里 z-index 最高、点击穿透）
-  const all = [canvas, skyCanvas, heroCanvas, frontCanvas];
-  const renderer: Renderer = pickRenderer({ sky: skyCanvas, world: canvas, hero: heroCanvas, front: frontCanvas });
+  const all = [canvas, heroCanvas, frontCanvas];
+  const renderer: Renderer = startRenderer({ world: canvas, hero: heroCanvas, front: frontCanvas });
   const ui = new UiBridge(canvas, heroCanvas);
   const dl = new DrawList();
   const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -92,7 +90,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   const fr: Frame = {
     dl, W: 0, H: 0, S: 4, HALF: 0, camX: 0, camLeft: 0, frac: 0, p: 0,
-    dark: false, bg: '#eef1f5', time: 0, reduced: reducedMq.matches, running: false, visH: 0, day: daytime(12, false),
+    dark: false, time: 0, reduced: reducedMq.matches, running: false, visH: 0, day: daytime(12, false),
   };
   // 时刻：网址带 ?tod=小时（0-24）时固定在那个时刻（预览、截图用），不然跟着系统时钟
   const todParam = new URLSearchParams(location.search).get('tod');
@@ -152,10 +150,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   resize();
   window.addEventListener('resize', resize);
 
-  /* 主题：雾色 = 页面底色 + 一点群系色调 */
+  /* 主题：亮色是太阳、暗色是月亮和夜色 */
   function readTheme() {
     fr.dark = root.dataset.theme === 'dark';
-    fr.bg = getComputedStyle(root).getPropertyValue('--bg').trim() || (fr.dark ? '#15181d' : '#eef1f5');
   }
   readTheme();
   new MutationObserver(readTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
@@ -456,11 +453,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawSky(fr, stars);
     lanterns.draw(fr);
     fireworks?.draw(fr, dt, fireX);
-    // 有景深时远近靠模糊区分，远景不再往雾色靠
-    const haze = renderer.depthOfField ? 0 : 1;
-    drawLayer(fr, 'far', 0.18, (dark ? 0.55 : 0.62) * haze);
-    drawLayer(fr, 'mid', 0.42, (dark ? 0.32 : 0.36) * haze);
-    drawLayer(fr, 'near', 0.7, 0.14 * haze);
+    drawLayer(fr, 'far', 0.18);
+    drawLayer(fr, 'mid', 0.42);
+    drawLayer(fr, 'near', 0.7);
     drawBackRow(fr, sc);
     eggs.beginFrame();
     drawItems();

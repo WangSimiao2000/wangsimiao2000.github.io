@@ -22,8 +22,8 @@ function treelineAt(lx: number, wx: number, freq: number, size: number): number 
   return (round * (1 - spiky) + tri * spiky) * size * present * Math.min(1, amt * 1.6);
 }
 
-/** 远景一层：factor 是视差系数，haze 是向雾色靠拢的程度 */
-export function drawLayer(fr: Frame, which: Layer, factor: number, haze: number) {
+/** 远景一层：factor 是视差系数（远近的空气透视由渲染器按层的深度做） */
+export function drawLayer(fr: Frame, which: Layer, factor: number) {
   const { dl, W, H } = fr;
   const base = H - GROUND;
   const exact = fr.camX * factor - fr.frac - Math.floor(fr.HALF);
@@ -42,7 +42,7 @@ export function drawLayer(fr: Frame, which: Layer, factor: number, haze: number)
       h = 4 + (noise1(lx * 0.021 + 60) * 0.5 + 0.5) * 12 + treelineAt(lx, wx, 0.075, 10);
     }
     const y = Math.round(base - h);
-    const [body, lit] = layerColor(wx, which, haze, fr.dark, fr.bg);
+    const [body, lit] = layerColor(wx, which, fr.dark);
     dl.rect(which, x, y, 1, H - y, body);
     dl.rect(which, x, y, 1, 1, lit);
   }

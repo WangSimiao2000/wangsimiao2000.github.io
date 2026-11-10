@@ -63,7 +63,7 @@ export interface Biome {
   weather?: { kind: WeatherKind; rate: number };
   /** 深色模式下萤火虫的生成概率 */
   fireflies?: number;
-  /** 白天体积光的强度：树多、林子密的地方光束更明显（只有 WebGPU 渲染器用） */
+  /** 日月体积光的强度：树多、林子密的地方光束更明显 */
   rays: number;
 }
 
@@ -228,18 +228,15 @@ export function onPath(wx: number): boolean {
 
 export type Layer = 'far' | 'mid' | 'near';
 const layerColorCache = new Map<string, [string, string]>();
-/** 远景某层在某处的颜色：先（深色模式下）入夜，再向雾色靠拢；第二个是轮廓上沿的受光线 */
-export function layerColor(wx: number, which: Layer, haze: number, dark: boolean, bg: string): [string, string] {
+/** 远景某层在某处的颜色（深色模式下先入夜）；第二个是轮廓上沿的受光线。远近的空气透视由渲染器按层的深度做 */
+export function layerColor(wx: number, which: Layer, dark: boolean): [string, string] {
   const [i, j, t] = weights(wx);
   const q = Math.round(t * STEPS);
-  const key = `${which}${i}${q}${dark ? 1 : 0}${bg}${haze}`;
+  const key = `${which}${i}${q}${dark ? 1 : 0}`;
   let c = layerColorCache.get(key);
   if (!c) {
-    let base = mixRGB(rgb(BIOMES[i][which]), rgb(BIOMES[j][which]), q / STEPS);
-    if (dark) base = mixRGB(base, rgb('#1d2639'), 0.62);
-    const tintRGB = mixRGB(rgb(BIOMES[i].tint), rgb(BIOMES[j].tint), q / STEPS);
-    const fog = mixRGB(rgb(bg), tintRGB, dark ? 0.08 : 0.25);
-    const body = mixRGB(base, fog, haze);
+    let body = mixRGB(rgb(BIOMES[i][which]), rgb(BIOMES[j][which]), q / STEPS);
+    if (dark) body = mixRGB(body, rgb('#1d2639'), 0.62);
     const lit = mixRGB(body, dark ? rgb('#8796b8') : ([255, 255, 255] as RGB), dark ? 0.12 : 0.28);
     c = [css(body), css(lit)];
     layerColorCache.set(key, c);

@@ -1,20 +1,18 @@
 /**
- * 选渲染器。迁移期间：网址带 ?gpu 时用 WebGPU，拿不到 WebGPU 或者没带参数就用 Canvas 2D。
- * ?gpu&fx=0 关掉全部光效（画面和 Canvas 2D 一致，画面回归测试用），?gpu&fx=lights,bloom 只开其中几项。
- * WebGPU 初始化是异步的，这期间返回的渲染器什么都不画（世界照常跑，卡片照常显示）。
- * 渲染器真正就位后在 <html data-renderer> 上标出用的是哪个（webgpu / canvas2d），调试和测试看这个；
- * 毛玻璃开着时再标 <html data-glass>，卡片这些表面才改成半透明（home.css）；
- * 天空画进世界画布时标 <html data-sky>，阅读时世界画布不再用 CSS 往下沉（渲染器自己沉）。
+ * 启动渲染器。WebGPU 初始化是异步的，这期间返回的渲染器什么都不画（世界照常跑，卡片照常显示）。
+ * 网址带 ?fx=0 关掉全部光效、?fx=lights,bloom 只开其中几项（调试、对比用）。
+ *
+ * 就位后在 <html data-renderer> 上标出状态，调试、测试和样式看这个：
+ *   webgpu  正常；毛玻璃开着时再标 <html data-glass>，卡片这些表面才改成半透明（home.css）
+ *   none    浏览器不支持 WebGPU（或拿不到适配器）：不画世界，页面是博客底色加实色卡片（home.css）
  */
 import type { Canvases, Renderer } from '../drawlist.js';
-import { createClassicRenderer } from './classic.js';
 import { createGpuRenderer, FX, FX_ALL } from './gpu/renderer.js';
 
-function mark(kind: 'webgpu' | 'canvas2d', glass = false, sky = false) {
+function mark(kind: 'webgpu' | 'none', glass = false) {
   const root = document.documentElement;
   root.dataset.renderer = kind;
   root.toggleAttribute('data-glass', glass);
-  root.toggleAttribute('data-sky', sky);
 }
 
 /** fx 参数：没有 = 全开，0 = 全关，逗号分隔的名字 = 只开这几项 */
@@ -24,32 +22,22 @@ export function parseEffects(v: string | null): number {
   return v.split(',').reduce((bits, k) => bits | (FX[k.trim() as keyof typeof FX] ?? 0), 0);
 }
 
-export function pickRenderer(c: Canvases): Renderer {
-  const q = new URLSearchParams(location.search);
-  if (!q.has('gpu')) {
-    mark('canvas2d');
-    return createClassicRenderer(c);
-  }
+export function startRenderer(c: Canvases): Renderer {
   let active: Renderer | null = null;
   let size: [number, number, number] = [0, 0, 1];
-  const effects = parseEffects(q.get('fx'));
+  const effects = parseEffects(new URLSearchParams(location.search).get('fx'));
   createGpuRenderer(c, effects).then(
     (r) => {
       r.resize(...size);
       active = r;
-      mark('webgpu', (effects & FX.glass) !== 0, (effects & FX.sky) !== 0);
+      mark('webgpu', (effects & FX.glass) !== 0);
     },
     (err) => {
-      console.error('[world] WebGPU 用不了，退回 Canvas 2D：', err);
-      active = createClassicRenderer(c);
-      active.resize(...size);
-      mark('canvas2d');
+      console.warn('[world] WebGPU 用不了，不画像素世界：', err);
+      mark('none');
     },
   );
   return {
-    get depthOfField() {
-      return active?.depthOfField ?? false;
-    },
     resize(w, h, S) {
       size = [w, h, S];
       active?.resize(w, h, S);

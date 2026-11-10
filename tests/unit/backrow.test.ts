@@ -13,7 +13,7 @@ const fake = (): Sprite[] => [10, 14, 18].map((h) => ({ name: `s${next}`, width:
 const sc = new Proxy({} as Record<string, Sprite[]>, { get: (o, k: string) => (o[k] ??= fake()) }) as unknown as Scenery;
 
 function frame(camX: number, frac = 0): Frame {
-  return { dl: new DrawList(), W: 300, H: 180, S: 5, HALF: 150, camX, camLeft: Math.floor(camX - 150), frac, p: camX / SECTION, dark: false, bg: '#eef1f5', time: 0, reduced: false, running: false, visH: 180 };
+  return { dl: new DrawList(), W: 300, H: 180, S: 5, HALF: 150, camX, camLeft: Math.floor(camX - 150), frac, p: camX / SECTION, dark: false, time: 0, reduced: false, running: false, visH: 180 };
 }
 
 /** 画出来的树：图集 x -> 它在后排坐标里的位置和底边（画布 x + 后排原点） */

@@ -33,7 +33,6 @@
   --accent: #3a9a30;
   --accent-soft: rgb(58 154 48 / 0.12);
   --danger: #d9534f;
-  --world-filter: none;
 }
 [data-theme='dark'] {
   color-scheme: dark;
@@ -48,7 +47,6 @@
   --muted: #8b93a3;
   --accent: #7ccf5c;
   --accent-soft: rgb(124 207 92 / 0.12);
-  --world-filter: none; /* 夜色由 world.ts 绘制 */
   --danger: #e57373;
 }
 /* 高度：凸起 e1-e4，凹陷 i1-i3。暗影在右下；凸起的白色亮影在正下方（放在像素场景前面，左上的亮影会成一圈白雾） */

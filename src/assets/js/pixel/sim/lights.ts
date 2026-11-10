@@ -1,6 +1,5 @@
 /**
- * 灯光：自发光像素（灯泡、窗格）、光晕、营火，以及每种光源的点光源。
- * 所有光源共用一套亮度：夜里的光晕强度和营火一致，白天按同样比例减弱。
+ * 灯光：自发光像素（灯泡、窗格）、营火的火焰，以及每处光源的点光源（渲染器拿来照亮夜色、洒出光束）。
  */
 import type { Sprite } from '../atlas.js';
 import type { Beam, DrawList, LayerName } from '../drawlist.js';
@@ -15,8 +14,6 @@ export interface Glow {
   wx: number; // 世界坐标：灯的闪烁相位、火星的生成位置
 }
 
-export const GLOW = { night: 0.26, day: 0.12 };
-
 /** 物体画进前景时同步维护自发光层：先擦掉它挡住的光，再画它自己的发光像素 */
 export function emit(fr: Frame, sp: Sprite, x: number, y: number) {
   if (!fr.dark) return;
@@ -24,7 +21,7 @@ export function emit(fr: Frame, sp: Sprite, x: number, y: number) {
   if (sp.glow) fr.dl.sprite('emissive', sp, x, y, { glow: true });
 }
 
-/** 像素化的圆形光晕：按距离分 3 档透明度，越外越淡 */
+/** 像素化的圆形光晕（孔明灯、烟花用）：按距离分 3 档透明度，越外越淡 */
 export function halo(dl: DrawList, layer: LayerName, x: number, y: number, r: number, color: string, a: number) {
   for (let band = 3; band >= 1; band--) {
     const rr = (r * band) / 3;
@@ -40,7 +37,6 @@ export function halo(dl: DrawList, layer: LayerName, x: number, y: number, r: nu
 function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: Particles) {
   const { dl } = fr;
   const flick = fr.reduced ? 0 : Math.floor(fr.time * 10) % 3;
-  halo(dl, 'halo', x, y - 3, 13, '#ffb55a', fr.dark ? GLOW.night : GLOW.day);
   dl.rect('glow', x - 3, y - 5 + flick, 6, 5 - flick, '#ff7a2a');
   dl.rect('glow', x - 1, y - 8 + flick, 3, 3, '#ff7a2a');
   dl.rect('glow', x - 2, y - 4 + (flick === 1 ? 1 : 0), 4, 4, '#ffc14d');
@@ -52,7 +48,7 @@ function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: P
 }
 
 /**
- * 点光源（照多远、多亮、什么颜色）：夜里把周围的夜色照淡、染上暖色。只有 WebGPU 渲染器用，
+ * 点光源（照多远、多亮、什么颜色）：夜里把周围的夜色照淡、染上暖色。
  * 白天不点灯（营火白天也亮，但弱很多）。
  * beam 是夜里洒出来的体积光：灯泡、窗户、营火都是露在外面的光源，往四周散开（照到地面为止）
  */
@@ -62,13 +58,10 @@ const LIGHT: Record<GlowKind, { radius: number; intensity: number; color: string
   fire: { radius: 44, intensity: 1.2, color: '#ff9a4a', beam: { dir: [0, -1], cos: -1, length: 42 } },
 };
 
-/** 光晕和火焰画在夜色之上、角色之下（角色经过会挡光）。光晕单独一层，WebGPU 下不画 */
+/** 营火的火焰（画在夜色之上、角色之下，角色经过会挡光）和每处光源的点光源 */
 export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
-  const base = fr.dark ? GLOW.night : GLOW.day;
   for (const gl of glows) {
     const flicker = gl.kind === 'fire' ? 0.85 + 0.15 * Math.sin(fr.time * 9 + gl.wx) * Math.sin(fr.time * 5.3) : gl.kind === 'lamp' ? 0.92 + 0.08 * Math.sin(fr.time * 3 + gl.wx) : 1;
-    if (gl.kind === 'lamp') halo(fr.dl, 'halo', gl.x, gl.y, 11, '#ffd36a', base * flicker);
-    if (gl.kind === 'window') halo(fr.dl, 'halo', gl.x, gl.y, 11, '#ffcf70', base);
     if (gl.kind === 'fire') drawFlame(fr, gl.x, gl.y, gl.wx, particles);
     const l = LIGHT[gl.kind];
     const ly = gl.kind === 'fire' ? gl.y - 3 : gl.y;

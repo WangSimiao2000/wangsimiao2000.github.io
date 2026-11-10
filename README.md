@@ -73,21 +73,21 @@ pixel/
 ├── atlas.ts     # 精灵 = 图集里的一块坐标（不含像素）
 ├── sim/         # 模拟：群系、地形、天空、灯光、粒子、彩蛋、主角……只算状态、写清单，不碰画布，可以在 Node 里测
 └── render/      # 渲染器：只读清单
-    ├── index.ts     # 选渲染器
-    ├── gpu/         # WebGPU：每层画到纹理（layer.wgsl）→ 光照图、景深、辉光、体积光 → 按 COMPOSE 合成（compose.wgsl）
-    └── classic.ts   # Canvas 2D：迁移到 WebGPU 期间保留，用来对照画面
+    ├── index.ts     # 启动渲染器；浏览器不支持 WebGPU 时不画世界（博客底色加实色卡片）
+    └── gpu/         # WebGPU：每层画到纹理（layer.wgsl）→ 光照图、景深、辉光、体积光 → 天空渐变 + 按 COMPOSE 合成（compose.wgsl）
 ```
 
-现在默认还是 Canvas 2D，网址加 `?gpu` 用 WebGPU（带光效）。`?gpu&fx=0` 关掉全部光效，`?gpu&fx=lights,bloom` 只开其中几项
-（lights 点光源、dof 景深、bloom 辉光、rays 白天体积光、beams 夜里灯光的光束和人物遮挡、grade 按群系调色、
-glass 卡片后面的毛玻璃和打开文章时的对焦拉近、front 压在卡片上的前景）。两个渲染器读同一份清单，`tests/e2e/world-pixels.mjs` 用来对比画面：
-Canvas 2D 和改造前逐像素一致，WebGPU 关掉光效后和它每个颜色通道的差不超过 3（混合时的舍入不同）。
+世界用 WebGPU 画。网址加 `?fx=0` 关掉全部效果、`?fx=lights,bloom` 只开其中几项，调试和对比画面用
+（lights 点光源、dof 景深、bloom 辉光、rays 日月体积光、grade 调色和环境光、beams 夜里灯光的光束和人物遮挡、
+glass 卡片后面的毛玻璃和打开文章时的对焦拉近、front 压在卡片上的前景、bokeh 镜头光斑、vignette 暗角、shadow 地面投影）。
+`?tod=小时`（0-24）把时刻固定下来，不然日月跟着系统时钟走（`sim/daytime.ts`）。
+`tests/e2e/world-pixels.mjs` 逐像素对比两次构建的画面（时钟、随机数、动画都固定住，画面完全确定）。
 
-光效的参数：光源的半径、亮度、颜色和光束（方向、张角、长度）在 `sim/lights.ts` 的 `LIGHT`；每个群系白天体积光的强弱是 `sim/biomes.ts` 里的 `rays`；
-远景三层、后排树、前景离对焦的主平面多远（景深模糊多少）是 `drawlist.ts` 里 `COMPOSE` 的 `depth`。
-开了景深时远景不再往雾色靠，远近靠模糊和视差区分；后排树（`sim/backrow.ts`）和前景（`sim/front.ts`）只有 WebGPU 渲染器画。
+效果的参数：光源的半径、亮度、颜色和光束在 `sim/lights.ts` 的 `LIGHT`；一天里各时刻的光色、天空、投影在 `sim/daytime.ts`；
+每个群系体积光的强弱是 `sim/biomes.ts` 里的 `rays`；远景三层、后排树、前景离对焦的主平面多远（景深模糊多少、空气透视多浓）是
+`drawlist.ts` 里 `COMPOSE` 的 `depth`。
 
-加新的画面元素：在 `sim/` 里往清单写命令；要新的合成规则（比如新的一层）改 `drawlist.ts` 的 `LAYERS` 和 `COMPOSE`，两个渲染器都会跟上。
+加新的画面元素：在 `sim/` 里往清单写命令；要新的合成规则（比如新的一层）改 `drawlist.ts` 的 `LAYERS` 和 `COMPOSE`，渲染器会跟上。
 
 ## 像素素材
 
