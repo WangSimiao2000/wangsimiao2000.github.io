@@ -10,6 +10,9 @@
  *     particles.ts 天气、灰尘、火星
  *     eggs.ts      路牌 / 女孩 / 彩狸猫三个彩蛋
  *     hero.ts      主角
+ *     backrow.ts   后排树（只有 WebGPU 画）
+ *     front.ts     镜头前的前景（只有 WebGPU 画）
+ *     bokeh.ts     失焦的光点（只有 WebGPU 画）
  *   drawlist.ts  模拟和渲染器之间的约定：图层、命令格式、各层怎么合成
  *   render/      渲染器：只读绘制清单
  *   input.ts     滚轮、触屏、键盘、点击
@@ -32,6 +35,7 @@ import { DrawList, type Renderer } from './drawlist.js';
 import { pickRenderer } from './render/index.js';
 import { drawFront } from './sim/front.js';
 import { drawBackRow } from './sim/backrow.js';
+import { drawBokeh } from './sim/bokeh.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
 
@@ -446,6 +450,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     particles.weather(fr, dt);
     particles.draw(fr, dt);
     drawFront(fr, sc);
+    drawBokeh(fr);
     // 毛玻璃要量卡片这一帧的位置，所以面板先摆好（frame 里 updatePanels 在 render 之前）
     renderer.draw(dl, dark, ui.view(dt, fr.reduced));
   }
