@@ -30,7 +30,7 @@ const FRONT_ALPHA = 0.92; // 前景压在卡片上，留一点点透
 const MAX_LIGHTS = 48;
 const MAX_BOKEH = 64;
 const BOKEH_FLOATS = 8; // 和 bokeh.wgsl 的 Dot 一一对应
-const FRAME_FLOATS = (9 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
+const FRAME_FLOATS = (10 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
 const DOF_SIGMA = 0.5; // 每一级深度模糊多少（逻辑像素的标准差）：远山 4 级 = 2，后排 2 级 = 1，前景 6 级 = 3
 const BLOOM_LEVELS = 4; // 辉光逐级缩小几次（每级一半），再逐级放大叠回来：光晕大而柔
 const BLOOM = { day: 0.22, night: 0.45 };
@@ -150,7 +150,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   const frameBuf = uniform(FRAME_FLOATS * 4);
   const frameData = new Float32Array(FRAME_FLOATS);
   const sizeBuf = uniform(16); // 逻辑宽高（layer.wgsl）
-  const scaleBuf = uniform(16); // 世界画布像素 / 逻辑像素, -, 世界下沉了多少（逻辑像素）（overlay.wgsl、bokeh.wgsl、sky.wgsl）
+  const scaleBuf = uniform(16); // 世界画布像素 / 逻辑像素（overlay.wgsl、bokeh.wgsl、sky.wgsl）
   const unitBuf = uniform(16, new Float32Array([1, 0, 0, 0])); // 毛玻璃那份按逻辑分辨率画：放大 1 倍
   const linear = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
   const blank = device.createTexture({ size: [1, 1], format: LOGICAL, usage: GPUTextureUsage.TEXTURE_BINDING });
@@ -273,11 +273,12 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     const top = rgb(dl.env.skyTop);
     d.set([top[0] / 255, top[1] / 255, top[2] / 255, dl.env.skyY[1]], 28);
     d.set([fog[0] / 255, fog[1] / 255, fog[2] / 255, dl.env.skyY[0]], 32);
-    d.set(FADE_STOPS.flat(), 36);
+    d.set([view.hero[0] / scale, view.hero[1] / scale, 0, 0], 36);
+    d.set(FADE_STOPS.flat(), 40);
     lights.forEach((l, i) => {
       const [r, g, b] = rgb(l.color);
       const bm = l.beam;
-      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 44 + i * 12);
+      d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 48 + i * 12);
     });
     device.queue.writeBuffer(frameBuf, 0, d);
     // 天空按主角画布（不平移、不下沉）对齐屏幕，世界跟着主角画布往下沉
@@ -454,7 +455,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     draw(dl, dark, view) {
       if (!T) return;
       writeFrame(dl, dark, view);
-      device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, 0, view.hero[1] / scale, 0]));
+      device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, 0, 0, 0]));
       const glassCount = effects & FX.glass ? writeGlass(view) : 0;
       const first = upload(dl);
       const enc = device.createCommandEncoder();
