@@ -28,14 +28,19 @@ fn covered(p: vec2i) -> f32 {
 @fragment fn fs(v: V) -> @location(0) vec4f {
   if (!fx(FX_BLOOM)) { return vec4f(0.0); }
   let w = world(v.pos.xy);
-  var c = textureLoad(glow, w, 0);
-  if (isDark()) { c += textureLoad(emissive, w, 0); }
+  // 营火火焰白天夜里一样亮：按自发光倍数进辉光，不打昼夜的折扣。灯窗、日月按昼夜的辉光强度（F.tint.a）
+  var c = textureLoad(glow, w, 0) * F.ambient.w * FIRE_BLOOM;
+  var rest = vec4f(0.0);
+  if (isDark()) { rest += textureLoad(emissive, w, 0); }
   // 天空：只取接近白的亮部（日盘、月盘），星星这种暗一点的不算
   let s = textureLoad(sky, vec2i(clamp(v.pos.xy - vec2f(F.view.x, 0.0), vec2f(0.0), F.size.xy - 1.0)), 0);
   let bright = smoothstep(0.7, 0.95, max(s.r, max(s.g, s.b)) / max(s.a, 1e-3)) * s.a * (1.0 - covered(w));
-  c += vec4f(s.rgb * bright * 1.6, 0.0);
-  return c;
+  rest += vec4f(s.rgb * bright * 1.6, 0.0);
+  return c + rest * F.tint.a;
 }
+
+/** 营火火焰的辉光强度 */
+const FIRE_BLOOM = 0.6;
 
 @fragment fn down(v: V) -> @location(0) vec4f {
   let dims = vec2f(textureDimensions(src));

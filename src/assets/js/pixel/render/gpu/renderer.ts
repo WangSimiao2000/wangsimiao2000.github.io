@@ -39,6 +39,8 @@ const GRADE = 0.12; // 往群系色调偏多少
 const FOG = { day: 0.07, night: 0.04 };
 const LOGICAL = 'rgba8unorm';
 const HDR = 'rgba16float';
+/** 营火火焰进辉光时的亮度倍数：和合成时同一个数（drawlist.ts 里 glow 那组的 emit） */
+const GLOW_EMIT = COMPOSE.world.find((g) => g.layers.includes('glow'))?.emit ?? 1;
 
 const shader = (name: string) => fetch(new URL(`./${name}.wgsl`, import.meta.url)).then((r) => r.text());
 
@@ -159,7 +161,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
    * 天空和世界画在同一张画布上，画布不透明：阅读时由这里把世界往下沉、天空不动（贴着屏幕的组）
    */
   type Target = CanvasName | 'glass';
-  const entry = (canvas: Target, g: Group) => ({ canvas, g, buf: uniform(80) });
+  const entry = (canvas: Target, g: Group) => ({ canvas, g, buf: uniform(96) });
   const groups = [
     ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => entry(k, g))),
     ...COMPOSE.world.map((g) => entry('glass', g)),
@@ -264,7 +266,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     d.set([tint[0] / 255, tint[1] / 255, tint[2] / 255, dark ? BLOOM.night : BLOOM.day], 8);
     d.set([NIGHT[0] / 255, NIGHT[1] / 255, NIGHT[2] / 255, NIGHT[3]], 12);
     const amb = rgb(dl.env.ambient);
-    d.set([amb[0] / 255, amb[1] / 255, amb[2] / 255, 0], 16);
+    d.set([amb[0] / 255, amb[1] / 255, amb[2] / 255, GLOW_EMIT], 16);
     const ray = rgb(dl.env.light);
     d.set([ray[0] / 255, ray[1] / 255, ray[2] / 255, 0], 20);
     // 空气透视：远景往地平线的颜色靠
@@ -302,7 +304,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const fade = g.fade && !aerial ? 1 : 0;
       const fog = [0, 1, 2].map((i) => (aerial ? (g.depth?.[i] ?? 0) * (dark ? FOG.night : FOG.day) : 0));
       const ambient = effects & FX.grade && (g.lit || g.fade) ? 1 : 0;
-      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient]));
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient, g.emit ?? 0, 0, 0, 0]));
     }
   }
 
