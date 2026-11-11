@@ -364,7 +364,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     const sec0 = Math.floor((camLeft - 160) / SECTION);
     const sec1 = Math.ceil((camLeft + W + 160) / SECTION);
     for (let s = Math.max(-OFF, sec0); s <= Math.min(N - 1, sec1); s++) items.push(...setPieces(s, sc));
-    items.push(...pinwheels.items(fr));
+    items.push(...pinwheels.items(fr, 'main'));
     items.sort((p, q) => p.z - q.z || p.wx - q.wx);
     for (const it of items) {
       const sp = it.sprite;
@@ -462,7 +462,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawLayer(fr, 'far', 0.18);
     drawLayer(fr, 'mid', 0.42);
     drawLayer(fr, 'near', 0.7);
-    drawBackRow(fr, sc);
+    drawBackRow(fr, sc, pinwheels.items(fr, 'back'));
     eggs.beginFrame();
     drawItems();
     // 孔明灯、烟花在布景之后画：它们在布景前面，自发光层里的光不能被布景擦掉（见 lights.ts 的 emit）
