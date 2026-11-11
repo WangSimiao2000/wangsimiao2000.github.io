@@ -39,8 +39,6 @@ PLAYWRIGHT_CORE=~/pw node tests/e2e/flow.mjs
 
 开发依赖只有 `@webgpu/types`：WebGPU 的类型声明，给编辑器和类型检查用，不进页面。
 
-字体：全站是[方舟像素 12px 等宽](https://github.com/TakWolf/ark-pixel-font)（OFL 协议），文章正文和代码保持系统字体。字体文件用 `scripts/split-pixel-font.py` 切成几十块放在 `public/assets/fonts/`，`src/assets/css/pixel-font.css` 按 unicode-range 声明，页面只下载用到的那几块（一般 9-10 块、约 280KB，换页和重新部署后都走缓存）。换字体版本时重跑脚本，删掉旧版本目录。
-
 ## 目录
 
 ```
@@ -58,8 +56,7 @@ src/
 ├── art/           # 像素精灵源图，每个精灵一张 PNG（构建时打包成图集）
 ├── assets/        # css/ 与 js/（js/pixel/ 是首页像素世界）
 └── site.mjs       # 站点信息
-public/            # 原样复制的静态文件（配图、头像、简历、CNAME、fonts/ 像素字体分块）
-scripts/           # 开发机上手动跑的一次性工具，不进构建（图片瘦身、像素字体切分）
+public/            # 原样复制的静态文件（配图、头像、简历、CNAME）
 tools/             # 旧站的工具页，待迁移
 ```
 

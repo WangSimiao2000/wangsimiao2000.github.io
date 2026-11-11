@@ -136,7 +136,6 @@ export function layout(o) {
   <meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#15181d" media="(prefers-color-scheme: dark)">
   <script>${raw(THEME_INIT)}${o.reading ? raw("document.documentElement.classList.add('reading');") : ''}</script>
-  <link rel="stylesheet" href="${o.asset('css/pixel-font.css')}">
   <link rel="stylesheet" href="${o.asset('css/base.css')}">
   <link rel="preload" as="image" href="${o.asset('img/atlas.png')}" fetchpriority="high">
   ${(o.css ?? []).map((c) => html`<link rel="stylesheet" href="${o.asset(c)}">`)}
