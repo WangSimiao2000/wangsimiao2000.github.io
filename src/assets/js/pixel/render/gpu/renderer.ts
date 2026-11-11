@@ -291,7 +291,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const s = canvas === 'glass' ? 1 : scale;
       // 前景压在卡片上：打开文章时淡出，不挡正文
       const opacity = canvas === 'front' ? FRONT_ALPHA * (1 - view.focus) : 1;
-      const soft = [0, 1, 2].map((i) => (effects & FX.dof && (g.depth?.[i] ?? 0) > 0 ? 1 : 0));
+      // 线性插值取样：景深模糊过的层；还有毛玻璃那份的所有层（它按逻辑分辨率画，按整格取的话天空的亚像素偏移会被截掉，
+      // 透过卡片看到的月亮一格一格地跳；反正之后要大幅模糊，插值看不出变软）
+      const soft = [0, 1, 2].map((i) => (canvas === 'glass' || (effects & FX.dof && (g.depth?.[i] ?? 0) > 0) ? 1 : 0));
       const grade = effects & FX.grade && (g.lit || g.fade) ? GRADE : 0;
       // 亚像素偏移只对模糊过的层有意义（线性插值取样）；清晰的层按最近邻取，偏移了也还是跳格
       const shift = [0, 1, 2].map((i) => (soft[i] ? (dl.shift[g.layers[i]] ?? 0) : 0));
