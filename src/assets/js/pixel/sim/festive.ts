@@ -60,7 +60,7 @@ export class Fireworks {
   private flashes: { x: number; y: number; t: number; color: string }[] = [];
 
   /**
-   * 推进并画到天空层（不吃世界的自下而上渐隐，在卡片上方也看得见）。
+   * 推进并画到 aloft 层（和人物同一个平面，不被远山挡住、不吃夜色，在卡片上方也看得见）。
    * fireX = 画面里营火的世界坐标；营火不在画面里就在画面内随机找个地方放
    */
   draw(fr: Frame, dt: number, fireX: number | null) {
