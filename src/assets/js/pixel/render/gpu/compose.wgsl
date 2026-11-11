@@ -62,18 +62,18 @@ fn haze(s: vec4f, k: f32) -> vec4f {
   if (c.a <= 0.0) { return vec4f(0.0); }
   if (G.f.x > 0.0) { c = vec4f(c.rgb * pow(G.f.x, 1.0 / 2.2), c.a); } // 自发光：线性亮度乘 emit 倍
 
-  let dark = isDark();
+  let nt = night();
   var light = vec4f(0.0);
   if (G.a.w > 0.5) { light = textureLoad(lightmap, vec2i(clamp(q, vec2f(0.0), F.size.xy - 1.0)), 0); }
   if (G.e.w > 0.5) {
     // 光照 = 环境光 + 灯光，再乘到颜色上：白天营火旁边也比别处亮。
     // 白天的环境光是这个时刻的天光（日落偏暖偏暗）；夜里再乘偏蓝的暗光，暗处通透、不发灰
     var amb = F.ambient.rgb;
-    if (G.a.z > 0.5 && dark) { amb *= NIGHT_AMBIENT; }
+    if (G.a.z > 0.5) { amb *= mix(vec3f(1.0), NIGHT_AMBIENT, nt); } // 随夜色慢慢暗下来
     c = vec4f(c.rgb * (amb + min(light.rgb * LIGHT_GAIN, vec3f(1.2))), c.a);
-  } else if (G.a.z > 0.5 && dark) {
+  } else if (G.a.z > 0.5 && nt > 0.0) {
     // 关掉调色时（画面对比用）：夜里盖一层夜色，灯旁边变淡
-    let k = F.night.a * (1.0 - min(light.a, 0.85));
+    let k = F.night.a * nt * (1.0 - min(light.a, 0.85));
     c = vec4f(F.night.rgb * k * c.a + c.rgb * (1.0 - k), c.a);
   }
   if (G.c.x > 0.0) {

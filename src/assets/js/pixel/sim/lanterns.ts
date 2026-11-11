@@ -81,12 +81,15 @@ export class Lanterns {
   /** 画到 aloft 层 */
   draw(fr: Frame) {
     this.hits = [];
-    const { dl, W, camLeft, dark } = fr;
+    const { dl, W, camLeft } = fr;
+    const night = fr.day.night;
     if (camLeft > CENTER + SPREAD + 30 || camLeft + W < CENTER - SPREAD - 30) return;
     this.load();
     const n = this.notes.length;
     if (!n) return;
-    const sp = sprite(dark ? 'lantern.night' : 'lantern.day');
+    // 白天、夜里两张图随夜色交叉淡化：天黑下来的过程中灯慢慢亮
+    const sp = sprite('lantern.day');
+    const lit = sprite('lantern.night');
     for (let i = 0; i < n; i++) {
       const wx = lanternX(i, n, W);
       const p = this.pose(fr, wx, i);
@@ -95,9 +98,10 @@ export class Lanterns {
       if (x > W || x + sp.width < 0 || p.alpha <= 0) continue;
       dl.sprite('aloft', sp, x, y, { alpha: p.alpha });
       // 夜里和路灯、窗户一样：亮着的像素进自发光层（辉光），火苗是一个点光源，照亮下面的树梢
-      if (dark) {
-        dl.sprite('emissive', sp, x, y, { glow: true, alpha: p.alpha });
-        dl.light(x + LANTERN_FLAME[0], y + LANTERN_FLAME[1], 18, 0.5 * p.alpha, '#ffc96a');
+      if (night > 0) {
+        dl.sprite('aloft', lit, x, y, { alpha: p.alpha * night });
+        dl.sprite('emissive', lit, x, y, { glow: true, alpha: p.alpha * night });
+        dl.light(x + LANTERN_FLAME[0], y + LANTERN_FLAME[1], 18, 0.5 * p.alpha * night, '#ffc96a');
       }
       // 刚从树后冒头时还被树挡着，露出来以后才能点
       if (p.alpha > 0.5 && y < p.start - 6) this.hits.push({ note: this.notes[i], x0: x - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height + 2 });

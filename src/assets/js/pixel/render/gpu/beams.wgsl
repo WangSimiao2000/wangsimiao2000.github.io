@@ -15,7 +15,7 @@ fn occluder(q: vec2f) -> f32 {
 }
 
 @fragment fn fs(v: V) -> @location(0) vec4f {
-  if (!fx(FX_BEAMS) || !isDark()) { return vec4f(0.0); }
+  if (!fx(FX_BEAMS) || night() <= 0.0) { return vec4f(0.0); }
   let p = floor(v.pos.xy) + 0.5;
   let q = vec2i(clamp(p, vec2f(0.0), F.size.xy - 1.0));
   let onScenery = textureLoad(fg, q, 0).a;

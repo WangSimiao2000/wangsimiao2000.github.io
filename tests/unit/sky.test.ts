@@ -6,7 +6,7 @@ import { DrawList } from '../../src/assets/js/pixel/drawlist.ts';
 import type { Frame } from '../../src/assets/js/pixel/sim/frame.ts';
 
 function frame(camX: number, dark: boolean): Frame {
-  return { dl: new DrawList(), W: 300, H: 180, S: 5, HALF: 150, camX, camLeft: Math.floor(camX - 150), frac: 0, p: 0, dark, time: 0, reduced: false, running: false, visH: 180, day: daytime(dark ? 22 : 12, dark) } as Frame;
+  return { dl: new DrawList(), W: 300, H: 180, S: 5, HALF: 150, camX, camLeft: Math.floor(camX - 150), frac: 0, p: 0, dark, time: 0, reduced: false, running: false, visH: 180, day: daytime(dark ? 22 : 12) } as Frame;
 }
 
 /** 日月显示在哪：按整格画的位置加上天空层的亚像素偏移 */

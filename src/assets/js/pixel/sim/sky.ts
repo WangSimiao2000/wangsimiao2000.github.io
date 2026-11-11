@@ -1,10 +1,11 @@
 /**
- * 天空：不抢内容，只是淡淡的一层。白天一轮太阳，夜里一轮月亮和一片固定的星空；日月是带明暗的像素圆球。
+ * 天空：不抢内容，只是淡淡的一层。太阳、月亮各走各的弧，一片固定的星空随夜色亮起来（daytime.ts）；日月是像素圆。
  */
 import type { DrawList } from '../drawlist.js';
 import type { Frame } from './frame.js';
 import { GROUND } from './biomes.js';
 import { mix } from './util.js';
+import { lightFromMoon } from './daytime.js';
 
 interface Star {
   x: number;
@@ -80,15 +81,19 @@ function orb(dl: DrawList, cx: number, cy: number, r: number, tones: string[], a
  * 画布贴底、可能比视口高（手机地址栏展开时顶上一截在屏幕外），高度按屏幕上实际看得到的部分算。
  * 横坐标不含视差，视差由 drawSky 统一处理
  */
-function orbAt(fr: Frame): [number, number] {
-  const { W, H, day } = fr;
+function orbAt(fr: Frame, arc: number): [number, number] {
+  const { W, H } = fr;
   const vis = Math.min(H, fr.visH);
   const low = H - GROUND - 34;
   const high = H - vis + Math.round(Math.max(12, vis * 0.12));
-  const x = W * (0.1 + 0.8 * day.arc);
-  const y = low - Math.sin(Math.PI * day.arc) * (low - high);
+  const x = W * (0.1 + 0.8 * arc);
+  // 弧走出 0..1 以后接着往下沉，沉到远山后面看不见（天空层在远山后面）
+  const y = low - Math.sin(Math.PI * arc) * (low - high);
   return [Math.round(x), Math.round(y)];
 }
+/** 沉到地平线以下这么多就不用画了 */
+const BELOW = 0.15;
+const above = (arc: number) => arc > -BELOW && arc < 1 + BELOW;
 
 /**
  * 天上的东西随镜头极慢地往反方向挪（视差）。挪动按整格画，剩下的小数写进 dl.shift.sky，
@@ -101,19 +106,25 @@ export function drawSky(fr: Frame, stars: Star[]) {
   const drift = fr.camX * DRIFT;
   const step = Math.floor(drift);
   dl.shift.sky = step - drift;
-  const [ox, cy] = orbAt(fr);
-  const cx = ox - step;
-  dl.sun = [cx, cy];
-  if (!fr.dark) {
-    disc(dl, cx, cy, 7, mix(SUN.noon, SUN.low, fr.day.golden));
-    return;
-  }
+  const { day } = fr;
+  const [sx, sy] = orbAt(fr, day.sun.arc);
+  const [mx, my] = orbAt(fr, day.moon.arc);
+  // 主光源（镜头光斑、体积光、投影按它）：夜色过半以前是太阳，过半以后是月亮
+  dl.sun = lightFromMoon(day) ? [mx - step, my] : [sx - step, sy];
+  // 星星随夜色一颗颗亮起来（每颗在自己的亮度上再乘夜色，暗的先看不见）
+  if (day.night > 0) drawStars(fr, stars, step);
+  if (above(day.sun.arc)) disc(dl, sx - step, sy, 7, mix(SUN.noon, SUN.low, day.sun.warm));
+  if (day.moon.alpha > 0 && above(day.moon.arc)) orb(dl, mx - step, my, 6, MOON, day.moon.alpha, true);
+}
+
+function drawStars(fr: Frame, stars: Star[], step: number) {
+  const { dl, W, day } = fr;
   for (const st of stars) {
     let x = (st.x - step) % W;
     if (x < 0) x += W;
     // 和 demo 一样亮：每颗都接近不透明，在 0.6 到 1 之间慢慢闪；够亮才进辉光（bloom.wgsl 只取接近白的亮部），周围有一点光晕
     const tw = fr.reduced ? 0.8 : 0.5 + 0.5 * Math.sin(fr.time * st.speed + st.phase);
-    const a = 0.6 + 0.4 * tw;
+    const a = (0.6 + 0.4 * tw) * day.night;
     const col = st.warm ? '#fff1d8' : '#e6edff';
     const px = Math.floor(x);
     const py = Math.floor(st.y);
@@ -126,5 +137,4 @@ export function drawSky(fr: Frame, stars: Star[]) {
       dl.rect('sky', px, py + 1, 1, 1, col, b);
     }
   }
-  orb(dl, cx, cy, 6, MOON, 1, true);
 }

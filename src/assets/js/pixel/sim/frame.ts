@@ -21,7 +21,6 @@ export interface Frame {
   frac: number;
   /** 滚动进度 0..N-1 */
   p: number;
-  dark: boolean;
   /** 动画时钟（秒） */
   time: number;
   /** 系统开了「减少动态效果」 */

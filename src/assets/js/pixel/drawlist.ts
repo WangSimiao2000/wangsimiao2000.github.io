@@ -42,9 +42,9 @@ export interface Group {
   screen?: boolean;
   /** 远景：关掉景深时自下而上淡出（util.ts 的 FADE_STOPS），开着时按深度往天空的颜色靠 */
   fade?: boolean;
-  /** 深色模式下变暗（夜色） */
+  /** 随夜色变暗（夜里乘偏蓝的暗光，晨昏时按夜色的浓淡） */
   night?: boolean;
-  /** 只在深色模式下合成 */
+  /** 只在有夜色时合成（层里的东西自己按夜色的浓淡画） */
   darkOnly?: boolean;
   /** 被点光源照亮：灯光加在环境光上（白天也有，营火旁边比别处亮、偏暖） */
   lit?: boolean;
@@ -291,5 +291,6 @@ export interface Renderer {
    * 实际分辨率由渲染器自己定（按屏幕像素画，模糊和泛光才是平滑的）
    */
   resize(W: number, H: number, S: number): void;
-  draw(dl: DrawList, dark: boolean, view: View): void;
+  /** night：夜色有多浓（0 = 白天，1 = 夜里，晨昏时在中间），见 sim/daytime.ts */
+  draw(dl: DrawList, night: number, view: View): void;
 }

@@ -47,10 +47,11 @@ const out = document.querySelector<HTMLOutputElement>('[data-time-out]');
 const now = document.querySelector<HTMLButtonElement>('[data-time-now]');
 
 /**
- * 换到 h 点。fade：深浅色变了时用 View Transitions 整页交叉淡化（颜色是一组 CSS 变量，渐变背景没法用 transition 过渡）；
- * 拖动时不淡化，跟手
+ * 显示 h 点。像素世界按 data-hour 连续地过渡晨昏（pixel/sim/daytime.ts）；界面的深浅色只在晨昏正中间（6 点、18 点）切一次，
+ * 那时世界已经暗了（亮了）一半，切换不突兀。切的时候用 View Transitions 整页交叉淡化
+ * （颜色是一组 CSS 变量，渐变背景没法用 transition 过渡），拖动时间条时也一样
  */
-function show(h: number, fade: boolean) {
+function show(h: number) {
   d.dataset.hour = h.toFixed(3);
   // 拖动条自己拖出来的变化不往回写（手正按在上面，写回去会和指针抢）；「回到现在」、跟着时钟走时滑块跟着动
   if (range && !fromRange) range.value = String(h);
@@ -60,7 +61,7 @@ function show(h: number, fade: boolean) {
   const set = () => {
     d.dataset.theme = theme;
   };
-  if (fade && 'startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if ('startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     d.classList.add('theme-switching');
     document.startViewTransition(set).finished.finally(() => d.classList.remove('theme-switching'));
   } else set();
@@ -75,7 +76,6 @@ const SMOOTH = 0.25; // 追上目标大约要多久（秒）
 let target = current();
 let shown = target;
 let speed = 0; // 时刻每秒变多少小时
-let fadeOnArrive = false; // 这一段是不是该用淡化切深浅色（拖动时不用）
 let fromRange = false; // 这一段是不是拖动条拖出来的
 let raf = 0;
 let last = 0;
@@ -101,20 +101,19 @@ function tick(now: number) {
     shown = target;
     speed = 0;
   }
-  show(shown, fadeOnArrive);
+  show(shown);
   raf = done ? 0 : requestAnimationFrame(tick);
 }
 
 /** 目标时刻换成 h，显示的时刻平滑地追过去 */
-function moveTo(h: number, fade: boolean, byRange = false) {
+function moveTo(h: number, byRange = false) {
   target = h;
-  fadeOnArrive = fade;
   fromRange = byRange;
   if (now) now.hidden = urlHour === null && stored() === null;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
     shown = target;
     speed = 0;
-    show(shown, fade);
+    show(shown);
     return;
   }
   if (!raf) {
@@ -134,11 +133,11 @@ toggle?.addEventListener('click', () => open(pop?.hidden ?? false));
 range?.addEventListener('input', () => {
   const h = parseFloat(range.value);
   store(h);
-  moveTo(h, false, true);
+  moveTo(h, true);
 });
 now?.addEventListener('click', () => {
   store(null);
-  moveTo(clock(), true);
+  moveTo(clock());
 });
 // 点到别处或按 Esc 收起
 document.addEventListener('pointerdown', (e) => {
@@ -151,11 +150,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-show(shown, false);
+show(shown);
 if (now) now.hidden = urlHour === null && stored() === null;
 // 跟着时钟走：没固定时刻的话每分钟更新一次
 setInterval(() => {
-  if (urlHour === null && stored() === null) moveTo(clock(), true);
+  if (urlHour === null && stored() === null) moveTo(clock());
 }, 60_000);
 // 旧版本记过的深浅色偏好（现在由时刻决定），清掉
 try {

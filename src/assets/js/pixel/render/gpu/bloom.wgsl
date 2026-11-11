@@ -35,7 +35,7 @@ fn covered(uv: vec2f) -> f32 {
   // 营火火焰按自发光倍数进辉光（白天比夜里弱，见 drawlist.ts 的 emit）。灯窗、日月按昼夜的辉光强度（F.tint.a）
   var c = at(glow, w) * F.ambient.w * FIRE_BLOOM;
   var rest = vec4f(0.0);
-  if (isDark()) { rest += at(emissive, w); }
+  rest += at(emissive, w); // 自发光层里的光本来就按夜色的浓淡画（白天是空的）
   // 天空：只取接近白的亮部（日盘、月盘、星星），天空底色和晚霞不算。
   // 天空的偏移带小数（视差的亚像素，见 sky.ts），线性插值取样，光晕才跟着日月平滑挪动，不会一格一格地跳
   let s = textureSampleLevel(sky, samp, (v.pos.xy - vec2f(F.view.x, 0.0)) / F.size.xy, 0.0);

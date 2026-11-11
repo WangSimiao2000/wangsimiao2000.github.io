@@ -22,9 +22,11 @@ export interface Glow {
 
 /** 物体画进前景时同步维护自发光层：先擦掉它挡住的光，再画它自己的发光像素 */
 export function emit(fr: Frame, sp: Sprite, x: number, y: number) {
-  if (!fr.dark) return;
+  const n = fr.day.night;
+  if (n <= 0) return;
   fr.dl.sprite('emissive', sp, x, y, { erase: true });
-  if (sp.glow) fr.dl.sprite('emissive', sp, x, y, { glow: true });
+  // 天黑下来的过程中慢慢亮起来
+  if (sp.glow) fr.dl.sprite('emissive', sp, x, y, { glow: true, alpha: n });
 }
 
 function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: Particles) {
@@ -61,6 +63,6 @@ export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
     const l = LIGHT[gl.kind];
     const ly = gl.kind === 'fire' ? gl.y - 3 : gl.y;
     const floor = fr.H - Math.round(heightAt(gl.wx));
-    fr.dl.light(gl.x, ly, l.radius, l.intensity * flicker * (fr.dark ? 1 : gl.kind === 'fire' ? FIRE_DAY : 0), l.color, { ...l.beam, floor });
+    fr.dl.light(gl.x, ly, l.radius, l.intensity * flicker * (gl.kind === 'fire' ? FIRE_DAY + (1 - FIRE_DAY) * fr.day.night : fr.day.night), l.color, { ...l.beam, floor });
   }
 }
