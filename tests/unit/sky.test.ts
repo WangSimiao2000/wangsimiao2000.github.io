@@ -26,3 +26,28 @@ test('日月按整格画、视差的小数交给 shift：翻页时显示位置�
     }
   }
 });
+
+test('镜头光斑用屏幕坐标、跟着日月连续移动：镜头每次挪一点，每个光斑的位置也只挪一点（不跳格）', async () => {
+  const { drawBokeh } = await import('../../src/assets/js/pixel/sim/bokeh.ts');
+  const ghosts = (camX: number) => {
+    const fr = frame(camX, false);
+    drawSky(fr, []);
+    drawBokeh(fr);
+    assert.ok(fr.dl.bokeh.every((b) => b.screen), '镜头光斑应该是屏幕坐标');
+    return fr.dl.bokeh.map((b) => b.x);
+  };
+  let prev = ghosts(1000);
+  for (let k = 1; k <= 200; k++) {
+    const cur = ghosts(1000 + k * 0.5);
+    cur.forEach((x, i) => assert.ok(Math.abs(x - prev[i]) < 0.01, `第 ${k} 步第 ${i} 个光斑跳了：${prev[i]} -> ${x}`));
+    prev = cur;
+  }
+});
+
+test('孔明灯、烟花跟着世界走，画在世界坐标的 aloft 层，不进屏幕坐标的 sky 层', async () => {
+  const { readFile } = await import('node:fs/promises');
+  for (const f of ['lanterns.ts', 'festive.ts']) {
+    const src = await readFile(new URL(`../../src/assets/js/pixel/sim/${f}`, import.meta.url), 'utf8');
+    assert.ok(!src.includes("'sky'"), `${f} 不应该再往 sky 层画`);
+  }
+});

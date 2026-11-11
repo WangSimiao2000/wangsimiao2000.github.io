@@ -3,14 +3,20 @@
  *
  * sim/ 每帧只往清单里写「在哪一层、哪个位置、画图集里的哪块 / 填什么颜色」，不碰画布；
  * 渲染器只读清单，按 COMPOSE 里写好的顺序和规则把各层合成到画布上，不知道画的是什么。
- * 坐标都是逻辑像素（一格 = 一个像素画像素），原点在画布左上角。
+ * 坐标都是逻辑像素（一格 = 一个像素画像素）。有两种坐标，每一层只用其中一种，混用就会在镜头移动时一格一格地跳：
+ *   世界坐标  原点在世界画布左上角（绝大多数层）。世界画布本身由 CSS 做亚像素平移，
+ *             所以按整格画在这里、跟着镜头走的东西，在屏幕上是连续移动的
+ *   屏幕坐标  原点在屏幕左上角：sky 层，和标了 screen 的光斑。渲染器替它们抵消世界画布的平移；
+ *             sky 层整层随视差挪动的小数写在 shift.sky，渲染器合成、辉光、毛玻璃时都按它取样
+ * 跟着世界走、但要画在远山后面的东西（孔明灯、烟花）放 aloft 层，不能放 sky 层。
  */
 import type { Sprite } from './atlas.js';
 import { rgb } from './sim/util.js';
 
 /**
  * 图层，按合成顺序排列。每层先单独画好，再合成：
- *   sky      日月星、孔明灯、烟花：贴着屏幕，不跟世界做亚像素平移、阅读时不跟着下沉
+ *   sky      日月星：屏幕坐标，阅读时不跟着下沉
+ *   aloft    天上跟着世界走的东西（孔明灯、烟花）：世界坐标，画在远山后面
  *   far      远山 \
  *   mid      丘陵  > 远景三层：越远越糊、越往天空的颜色靠（空气透视）
  *   near     树线 /
@@ -24,7 +30,7 @@ import { rgb } from './sim/util.js';
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移
  *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害
  */
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
+export const LAYERS = ['sky', 'aloft', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
 /** 合成组：组里的层按顺序叠好以后，再整体处理（变暗、照亮、调色……），然后叠到画布上 */
@@ -52,6 +58,7 @@ export type CanvasName = 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
   world: [
     { layers: ['sky'], screen: true },
+    { layers: ['aloft'] },
     { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3.5, 3] },
     { layers: ['back'], night: true, lit: true, depth: [2] },
     { layers: ['fg'], night: true, lit: true },
@@ -91,7 +98,8 @@ export interface Light {
 
 /**
  * 一个六边形（光圈形状）的光斑，比如镜头光斑、失焦的光点：紧跟在 layer 所在的合成组后面叠上去，
- * 后面的组照常盖住它（放在 back 层就会被主平面挡住，放在 front 层就压在卡片上）。坐标是逻辑像素，r 是外接圆半径
+ * 后面的组照常盖住它（放在 back 层就会被主平面挡住，放在 front 层就压在卡片上）。坐标是逻辑像素，r 是外接圆半径。
+ * 默认是世界坐标（跟着世界走、阅读时跟着下沉）；screen 的是屏幕坐标（镜头光斑这种长在镜头上的）
  */
 export interface Bokeh {
   layer: LayerName;
@@ -100,6 +108,7 @@ export interface Bokeh {
   r: number;
   color: string;
   alpha: number;
+  screen?: boolean;
 }
 
 /** 这一帧的环境：随相机所在的群系插值，渲染器拿来调光效 */

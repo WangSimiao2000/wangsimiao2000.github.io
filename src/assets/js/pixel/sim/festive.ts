@@ -101,10 +101,10 @@ export class Fireworks {
       const sy = Math.round(s.y);
       if (sx < -10 || sx > W + 10) continue;
       const sz = s.rocket ? 2 : (s.size ?? 1);
-      dl.rect('sky', sx, sy, sz, sz, s.color, s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7);
+      dl.rect('aloft', sx, sy, sz, sz, s.color, s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7);
       if (s.rocket) {
-        dl.rect('sky', sx, sy + 2, 2, 3, s.color, 0.5); // 拖尾
-        dl.rect('sky', sx, sy + 5, 2, 3, s.color, 0.25);
+        dl.rect('aloft', sx, sy + 2, 2, 3, s.color, 0.5); // 拖尾
+        dl.rect('aloft', sx, sy + 5, 2, 3, s.color, 0.25);
       }
     }
     for (let i = this.flashes.length - 1; i >= 0; i--) {
@@ -114,7 +114,7 @@ export class Fireworks {
         this.flashes.splice(i, 1);
         continue;
       }
-      halo(dl, 'sky', Math.round(fl.x - camLeft), Math.round(fl.y), 18, fl.color, (fr.dark ? 0.45 : 0.22) * (1 - fl.t / 0.35));
+      halo(dl, 'aloft', Math.round(fl.x - camLeft), Math.round(fl.y), 18, fl.color, (fr.dark ? 0.45 : 0.22) * (1 - fl.t / 0.35));
     }
   }
 
