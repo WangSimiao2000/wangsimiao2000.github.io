@@ -48,8 +48,8 @@ function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: P
 }
 
 /**
- * 点光源（照多远、多亮、什么颜色）：夜里把周围的夜色照淡、染上暖色。
- * 白天不点灯（营火白天也亮，但弱很多）。
+ * 点光源（照多远、多亮、什么颜色）：加在环境光上照亮周围、染上灯的颜色。
+ * 白天路灯和窗户不亮；营火白天照样烧，只是比夜里弱一些（FIRE_DAY）。
  * beam 是夜里洒出来的体积光：灯泡、窗户、营火都是露在外面的光源，往四周散开（照到地面为止）
  */
 const LIGHT: Record<GlowKind, { radius: number; intensity: number; color: string; beam: Beam }> = {
@@ -57,6 +57,8 @@ const LIGHT: Record<GlowKind, { radius: number; intensity: number; color: string
   window: { radius: 28, intensity: 0.8, color: '#ffc874', beam: { dir: [0, 1], cos: -1, length: 34 } },
   fire: { radius: 44, intensity: 1.2, color: '#ff9a4a', beam: { dir: [0, -1], cos: -1, length: 42 } },
 };
+/** 营火白天的光照是夜里的几成 */
+const FIRE_DAY = 0.8;
 
 /** 营火的火焰（画在夜色之上、角色之下，角色经过会挡光）和每处光源的点光源 */
 export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
@@ -66,6 +68,6 @@ export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
     const l = LIGHT[gl.kind];
     const ly = gl.kind === 'fire' ? gl.y - 3 : gl.y;
     const floor = fr.H - Math.round(heightAt(gl.wx));
-    fr.dl.light(gl.x, ly, l.radius, l.intensity * flicker * (fr.dark ? 1 : gl.kind === 'fire' ? 0.25 : 0), l.color, { ...l.beam, floor });
+    fr.dl.light(gl.x, ly, l.radius, l.intensity * flicker * (fr.dark ? 1 : gl.kind === 'fire' ? FIRE_DAY : 0), l.color, { ...l.beam, floor });
   }
 }

@@ -6,7 +6,7 @@ struct Frame {
   sun: vec4f,    // 太阳 x, y（逻辑像素）, 体积光强度, 1 = 深色模式
   tint: vec4f,   // 群系色调 rgb（0-1）, 辉光强度
   night: vec4f,  // 夜色 rgb（0-1）和不透明度
-  ambient: vec4f, // 环境光 rgb（0-1，场景整体乘上它）, -
+  ambient: vec4f, // 环境光 rgb（0-1，场景整体乘上它）, 营火火焰进辉光的亮度倍数
   rayColor: vec4f, // 日月体积光的颜色 rgb, -
   fog: vec4f,    // 远景往这个颜色靠（空气透视）rgb, -（靠多少按层的深度算，在合成组参数里）
   skyTop: vec4f, // 天空渐变：天顶的颜色, 地平线在哪一行

@@ -15,7 +15,7 @@
 @fragment fn fs(v: V) -> @location(0) vec4f {
   let lp = v.pos.xy / scale.x;
   let uv = lp / F.size.xy;
-  let b = textureSampleLevel(bloom, samp, uv, 0.0).rgb * F.tint.a;
+  let b = textureSampleLevel(bloom, samp, uv, 0.0).rgb; // 昼夜的强度在 bloom.wgsl 里已经乘过
   let ray = textureSampleLevel(rays, samp, uv, 0.0).rgb;
   let beam = textureSampleLevel(beams, samp, (lp - vec2f(0.0, F.view.y)) / F.size.xy, 0.0).rgb;
   let c = b + ray + beam;
