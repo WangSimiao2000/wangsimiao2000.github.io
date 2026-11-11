@@ -7,6 +7,7 @@
  */
 import { mixRGB, rgb, css } from './util.js';
 import type { Frame } from './frame.js';
+import { handover } from './daytime.js';
 
 /** 每个光斑：在线上的位置（0 = 光源，1 = 画面中心）、半径（逻辑像素）、相对亮度、往哪个颜色偏、偏多少 */
 const GHOSTS: readonly (readonly [number, number, number, string, number])[] = [
@@ -27,7 +28,8 @@ export function drawBokeh(fr: Frame) {
   const sy = dl.sun[1];
   const cx = fr.HALF;
   const cy = H - vis / 2;
-  const alpha = fr.dark ? ALPHA.night : ALPHA.day;
+  // 夜里光斑淡一些；主光源从太阳换成月亮那一下前后先淡掉再淡回来（daytime.ts 的 handover）
+  const alpha = (ALPHA.day + (ALPHA.night - ALPHA.day) * fr.day.night) * handover(fr.day);
   const base = rgb(dl.env.light);
   for (const [t, r, k, tint, mix] of GHOSTS) {
     dl.bokeh.push({

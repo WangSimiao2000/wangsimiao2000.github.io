@@ -94,7 +94,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   const fr: Frame = {
     dl, W: 0, H: 0, S: 4, HALF: 0, camX: 0, camLeft: 0, frac: 0, p: 0,
-    dark: false, time: 0, reduced: reducedMq.matches, running: false, visH: 0, day: daytime(12, false),
+    time: 0, reduced: reducedMq.matches, running: false, visH: 0, day: daytime(12),
   };
   // 时刻由 theme.ts 维护在 <html data-hour> 上（跟着系统时钟，或者右上角拖动条拖到的时刻）
   const clockHour = () => {
@@ -161,13 +161,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     const top = sections[fr.p]?.offsetTop ?? 0;
     if (window.scrollY !== top) window.scrollTo({ top, behavior: 'instant' });
   });
-
-  /* 主题：亮色是太阳、暗色是月亮和夜色 */
-  function readTheme() {
-    fr.dark = root.dataset.theme === 'dark';
-  }
-  readTheme();
-  new MutationObserver(readTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 
   /**
    * 滚动进度：按各板块的实际位置算，而不是 scrollY / 一屏高度：手机地址栏收起展开时 100dvh 会变，
@@ -395,7 +388,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
         // 炊烟
         if (!fr.reduced && Math.random() < 0.06) {
           const cx = it.wx - sp.width / 2 + COTTAGE.chimney[0];
-          particles.spawn({ x: cx + (Math.random() - 0.5) * 2, y: y + COTTAGE.chimney[1], vx: 0.05 + Math.random() * 0.06, vy: -0.12 - Math.random() * 0.08, life: 0, max: 140 + Math.random() * 60, color: fr.dark ? '#7d8494' : '#c9ced8', size: Math.random() < 0.4 ? 2 : 1, kind: 'smoke' });
+          particles.spawn({ x: cx + (Math.random() - 0.5) * 2, y: y + COTTAGE.chimney[1], vx: 0.05 + Math.random() * 0.06, vy: -0.12 - Math.random() * 0.08, life: 0, max: 140 + Math.random() * 60, color: fr.day.night > 0.5 ? '#7d8494' : '#c9ced8', size: Math.random() < 0.4 ? 2 : 1, kind: 'smoke' });
         }
       }
     }
@@ -441,7 +434,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       particles.spawn({ x: fr.camX - hero.facing * 4, y: hero.y - 1, vx: -hero.facing * (0.2 + Math.random() * 0.3), vy: -0.2 - Math.random() * 0.2, life: 0, max: 22, color: pal.rim, size: 1, kind: 'dust' });
     }
 
-    fr.day = daytime(clockHour(), fr.dark);
+    fr.day = daytime(clockHour());
     const [i, j, t] = weights(fr.camX);
     const tint = mix(mix(BIOMES[i].tint, BIOMES[j].tint, t), fr.day.horizon, fr.day.golden * 0.45);
     if (tint !== lastTint) {
@@ -454,7 +447,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       light: fr.day.light,
       ambient: fr.day.ambient,
       skyTop: fr.day.skyTop,
-      skyHorizon: mix(fr.day.skyHorizon, tint, fr.dark ? 0.12 : 0.3),
+      skyHorizon: mix(fr.day.skyHorizon, tint, 0.3 + (0.12 - 0.3) * fr.day.night),
       skyY: [fr.H - Math.min(fr.H, fr.visH || fr.H), fr.H - GROUND - 6],
       shadow: fr.day.shadow,
     };
@@ -462,7 +455,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   /** 写这一帧的绘制清单，交给渲染器（各层怎么合成见 drawlist.ts 的 COMPOSE） */
   function render(dt: number) {
-    const { dark } = fr;
     dl.clear(); // 环境（dl.env）在 update 里按相机位置算好，不随清单清掉
     fr.visH = Math.ceil(window.innerHeight / fr.S);
     drawSky(fr, stars);
@@ -486,7 +478,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawFront(fr, sc);
     drawBokeh(fr);
     // 毛玻璃要量卡片这一帧的位置，所以面板先摆好（frame 里 updatePanels 在 render 之前）
-    renderer.draw(dl, dark, ui.view(dt, fr.reduced));
+    renderer.draw(dl, fr.day.night, ui.view(dt, fr.reduced));
   }
 
   /**

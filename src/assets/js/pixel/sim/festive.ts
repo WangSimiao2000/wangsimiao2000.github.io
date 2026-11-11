@@ -103,7 +103,7 @@ export class Fireworks {
       const a = s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7;
       dl.rect('aloft', sx, sy, sz, sz, s.color, a);
       // 火花自己会发光：夜里进自发光层（辉光），和灯、窗户一个做法
-      if (fr.dark) dl.rect('emissive', sx, sy, sz, sz, s.color, a);
+      if (fr.day.night > 0) dl.rect('emissive', sx, sy, sz, sz, s.color, a * fr.day.night);
       if (s.rocket) {
         dl.rect('aloft', sx, sy + 2, 2, 3, s.color, 0.5); // 拖尾
         dl.rect('aloft', sx, sy + 5, 2, 3, s.color, 0.25);

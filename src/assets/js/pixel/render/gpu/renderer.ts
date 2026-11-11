@@ -167,7 +167,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     ...COMPOSE.world.map((g) => entry('glass', g)),
   ];
   /** 这一组这一帧画不画：只在深色模式合成的组、影子开没开 */
-  const skip = (e: (typeof groups)[number], dark: boolean) => (e.g.darkOnly && !dark) || (e.g.layers.includes('shadow') && !(effects & FX.shadow));
+  const skip = (e: (typeof groups)[number], night: number) => (e.g.darkOnly && night <= 0) || (e.g.layers.includes('shadow') && !(effects & FX.shadow));
 
   const glassBuf = uniform((1 + MAX_GLASS * 2) * 16);
 
@@ -259,17 +259,19 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
 
   /* ---------- 每帧 ---------- */
 
-  function writeFrame(dl: DrawList, dark: boolean, view: View) {
+  /** night：夜色有多浓（0..1，daytime.ts）；白天和夜里的参数都按它插值，没有开关 */
+  function writeFrame(dl: DrawList, night: number, view: View) {
+    const byNight = (a: { day: number; night: number }) => a.day + (a.night - a.day) * night;
     const d = frameData;
     d.fill(0);
     const lights = dl.lights.slice(0, MAX_LIGHTS);
     const tint = rgb(dl.env.tint);
     d.set([W, H, effects, lights.length], 0);
-    d.set([dl.sun[0], dl.sun[1], dl.env.rays, dark ? 1 : 0], 4);
-    d.set([tint[0] / 255, tint[1] / 255, tint[2] / 255, dark ? BLOOM.night : BLOOM.day], 8);
+    d.set([dl.sun[0], dl.sun[1], dl.env.rays, night], 4);
+    d.set([tint[0] / 255, tint[1] / 255, tint[2] / 255, byNight(BLOOM)], 8);
     d.set([NIGHT[0] / 255, NIGHT[1] / 255, NIGHT[2] / 255, NIGHT[3]], 12);
     const amb = rgb(dl.env.ambient);
-    d.set([amb[0] / 255, amb[1] / 255, amb[2] / 255, GLOW_EMIT[dark ? 'night' : 'day']], 16);
+    d.set([amb[0] / 255, amb[1] / 255, amb[2] / 255, byNight(GLOW_EMIT)], 16);
     const ray = rgb(dl.env.light);
     d.set([ray[0] / 255, ray[1] / 255, ray[2] / 255, 0], 20);
     // 空气透视：远景往地平线的颜色靠
@@ -308,9 +310,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       // 有景深时远近靠模糊和空气透视区分，远景不再自下而上淡出（山顶淡没了就看不出是山）
       const aerial = effects & FX.dof && g.fade;
       const fade = g.fade && !aerial ? 1 : 0;
-      const fog = [0, 1, 2].map((i) => (aerial ? (g.depth?.[i] ?? 0) * (dark ? FOG.night : FOG.day) : 0));
+      const fog = [0, 1, 2].map((i) => (aerial ? (g.depth?.[i] ?? 0) * byNight(FOG) : 0));
       const ambient = effects & FX.grade && (g.lit || g.fade) ? 1 : 0;
-      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient, g.emit ? g.emit[dark ? 'night' : 'day'] : 0, g.hires ? scale : 0, 0, 0]));
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient, g.emit ? byNight(g.emit) : 0, g.hires ? scale : 0, 0, 0]));
     }
   }
 
@@ -392,7 +394,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   }
 
   /** 把各组合成到一张画布（或毛玻璃用的那张纹理）上 */
-  function composeTo(enc: GPUCommandEncoder, k: Target, dark: boolean, glassCount: number, dots: Partial<Record<LayerName, [number, number]>> = {}) {
+  function composeTo(enc: GPUCommandEncoder, k: Target, night: number, glassCount: number, dots: Partial<Record<LayerName, [number, number]>> = {}) {
     const p = pass(enc, k === 'glass' ? T!.glassSrc : contexts[k].getCurrentTexture());
     // 前景画布关掉时清成透明就结束
     if (k === 'front' && !(effects & FX.front)) return p.end();
@@ -405,7 +407,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     p.setPipeline(k === 'glass' ? composeGlassPipe : composePipe);
     groups.forEach((e, i) => {
       const { canvas, g } = e;
-      if (canvas !== k || skip(e, dark)) return;
+      if (canvas !== k || skip(e, night)) return;
       p.setBindGroup(0, T!.composeBinds[i]);
       p.draw(3);
       // 这一组里的层上有失焦的光点：紧跟着叠上去，后面的组照常盖住它
@@ -463,9 +465,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       device.queue.writeBuffer(sizeBuf, 0, new Float32Array([w, h, 0, 0]));
       T = makeTargets();
     },
-    draw(dl, dark, view) {
+    draw(dl, night, view) {
       if (!T) return;
-      writeFrame(dl, dark, view);
+      writeFrame(dl, night, view);
       device.queue.writeBuffer(scaleBuf, 0, new Float32Array([scale, 0, 0, 0]));
       const glassCount = effects & FX.glass ? writeGlass(view) : 0;
       const first = upload(dl);
@@ -489,12 +491,12 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       if (effects & FX.rays) full(enc, T.rays, raysPipe, T.raysBind);
       if (effects & FX.beams) full(enc, T.beams, beamsPipe, T.beamsBind);
       if (effects & FX.glass && glassCount > 0) {
-        composeTo(enc, 'glass', dark, 0);
+        composeTo(enc, 'glass', night, 0);
         blur(enc, T.glassBlurBinds, T.scratch, T.glassBlur, LOGICAL);
         blur(enc, T.glassSharpBinds, T.scratch, T.glassSharp, LOGICAL);
       }
       const dots = uploadBokeh(dl, view);
-      for (const k of CANVASES) composeTo(enc, k, dark, glassCount, dots);
+      for (const k of CANVASES) composeTo(enc, k, night, glassCount, dots);
       device.queue.submit([enc.finish()]);
     },
   };

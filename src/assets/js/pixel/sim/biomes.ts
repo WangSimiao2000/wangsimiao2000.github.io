@@ -233,16 +233,17 @@ export function onPath(wx: number): boolean {
 
 export type Layer = 'far' | 'mid' | 'near';
 const layerColorCache = new Map<string, [string, string]>();
-/** 远景某层在某处的颜色（深色模式下先入夜）；第二个是轮廓上沿的受光线。远近的空气透视由渲染器按层的深度做 */
-export function layerColor(wx: number, which: Layer, dark: boolean): [string, string] {
+/** 远景某层在某处的颜色（随夜色渐渐入夜，night 0..1）；第二个是轮廓上沿的受光线。远近的空气透视由渲染器按层的深度做 */
+export function layerColor(wx: number, which: Layer, night: number): [string, string] {
   const [i, j, t] = weights(wx);
   const q = Math.round(t * STEPS);
-  const key = `${which}${i}${q}${dark ? 1 : 0}`;
+  const n = Math.round(night * STEPS); // 夜色也量化，缓存才有用
+  const key = `${which}${i}${q}${n}`;
   let c = layerColorCache.get(key);
   if (!c) {
-    let body = mixRGB(rgb(BIOMES[i][which]), rgb(BIOMES[j][which]), q / STEPS);
-    if (dark) body = mixRGB(body, rgb('#1d2639'), 0.62);
-    const lit = mixRGB(body, dark ? rgb('#8796b8') : ([255, 255, 255] as RGB), dark ? 0.12 : 0.28);
+    const k = n / STEPS;
+    const body = mixRGB(mixRGB(rgb(BIOMES[i][which]), rgb(BIOMES[j][which]), q / STEPS), rgb('#1d2639'), 0.62 * k);
+    const lit = mixRGB(body, mixRGB([255, 255, 255] as RGB, rgb('#8796b8'), k), 0.28 + (0.12 - 0.28) * k);
     c = [css(body), css(lit)];
     layerColorCache.set(key, c);
   }

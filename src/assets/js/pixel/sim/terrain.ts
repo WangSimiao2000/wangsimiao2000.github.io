@@ -42,7 +42,7 @@ export function drawLayer(fr: Frame, which: Layer, factor: number) {
       h = 4 + (noise1(lx * 0.021 + 60) * 0.5 + 0.5) * 12 + treelineAt(lx, wx, 0.075, 10);
     }
     const y = Math.round(base - h);
-    const [body, lit] = layerColor(wx, which, fr.dark);
+    const [body, lit] = layerColor(wx, which, fr.day.night);
     dl.rect(which, x, y, 1, H - y, body);
     dl.rect(which, x, y, 1, 1, lit);
   }

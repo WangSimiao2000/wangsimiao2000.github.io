@@ -3,7 +3,7 @@
 
 struct Frame {
   size: vec4f,   // 逻辑宽, 逻辑高, 效果开关位, 光源数
-  sun: vec4f,    // 太阳 x, y（逻辑像素）, 体积光强度, 1 = 深色模式
+  sun: vec4f,    // 主光源（日 / 月）x, y（逻辑像素）, 体积光强度, 夜色有多浓（0 = 白天，1 = 夜里，晨昏时在中间）
   tint: vec4f,   // 群系色调 rgb（0-1）, 辉光强度
   night: vec4f,  // 夜色 rgb（0-1）和不透明度
   ambient: vec4f, // 环境光 rgb（0-1，场景整体乘上它）, 营火火焰进辉光的亮度倍数
@@ -30,7 +30,8 @@ const FX_BOKEH = 256u;
 const FX_VIGNETTE = 512u;
 const FX_SKY = 1024u;
 fn fx(bit: u32) -> bool { return (u32(F.size.z) & bit) != 0u; }
-fn isDark() -> bool { return F.sun.w > 0.5; }
+/** 夜色有多浓（0..1）：白天和夜里的效果都按它插值，没有开关 */
+fn night() -> f32 { return F.sun.w; }
 fn hash2(p: vec2f) -> f32 { return fract(sin(dot(p, vec2f(12.9898, 78.233))) * 43758.5453); }
 /** 抖动：加上不到半档的噪声，渐变和模糊过的地方不会出现一条条色带 */
 fn dither(p: vec2f) -> f32 { return (hash2(floor(p)) - 0.5) / 255.0; }
@@ -63,7 +64,7 @@ fn look(c: vec3f) -> vec3f {
 /** 暗角：画面边上压暗多少（0..1），uv 是 0..1 的屏幕位置。浅色模式的天空是浅色页面底色，压重了发灰，轻一些 */
 fn vignette(uv: vec2f) -> f32 {
   let q = (uv - 0.5) * vec2f(0.9, 1.2);
-  return clamp(dot(q, q) * select(0.28, 0.55, isDark()), 0.0, 1.0);
+  return clamp(dot(q, q) * mix(0.28, 0.55, night()), 0.0, 1.0);
 }
 
 struct V { @builtin(position) pos: vec4f };

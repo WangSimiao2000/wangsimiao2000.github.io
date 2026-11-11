@@ -39,11 +39,11 @@ export class Particles {
       if (near <= 0) return;
       const wt = b.weather;
       if (wt && Math.random() < near * wt.rate * k) {
-        if (wt.kind === 'snow') this.spawn({ x: camLeft + Math.random() * W, y: H * 0.35, vx: 0, vy: 0.16 + Math.random() * 0.18, life: 0, max: 900, color: fr.dark ? '#dfe7f5' : '#ffffff', size: Math.random() < 0.2 ? 2 : 1, kind: 'snow' });
+        if (wt.kind === 'snow') this.spawn({ x: camLeft + Math.random() * W, y: H * 0.35, vx: 0, vy: 0.16 + Math.random() * 0.18, life: 0, max: 900, color: fr.day.night > 0.5 ? '#dfe7f5' : '#ffffff', size: Math.random() < 0.2 ? 2 : 1, kind: 'snow' });
         if (wt.kind === 'petal') this.spawn({ x: camLeft + Math.random() * W * 1.2, y: H * 0.4, vx: -0.15 - Math.random() * 0.15, vy: 0.2 + Math.random() * 0.12, life: 0, max: 900, color: Math.random() < 0.5 ? '#ffd6e6' : '#ef9fc2', size: Math.random() < 0.3 ? 2 : 1, kind: 'petal' });
         if (wt.kind === 'leaf') this.spawn({ x: camLeft + Math.random() * W * 1.2, y: H - GROUND - 40 - Math.random() * 20, vx: -0.1 - Math.random() * 0.1, vy: 0.12 + Math.random() * 0.08, life: 0, max: 600, color: Math.random() < 0.5 ? '#8fc66b' : '#c9b25a', size: 1, kind: 'leaf' });
       }
-      if (b.fireflies && fr.dark && Math.random() < near * b.fireflies * k) {
+      if (b.fireflies && Math.random() < near * b.fireflies * k * fr.day.night) {
         this.spawn({ x: camLeft + Math.random() * W, y: H - GROUND - 6 - Math.random() * 36, vx: 0, vy: 0, life: 0, max: 240 + Math.random() * 200, color: '#fff27a', size: 1, kind: 'firefly' });
       }
     });
@@ -83,10 +83,11 @@ export class Particles {
       // 雪、花瓣、落叶这些飘在半空的粒子和远景一起往上淡出，不满屏乱飞；地面附近的灰、烟、火星照常
       if (pt.kind === 'snow' || pt.kind === 'petal' || pt.kind === 'leaf' || pt.kind === 'firefly') a *= fadeAt(pt.y / H);
       dl.rect('over', sx, Math.round(pt.y), pt.size, pt.size, pt.color, clamp(a) * (pt.kind === 'smoke' ? 0.45 : 1));
-      if (fr.dark && (pt.kind === 'firefly' || pt.kind === 'spark')) {
-        // 自己会发光：亮着的那格进自发光层（辉光），再是一个小小的点光源，和灯、孔明灯一个做法
-        dl.rect('emissive', sx, Math.round(pt.y), pt.size, pt.size, pt.color, clamp(a));
-        dl.light(sx + 0.5, Math.round(pt.y) + 0.5, pt.kind === 'firefly' ? 7 : 5, clamp(a) * 0.5, pt.color);
+      if (fr.day.night > 0 && (pt.kind === 'firefly' || pt.kind === 'spark')) {
+        // 自己会发光：亮着的那格进自发光层（辉光），再是一个小小的点光源，和灯、孔明灯一个做法；随夜色变亮
+        const glow = clamp(a) * fr.day.night;
+        dl.rect('emissive', sx, Math.round(pt.y), pt.size, pt.size, pt.color, glow);
+        dl.light(sx + 0.5, Math.round(pt.y) + 0.5, pt.kind === 'firefly' ? 7 : 5, glow * 0.5, pt.color);
       }
     }
   }
