@@ -38,3 +38,14 @@ test('风车头整张转：转角随转过的圈数连续变化、一圈回到 0
   assert.equal(d[13], 1.25);
   assert.deepEqual([...d.subarray(2, 6)], [3, 4, 13, 13], '目标矩形不变，渲染器绕它的中心转');
 });
+
+test('风车分插在主平面和后排：每三个里一个在后排；后排的位置左右交替、不挤、不出板块', async () => {
+  const { pinwheelRow, pinwheelBackDx } = await import('../../src/assets/js/pixel/sim/pinwheels.ts');
+  const rows = Array.from({ length: 8 }, (_, i) => pinwheelRow(i));
+  assert.equal(rows.filter((r) => r === 'back').length, 3, '8 个友链：3 个在后排');
+  assert.equal(rows.filter((r) => r === 'main').length, 5);
+  const xs = Array.from({ length: Math.ceil(MAX_PINWHEELS / 3) }, (_, k) => pinwheelBackDx(k));
+  for (const x of xs) assert.ok(Math.abs(x) < SECTION / 2 - 8, `后排风车 ${x} 排到邻近板块去了`);
+  const sorted = [...xs].sort((a, b) => a - b);
+  for (let i = 1; i < sorted.length; i++) assert.ok(sorted[i] - sorted[i - 1] >= 20, `后排风车 ${sorted[i - 1]} 和 ${sorted[i]} 挤在一起`);
+});

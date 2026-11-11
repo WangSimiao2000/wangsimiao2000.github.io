@@ -6,6 +6,7 @@
  * 头不换帧，每帧按当前角度绕钉子转（绘制清单的 rotate），画在按屏幕分辨率画的 spin 层：角度连续、
  * 转出来的边缘按屏幕像素走，不是序列帧那种一顿一顿，也不是逻辑像素那种一格一格地跳。
  *
+ * 每三个里有一个插在后排那片地上（backrow.ts），其余插在主平面。
  * 风车是普通布景（Item）：和植被一起按 z 排序、落地、投影、入夜变暗。每个风车的起始角度和转速都错开一点，
  * 像被同一阵风吹着；镜头在走时风大一些、转得快，停下来慢慢缓回去。开了「减少动态效果」就不转。
  */
@@ -28,6 +29,15 @@ export function pinwheelDx(i: number): number {
   const k = Math.floor(i / 2);
   const jitter = Math.round((hash(i * 4.7 + 1.3) - 0.5) * 6);
   return (i % 2 === 0 ? FIRST_RIGHT + k * STEP : FIRST_LEFT - k * STEP) + jitter;
+}
+
+/** 第 i 个风车插在哪一排：每三个里有一个插到后排那片地上（远一点、糊一点），其余插在主平面 */
+export const pinwheelRow = (i: number): 'main' | 'back' => (i % 3 === 1 ? 'back' : 'main');
+
+/** 后排的第 k 个风车相对板块中心的位置（主平面的世界坐标）：后排没有小人和路牌要让，左右交替排得更开 */
+export function pinwheelBackDx(k: number): number {
+  const jitter = Math.round((hash(k * 6.1 + 2.7) - 0.5) * 10);
+  return (k % 2 === 0 ? -1 : 1) * (40 + Math.floor(k / 2) * 46) + jitter;
 }
 
 /** 转了 turns 圈时风车头的转角（弧度，顺时针） */
@@ -56,19 +66,30 @@ export class Pinwheels {
     for (let i = 0; i < this.count; i++) this.turns[i] += dt * TURN * this.wind * (0.8 + hash(i * 5.1 + 2.9) * 0.4);
   }
 
-  /** 镜头附近的话，返回这些风车这一帧的布景：杆子是布景本身，风车头在 paint 里按当前角度转着画 */
-  items(fr: Frame): Item[] {
+  /**
+   * 镜头附近的话，返回插在 row 那一排的风车这一帧的布景：杆子是布景本身，风车头在 paint 里按当前角度转着画。
+   * 主平面的头画在按屏幕分辨率画的 spin 层；后排的头跟着后排画在 back 层（会糊、跟着后排走得慢一点）
+   */
+  items(fr: Frame, row: 'main' | 'back'): Item[] {
     const c = this.sec * SECTION;
     if (!this.count || fr.camLeft > c + SECTION / 2 || fr.camLeft + fr.W < c - SECTION / 2) return [];
     if (!this.sticks.length) this.sticks = sprites('pinwheel.stick');
     this.head ??= sprite('pinwheel.head');
     const head = this.head;
     const { dl } = fr;
-    return this.turns.map((t, i) => ({
-      sprite: this.sticks[Math.floor(hash(i * 3.9 + 0.4) * this.sticks.length)],
-      wx: c + pinwheelDx(i),
-      z: 2,
-      paint: (x: number, y: number) => dl.sprite('spin', head, x, y, { rotate: pinwheelAngle(t) }),
-    }));
+    const layer = row === 'main' ? 'spin' : 'back';
+    const out: Item[] = [];
+    let k = 0; // 这一排的第几个
+    this.turns.forEach((t, i) => {
+      if (pinwheelRow(i) !== row) return;
+      out.push({
+        sprite: this.sticks[Math.floor(hash(i * 3.9 + 0.4) * this.sticks.length)],
+        wx: c + (row === 'main' ? pinwheelDx(k) : pinwheelBackDx(k)),
+        z: 2,
+        paint: (x: number, y: number) => dl.sprite(layer, head, x, y, { rotate: pinwheelAngle(t) }),
+      });
+      k++;
+    });
+    return out;
   }
 }

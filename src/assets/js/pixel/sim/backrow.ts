@@ -9,7 +9,8 @@
  * 镜头停在哪一屏，屏幕正中的后排就是那一屏的群系，地面也在板块中心附近压平。
  * 按整格画，剩下的小数写进 dl.shift，渲染器合成时补上，移动是连续的。
  */
-import { BIOMES, SLOT, heightAt, paletteAt, weights } from './biomes.js';
+import { BIOMES, SLOT, heightAt, paletteAt, weights, type Item } from './biomes.js';
+import type { Sprite } from '../atlas.js';
 import type { Scenery } from './scenery.js';
 import { hash } from './sprites.js';
 import type { Frame } from './frame.js';
@@ -20,7 +21,11 @@ const RISE = 5; // 地面比主平面高几格
 /** 后排地面在 bx 处离画布底边的高度 */
 const groundAt = (bx: number) => Math.round(heightAt(bx / SPEED)) + RISE;
 
-export function drawBackRow(fr: Frame, sc: Scenery) {
+/**
+ * extra：另外插在后排的布景（比如友链的风车），wx 是它在主平面的世界坐标，换成后排坐标 bx = wx * SPEED，
+ * 和植被一起排序、落地；有 paint 的精灵画完后再画自己的部分
+ */
+export function drawBackRow(fr: Frame, sc: Scenery, extra: Item[] = []) {
   const { dl, W, H, HALF, camX, frac } = fr;
   // 画布 x 对应的后排坐标。世界画布整体往左挪了 frac（亚像素平移），这里补回来
   const exact = camX * SPEED - HALF - frac;
@@ -39,7 +44,7 @@ export function drawBackRow(fr: Frame, sc: Scenery) {
   }
 
   // 植被：和主平面一样按槽位、按群系的植被表挑；先画大的（树），再画小的（草、花），小的在前面
-  const items: { z: number; x: number; y: number; sp: Scenery['oak'][number] }[] = [];
+  const items: { z: number; x: number; y: number; sp: Sprite; paint?: Item['paint'] }[] = [];
   for (let s = Math.floor((origin - 40) / SLOT); s <= Math.ceil((origin + W + 40) / SLOT); s++) {
     const bx = s * SLOT + Math.floor(hash(s * 1.37 + 5.1) * 6);
     const [i, j, t] = weights(bx / SPEED);
@@ -54,6 +59,15 @@ export function drawBackRow(fr: Frame, sc: Scenery) {
     const bottom = H - groundAt(bx) + 2; // 底边陷进地面描边下面一格，和主平面的布景一样不悬空
     items.push({ z: fl.z, x, y: bottom - sp.height, sp });
   }
+  for (const it of extra) {
+    const bx = Math.round(it.wx * SPEED);
+    const x = bx - origin - Math.floor(it.sprite.width / 2);
+    if (x > W || x + it.sprite.width < 0) continue;
+    items.push({ z: it.z, x, y: H - groundAt(bx) + 2 - it.sprite.height, sp: it.sprite, paint: it.paint });
+  }
   items.sort((p, q) => p.z - q.z || p.x - q.x);
-  for (const it of items) dl.sprite('back', it.sp, it.x, it.y);
+  for (const it of items) {
+    dl.sprite('back', it.sp, it.x, it.y);
+    it.paint?.(it.x, it.y);
+  }
 }
