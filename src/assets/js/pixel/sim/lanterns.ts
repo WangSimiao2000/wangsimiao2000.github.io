@@ -5,7 +5,6 @@
  * 数据是构建时生成的 /guestbook.json（作者、前 30 个字、日期），走到秋林附近才去取。
  */
 import { SECTION, heightAt } from './biomes.js';
-import { halo } from './lights.js';
 import { hash } from './sprites.js';
 import { sprite } from '../atlas.js';
 import type { Frame } from './frame.js';
@@ -27,7 +26,9 @@ export interface LanternHit {
 const CENTER = -SECTION; // 秋林在起点左边一整个板块
 const SPREAD = 150; // 散布在秋林中心左右这么远（世界像素）
 const RISE = 3; // 上升速度（逻辑像素 / 秒）
-const TREETOP = 44; // 从离地这么高（树梢附近）开始升起，下面被树挡着
+const TREETOP = 44;
+/** 孔明灯里火苗的位置（相对精灵左上角） */
+const LANTERN_FLAME = [4.5, 8.5] as const; // 从离地这么高（树梢附近）开始升起，下面被树挡着
 
 // 孔明灯（图集里的 lantern.day / lantern.night）：圆顶纸罩上宽下窄，底口一圈竹框，下面吊着火苗。
 // aloft 层不吃夜色，夜里单独一套亮着的颜色
@@ -92,8 +93,12 @@ export class Lanterns {
       const x = Math.round(p.x - camLeft - sp.width / 2);
       const y = Math.round(p.y);
       if (x > W || x + sp.width < 0 || p.alpha <= 0) continue;
-      if (dark) halo(dl, 'aloft', x + 4, y + 7, 12, '#ffc96a', 0.32 * p.alpha);
       dl.sprite('aloft', sp, x, y, { alpha: p.alpha });
+      // 夜里和路灯、窗户一样：亮着的像素进自发光层（辉光），火苗是一个点光源，照亮下面的树梢
+      if (dark) {
+        dl.sprite('emissive', sp, x, y, { glow: true, alpha: p.alpha });
+        dl.light(x + LANTERN_FLAME[0], y + LANTERN_FLAME[1], 18, 0.5 * p.alpha, '#ffc96a');
+      }
       // 刚从树后冒头时还被树挡着，露出来以后才能点
       if (p.alpha > 0.5 && y < p.start - 6) this.hits.push({ note: this.notes[i], x0: x - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height + 2 });
     }

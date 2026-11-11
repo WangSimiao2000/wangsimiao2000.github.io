@@ -102,28 +102,15 @@ export class Eggs {
     const sp = it.sprite;
     const { dl } = fr;
     if (it.egg === 'sign') {
-      // 起点的路牌：立柱不动，牌子绕立柱顺时针转（从上往下看），转到侧面时近大远小
-      const th = this.signFlip * Math.PI;
-      const c = Math.cos(th);
-      const s = Math.sin(th);
-      const by = y + SIGN_BOARD[0];
-      const bh = SIGN_BOARD[1] - SIGN_BOARD[0];
-      // 每一列按深度排好：远的先画，立柱夹在中间，近的后画
-      const cols: { i: number; z: number }[] = [];
-      for (let i = 0; i < sp.width; i++) cols.push({ i, z: (i + 0.5 - SIGN_PIVOT) * s });
-      cols.sort((p, q) => p.z - q.z);
-      let poleDrawn = false;
-      for (const { i, z } of cols) {
-        if (!poleDrawn && z > 0) {
-          drawPole(dl, sp, x, y);
-          poleDrawn = true;
-        }
-        const cx = x + SIGN_PIVOT + (i + 0.5 - SIGN_PIVOT) * c;
-        const w = Math.max(1, Math.abs(c));
-        const h = Math.round(bh * (1 + z * 0.03));
-        dl.sprite('fg', sp, Math.round(cx - w / 2), Math.round(by + (bh - h) / 2), { part: [i, SIGN_BOARD[0], 1, bh], w: Math.round(w), h });
+      // 起点的路牌：没转的时候就是一块普通路牌，和别处的一模一样。
+      // 转起来时立柱不动，牌子从正面看绕钉在立柱上的那一点顺时针转（翻过来就是倒着指向左边）；
+      // 画在按屏幕分辨率画的 spin 层，转起来是顺的
+      if (this.signFlip === 0) dl.sprite('fg', sp, x, y);
+      else {
+        const bh = SIGN_BOARD[1] - SIGN_BOARD[0];
+        drawPole(dl, sp, x, y);
+        dl.sprite('spin', sp, x, y + SIGN_BOARD[0], { part: [0, SIGN_BOARD[0], sp.width, bh], rotate: this.signFlip * Math.PI, pivot: [SIGN_PIVOT, bh / 2] });
       }
-      if (!poleDrawn) drawPole(dl, sp, x, y);
       // 翻过来以后牌子伸到立柱左边，点击区域两边都留够
       const reach = sp.width - SIGN_PIVOT;
       this.spots.push({ kind: 'sign', x0: x + SIGN_PIVOT - reach - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height });

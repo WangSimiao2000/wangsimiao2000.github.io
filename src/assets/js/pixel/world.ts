@@ -466,14 +466,15 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     dl.clear(); // 环境（dl.env）在 update 里按相机位置算好，不随清单清掉
     fr.visH = Math.ceil(window.innerHeight / fr.S);
     drawSky(fr, stars);
-    lanterns.draw(fr);
-    fireworks?.draw(fr, dt, fireX);
     drawLayer(fr, 'far', 0.18);
     drawLayer(fr, 'mid', 0.42);
     drawLayer(fr, 'near', 0.7);
     drawBackRow(fr, sc);
     eggs.beginFrame();
     drawItems();
+    // 孔明灯、烟花在布景之后画：它们在布景前面，自发光层里的光不能被布景擦掉（见 lights.ts 的 emit）
+    lanterns.draw(fr);
+    fireworks?.draw(fr, dt, fireX);
     drawGround(fr);
     eggs.drawActors(fr, dt);
     hero.draw(fr, fr.running, reading && !fr.running && Math.abs(camTarget() - fr.camX) < 1.5);
