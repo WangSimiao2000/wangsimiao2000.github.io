@@ -225,7 +225,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       dofBinds: Object.fromEntries(Object.keys(blurred).map((l) => [l, blurBinds(layers[l as LayerName], t.scratch, blurPipe[LOGICAL], depthOf(l as LayerName) * DOF_SIGMA)])) as Partial<Record<LayerName, { h: GPUBindGroup; v: GPUBindGroup }>>,
       bloomSrcBind: device.createBindGroup({
         layout: bloomPipe.getBindGroupLayout(0),
-        entries: [F, layers.emissive, layers.glow, layers.sky, null, null, layers.far, layers.mid, layers.near, layers.back, layers.fg]
+        entries: [F, layers.emissive, layers.glow, layers.sky, null, linear, layers.far, layers.mid, layers.near, layers.back, layers.fg]
           .map((r, i) => r && { binding: i, resource: r instanceof GPUTexture ? r.createView() : r })
           .filter((e) => e !== null),
       }),
