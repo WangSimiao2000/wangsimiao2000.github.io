@@ -8,6 +8,8 @@ const browser = await launch();
 for (const path of ['/', '/posts/MC-Server-Backup-Strategy/']) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await ctx.addInitScript(() => {
+    // 只在顶层页面写：初始化脚本对页面里后来加载的每个 iframe 也会跑一遍，会把拖好的时刻又改回 10
+    if (window !== window.top) return;
     localStorage.setItem('fs-hint', '1');
     localStorage.setItem('tod', '10');
   });
@@ -23,6 +25,9 @@ for (const path of ['/', '/posts/MC-Server-Backup-Strategy/']) {
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * (21 / 24), y, { steps: 8 });
   await page.mouse.up();
+  // 时刻是平滑追过去的：刚松手时还在路上，过一会儿才到
+  const gliding = await page.evaluate(() => parseFloat(document.documentElement.dataset.hour ?? ''));
+  await page.waitForFunction(() => parseFloat(document.documentElement.dataset.hour ?? '') > 20.5, null, { polling: 50, timeout: 5000 }).catch(() => {});
   await page.waitForTimeout(300);
   const after = await page.evaluate(() => ({
     open: !document.getElementById('time-pop').hidden,
@@ -31,8 +36,9 @@ for (const path of ['/', '/posts/MC-Server-Backup-Strategy/']) {
     stored: localStorage.getItem('tod'),
   }));
   t.ok(after.open, `${path}：拖动时拖动条不收起`);
+  t.ok(gliding < after.hour - 0.05, `${path}：松手时时刻还在平滑地追（${gliding} -> ${after.hour}）`);
   t.ok(after.hour > 20 && after.theme === 'dark', `${path}：拖到 21 点左右变成深色（${after.hour}、${after.theme}）`);
-  t.ok(after.stored !== null && parseFloat(after.stored) > 20, `${path}：拖到的时刻记下来了`);
+  t.ok(after.stored !== null && parseFloat(after.stored) > 20, `${path}：拖到的时刻记下来了（${after.stored}）`);
   await page.mouse.click(700, 620);
   t.ok(await page.evaluate(() => document.getElementById('time-pop').hidden), `${path}：点空白处收起`);
   t.ok(errors.length === 0, `${path}：没有 JS 报错`);
