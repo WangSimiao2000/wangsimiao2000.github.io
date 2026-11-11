@@ -211,7 +211,7 @@ export function shell(ctx, page = {}) {
   <main class="stages">
     ${SECTIONS.map(
       (s, i) => html`
-    <section id="${s.id}" class="stage" aria-labelledby="${s.id}-title">
+    <section id="${s.id}" class="stage" aria-labelledby="${s.id}-title"${s.id === 'friends' ? html` data-friends="${ctx.friends.length}"` : ''}>
       <div class="panel" data-panel="${i}">
         <div class="card">
           ${(() => {
