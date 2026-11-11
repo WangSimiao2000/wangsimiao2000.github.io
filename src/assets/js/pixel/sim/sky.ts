@@ -15,16 +15,19 @@ interface Star {
   speed: number;
 }
 
-/** 星星位置用固定种子生成：每次打开都是同一片星空 */
+/**
+ * 星星位置用固定种子生成：每次打开都是同一片星空。
+ * 和 demo 一样密（约 0.6% 的格子有星星）、铺满天空上面七成；被远山挡住的部分自然看不到
+ */
 export function makeStars(W: number, H: number): Star[] {
   const out: Star[] = [];
-  const n = Math.round((W * H) / 420);
+  const n = Math.round(W * H * 0.7 * 0.006);
   for (let i = 0; i < n; i++) {
     const r = (k2: number) => {
       const v = Math.sin(i * 127.1 + k2 * 311.7) * 43758.5453;
       return v - Math.floor(v);
     };
-    out.push({ x: r(1) * W, y: 2 + Math.pow(r(2), 1.4) * H * 0.5, big: r(3) < 0.05, warm: r(4) < 0.2, phase: r(5) * 6.28, speed: 0.6 + r(6) * 1.6 });
+    out.push({ x: r(1) * W, y: 2 + Math.pow(r(2), 1.2) * H * 0.7, big: r(3) < 0.05, warm: r(4) < 0.2, phase: r(5) * 6.28, speed: 0.6 + r(6) * 1.6 });
   }
   return out;
 }
@@ -108,14 +111,15 @@ export function drawSky(fr: Frame, stars: Star[]) {
   for (const st of stars) {
     let x = (st.x - step) % W;
     if (x < 0) x += W;
-    const tw = fr.reduced ? 0.7 : 0.5 + 0.5 * Math.sin(fr.time * st.speed + st.phase);
-    const a = (st.big ? 0.3 : 0.12) + tw * (st.big ? 0.3 : 0.22);
-    const col = st.warm ? '#ffeccc' : '#dce4ff';
+    // 和 demo 一样亮：每颗都接近不透明，在 0.6 到 1 之间慢慢闪；够亮才进辉光（bloom.wgsl 只取接近白的亮部），周围有一点光晕
+    const tw = fr.reduced ? 0.8 : 0.5 + 0.5 * Math.sin(fr.time * st.speed + st.phase);
+    const a = 0.6 + 0.4 * tw;
+    const col = st.warm ? '#fff1d8' : '#e6edff';
     const px = Math.floor(x);
     const py = Math.floor(st.y);
     dl.rect('sky', px, py, 1, 1, col, a);
     if (st.big && tw > 0.7) {
-      const b = a * 0.4;
+      const b = a * 0.35;
       dl.rect('sky', px - 1, py, 1, 1, col, b);
       dl.rect('sky', px + 1, py, 1, 1, col, b);
       dl.rect('sky', px, py - 1, 1, 1, col, b);
