@@ -140,7 +140,8 @@ export interface Env {
 
 /**
  * 一条命令 14 个 float：
- *   0 flags  1 alpha  2-5 目标 x y w h  6-9 图集里的 x y w h（纯色块时不用）  10-12 颜色 r g b（0-255）
+ *   0 flags  1 alpha  2-5 目标 x y w h  6-9 图集里的 x y w h（纯色块时不用）
+ *   10-12 纯色块的颜色 r g b（0-255）；ROTATE 的精灵借 10-11 放转轴（相对目标矩形左上角）
  *   13 附加参数：SHADOW 时是影子往右斜多少（每一行往右挪 斜率 × 离顶边的行数），ROTATE 时是转角（弧度，顺时针）
  * 渲染器可以把这段内存直接当实例数据上传。
  */
@@ -149,7 +150,7 @@ export const SOLID = 1; // 纯色块（不采样图集）
 export const ERASE = 2; // 擦除：按这块的不透明度把已画的东西擦掉（destination-out）
 export const FLIP = 4; // 水平翻转图集里那块
 export const SHADOW = 8; // 画成影子：上下翻过来、只取轮廓（黑色）、按第 13 位斜过去
-export const ROTATE = 16; // 绕目标矩形的中心转第 13 位那么多（风车头）；按最近邻取像素，转出来还是像素画
+export const ROTATE = 16; // 绕转轴（第 10-11 位，默认是目标矩形的中心）转第 13 位那么多：风车头、路牌；按最近邻取像素，转出来还是像素画
 
 export interface SpriteOpts {
   alpha?: number;
@@ -164,8 +165,10 @@ export interface SpriteOpts {
   glow?: boolean;
   /** 画成影子（只有轮廓、上下翻转），值是往右斜的斜率（负数往左） */
   shadow?: number;
-  /** 绕自己的中心转多少（弧度，顺时针），角度可以是任意值：转动是连续的，不是一帧帧换图 */
+  /** 转多少（弧度，顺时针），角度可以是任意值：转动是连续的，不是一帧帧换图 */
   rotate?: number;
+  /** 绕哪里转（相对画出来的那块的左上角），默认是它的中心 */
+  pivot?: readonly [number, number];
 }
 
 export class Commands {
@@ -233,7 +236,9 @@ export class DrawList {
     if (!r) return;
     const [px, py, pw, ph] = o.part ?? [0, 0, r[2], r[3]];
     const flags = (o.erase ? ERASE : 0) | (o.flip ? FLIP : 0) | (o.shadow !== undefined ? SHADOW : 0) | (o.rotate !== undefined ? ROTATE : 0);
-    this.layers[layer].push(flags, o.alpha ?? 1, x, y, o.w ?? pw, o.h ?? ph, r[0] + px, r[1] + py, pw, ph, 0, 0, 0, o.shadow ?? o.rotate ?? 0);
+    const [dw, dh] = [o.w ?? pw, o.h ?? ph];
+    const [ax, ay] = o.pivot ?? [dw / 2, dh / 2];
+    this.layers[layer].push(flags, o.alpha ?? 1, x, y, dw, dh, r[0] + px, r[1] + py, pw, ph, ax, ay, 0, o.shadow ?? o.rotate ?? 0);
   }
 
   /** 填一个纯色矩形 */

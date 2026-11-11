@@ -3,7 +3,6 @@
  * 网址加 ?date=11-06 可以在别的日子预览。
  */
 import { heightAt } from './biomes.js';
-import { halo } from './lights.js';
 import { sprite } from '../atlas.js';
 import type { Frame } from './frame.js';
 
@@ -101,7 +100,10 @@ export class Fireworks {
       const sy = Math.round(s.y);
       if (sx < -10 || sx > W + 10) continue;
       const sz = s.rocket ? 2 : (s.size ?? 1);
-      dl.rect('aloft', sx, sy, sz, sz, s.color, s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7);
+      const a = s.rocket ? 1 : Math.max(0, 1 - s.life / s.max) ** 0.7;
+      dl.rect('aloft', sx, sy, sz, sz, s.color, a);
+      // 火花自己会发光：夜里进自发光层（辉光），和灯、窗户一个做法
+      if (fr.dark) dl.rect('emissive', sx, sy, sz, sz, s.color, a);
       if (s.rocket) {
         dl.rect('aloft', sx, sy + 2, 2, 3, s.color, 0.5); // 拖尾
         dl.rect('aloft', sx, sy + 5, 2, 3, s.color, 0.25);
@@ -114,7 +116,8 @@ export class Fireworks {
         this.flashes.splice(i, 1);
         continue;
       }
-      halo(dl, 'aloft', Math.round(fl.x - camLeft), Math.round(fl.y), 18, fl.color, (fr.dark ? 0.45 : 0.22) * (1 - fl.t / 0.35));
+      // 炸开的一瞬间是一个点光源：照亮附近的树和地面，很快暗下去
+      dl.light(fl.x - camLeft, fl.y, 40, 1.2 * (1 - fl.t / 0.35), fl.color);
     }
   }
 

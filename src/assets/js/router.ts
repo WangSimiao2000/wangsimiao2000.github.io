@@ -212,8 +212,10 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
       update();
       return;
     }
-    // 关闭：世界、首页卡片和快捷栏立刻开始回来，面板同时缩回原卡片的位置，最后一小段淡掉
+    // 关闭：世界、首页卡片和快捷栏立刻开始回来，面板同时缩回原卡片的位置，最后一小段淡掉。
+    // 世界也要立刻知道：阅读时它降到约 20 帧省电，不马上恢复的话，主角跟着 CSS 平滑上来，世界却一顿一顿地跟
     root.classList.remove('reading');
+    world.setReading(false);
     const r1 = to?.getBoundingClientRect();
     if (r1 && r1.width) {
       c.style.transformOrigin = '0 0';

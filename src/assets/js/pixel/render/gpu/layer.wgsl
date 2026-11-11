@@ -1,7 +1,8 @@
 // 画一层：绘制清单里的每条命令是一个实例（一个矩形），从图集取像素或填纯色。
 // 输出预乘 alpha；普通命令按「源在上」混合，擦除命令按源的不透明度把目标擦掉（混合方式在管线里设）。
 // 影子命令（SHADOW）：图集那块上下翻过来、只取轮廓画成黑色，每往下一行往右挪「斜率」格（斜着拉长的影子）。
-// 旋转命令（ROTATE）：整个矩形绕自己的中心转「转角」弧度（顺时针），取像素照旧按矩形里的位置、最近邻，所以转出来还是像素画。
+// 旋转命令（ROTATE）：整个矩形绕转轴（借颜色的 r g 两位放，相对矩形左上角）转「转角」弧度（顺时针），
+// 取像素照旧按矩形里的位置、最近邻，所以转出来还是像素画。
 
 struct Uniforms {
   size: vec2f, // 这一层的宽高（逻辑像素）
@@ -14,7 +15,7 @@ struct Cmd {
   @location(0) flagsAlpha: vec2f, // flags, alpha
   @location(1) dst: vec4f,        // 目标 x y w h
   @location(2) src: vec4f,        // 图集里的 x y w h
-  @location(3) rgb: vec3f,        // 纯色（0-255）
+  @location(3) rgb: vec3f,        // 纯色（0-255）；ROTATE 时前两位是转轴
   @location(4) extra: f32,        // 影子的斜率 / 旋转的转角
 };
 
@@ -39,7 +40,7 @@ struct V {
   let flags = u32(c.flagsAlpha.x);
   if ((flags & SHADOW) != 0u) { p.x += c.extra * k.y * c.dst.w; }
   if ((flags & ROTATE) != 0u) {
-    let mid = c.dst.xy + c.dst.zw * 0.5;
+    let mid = c.dst.xy + c.rgb.xy;
     let cs = cos(c.extra);
     let sn = sin(c.extra);
     let d = p - mid;

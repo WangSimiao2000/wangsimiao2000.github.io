@@ -1,8 +1,14 @@
 /**
  * 灯光：自发光像素（灯泡、窗格）、营火的火焰，以及每处光源的点光源（渲染器拿来照亮夜色、洒出光束）。
+ *
+ * 所有会发光的东西都是同一套做法，没有别的特例：
+ *   本体照常画在自己的层里；
+ *   亮着的像素再画进自发光层（emissive：sprite 的 #glow 遮罩，或直接画那几格），渲染器拿它做辉光；营火火焰在 glow 层，按 emit 倍数发光；
+ *   照亮周围的光是点光源（dl.light），夜里路灯、窗户、营火还从点光源洒出光束。
+ * 孔明灯（lanterns.ts）、烟花（festive.ts）、萤火虫和火星（particles.ts）也都按这套来。
  */
 import type { Sprite } from '../atlas.js';
-import type { Beam, DrawList, LayerName } from '../drawlist.js';
+import type { Beam } from '../drawlist.js';
 import { heightAt, type GlowKind } from './biomes.js';
 import type { Particles } from './particles.js';
 import type { Frame } from './frame.js';
@@ -19,19 +25,6 @@ export function emit(fr: Frame, sp: Sprite, x: number, y: number) {
   if (!fr.dark) return;
   fr.dl.sprite('emissive', sp, x, y, { erase: true });
   if (sp.glow) fr.dl.sprite('emissive', sp, x, y, { glow: true });
-}
-
-/** 像素化的圆形光晕（孔明灯、烟花用）：按距离分 3 档透明度，越外越淡 */
-export function halo(dl: DrawList, layer: LayerName, x: number, y: number, r: number, color: string, a: number) {
-  for (let band = 3; band >= 1; band--) {
-    const rr = (r * band) / 3;
-    const alpha = a / (band + 0.5);
-    const ri = Math.ceil(rr);
-    for (let dy = -ri; dy <= ri; dy++) {
-      const half = Math.floor(Math.sqrt(Math.max(0, rr * rr - dy * dy)));
-      dl.rect(layer, x - half, y + dy, half * 2 + 1, 1, color, alpha);
-    }
-  }
 }
 
 function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: Particles) {
