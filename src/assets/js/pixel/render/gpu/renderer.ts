@@ -234,7 +234,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       bloomUp: t.bloom.slice(1).map((from) => device.createBindGroup({ layout: bloomUpPipe.getBindGroupLayout(0), entries: [{ binding: 4, resource: from.createView() }, { binding: 5, resource: linear }] })),
       skyBind: bind(skyPipe, [F, { buffer: scaleBuf }]),
       skyGlassBind: bind(skyGlassPipe, [F, { buffer: unitBuf }]),
-      raysBind: bind(raysPipe, [F, layers.far, layers.mid, layers.near, layers.fg]),
+      raysBind: bind(raysPipe, [F, layers.far, layers.mid, layers.near, layers.fg, linear]),
       beamsBind: bind(beamsPipe, [F, layers.actors, layers.hero, layers.fg]),
       glassBlurBinds: blurBinds(t.glassSrc, t.scratch, blurPipe[LOGICAL], GLASS_SIGMA),
       glassSharpBinds: blurBinds(t.glassSrc, t.scratch, blurPipe[LOGICAL], GLASS_SHARP),

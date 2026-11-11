@@ -16,22 +16,26 @@
 @group(0) @binding(9) var back: texture_2d<f32>;
 @group(0) @binding(10) var fg: texture_2d<f32>;
 
-/** 画布上的位置换成世界里的位置（阅读时世界往下沉了 F.view.y） */
-fn world(p: vec2f) -> vec2i { return vec2i(clamp(p - vec2f(0.0, F.view.y), vec2f(0.0), F.size.xy - 1.0)); }
+/**
+ * 画布上的位置换成世界里取样用的坐标（阅读时世界往下沉了 F.view.y，带小数）。
+ * 按小数偏移取的都要线性插值，按整格取的话世界下沉时光晕一格一格地跳
+ */
+fn world(p: vec2f) -> vec2f { return (p - vec2f(0.0, F.view.y)) / F.size.xy; }
+fn at(t: texture_2d<f32>, uv: vec2f) -> vec4f { return textureSampleLevel(t, samp, uv, 0.0); }
 
 /** 这一格天空被前面的东西挡住了多少 */
-fn covered(p: vec2i) -> f32 {
-  let a = max(max(textureLoad(far, p, 0).a, textureLoad(mid, p, 0).a), textureLoad(near, p, 0).a);
-  return max(a, max(textureLoad(back, p, 0).a, textureLoad(fg, p, 0).a));
+fn covered(uv: vec2f) -> f32 {
+  let a = max(max(at(far, uv).a, at(mid, uv).a), at(near, uv).a);
+  return max(a, max(at(back, uv).a, at(fg, uv).a));
 }
 
 @fragment fn fs(v: V) -> @location(0) vec4f {
   if (!fx(FX_BLOOM)) { return vec4f(0.0); }
   let w = world(v.pos.xy);
   // 营火火焰按自发光倍数进辉光（白天比夜里弱，见 drawlist.ts 的 emit）。灯窗、日月按昼夜的辉光强度（F.tint.a）
-  var c = textureLoad(glow, w, 0) * F.ambient.w * FIRE_BLOOM;
+  var c = at(glow, w) * F.ambient.w * FIRE_BLOOM;
   var rest = vec4f(0.0);
-  if (isDark()) { rest += textureLoad(emissive, w, 0); }
+  if (isDark()) { rest += at(emissive, w); }
   // 天空：只取接近白的亮部（日盘、月盘、星星），天空底色和晚霞不算。
   // 天空的偏移带小数（视差的亚像素，见 sky.ts），线性插值取样，光晕才跟着日月平滑挪动，不会一格一格地跳
   let s = textureSampleLevel(sky, samp, (v.pos.xy - vec2f(F.view.x, 0.0)) / F.size.xy, 0.0);

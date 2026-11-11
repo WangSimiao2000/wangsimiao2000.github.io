@@ -7,11 +7,14 @@
 @group(0) @binding(2) var mid: texture_2d<f32>;
 @group(0) @binding(3) var near: texture_2d<f32>;
 @group(0) @binding(4) var fg: texture_2d<f32>;
+@group(0) @binding(5) var samp: sampler;
 
-// 按画布上的位置算：太阳在天空里，要加上天空的偏移；世界阅读时往下沉，取样时换算回去（frame.wgsl 的 view）
+// 按画布上的位置算：太阳在天空里，要加上天空的偏移；世界阅读时往下沉，取样时换算回去（frame.wgsl 的 view）。
+// 下沉量带小数，挡光的形状要线性插值取，按整格取的话世界下沉时光束一格一格地跳
 fn blocked(q: vec2f) -> f32 {
-  let p = vec2i(clamp(q - vec2f(0.0, F.view.y), vec2f(0.0), F.size.xy - 1.0));
-  return max(max(textureLoad(far, p, 0).a, textureLoad(mid, p, 0).a), max(textureLoad(near, p, 0).a, textureLoad(fg, p, 0).a));
+  let uv = (q - vec2f(0.0, F.view.y)) / F.size.xy;
+  let a = max(textureSampleLevel(far, samp, uv, 0.0).a, textureSampleLevel(mid, samp, uv, 0.0).a);
+  return max(a, max(textureSampleLevel(near, samp, uv, 0.0).a, textureSampleLevel(fg, samp, uv, 0.0).a));
 }
 
 /** 这一点有多少光射出来：是天空（没被挡住）、离光源越近越亮 */
