@@ -147,6 +147,16 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   }
   resize();
   window.addEventListener('resize', resize);
+  /**
+   * 窗口尺寸变了（进出全屏、旋转屏幕）：板块高度跟着变，页面滚动位置却还是旧的像素数，按它算出的进度会落到别的板块上
+   * （比如 720 高时停在第 3 块是 2160px，换成 1000 高就算成 2.16），相机和小人就跑走了。
+   * 停在某个板块上时，把页面滚回这个板块的新位置。fr.p 还是上一帧按旧尺寸算的
+   */
+  window.addEventListener('resize', () => {
+    if (fr.p !== Math.round(fr.p)) return; // 正在翻页，交给滚动自己落位
+    const top = sections[fr.p]?.offsetTop ?? 0;
+    if (window.scrollY !== top) window.scrollTo({ top, behavior: 'instant' });
+  });
 
   /* 主题：亮色是太阳、暗色是月亮和夜色 */
   function readTheme() {
