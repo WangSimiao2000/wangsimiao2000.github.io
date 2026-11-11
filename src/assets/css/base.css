@@ -16,7 +16,10 @@
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 16px;
-  --font: 'Inter', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  /* 全站是方舟像素 12px 等宽（像素字，pixel-font.css）；缺字和字体还没下载完时退回系统字体。
+     文章正文是长文，留用原来的无衬线字体（--font-text），代码是等宽字体（--mono） */
+  --font-text: 'Inter', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font: 'Ark Pixel', var(--font-text);
   --mono: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, monospace;
 }
 :root, [data-theme='light'] {
