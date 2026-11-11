@@ -232,13 +232,16 @@ export function onPath(wx: number): boolean {
 }
 
 export type Layer = 'far' | 'mid' | 'near';
-const layerColorCache = new Map<string, [string, string]>();
+const layerColorCache = new Map<number, [string, string]>();
+const LAYER_KEY: Record<Layer, number> = { far: 0, mid: 1, near: 2 };
 /** 远景某层在某处的颜色（随夜色渐渐入夜，night 0..1）；第二个是轮廓上沿的受光线。远近的空气透视由渲染器按层的深度做 */
 export function layerColor(wx: number, which: Layer, night: number): [string, string] {
   const [i, j, t] = weights(wx);
   const q = Math.round(t * STEPS);
   const n = Math.round(night * STEPS); // 夜色也量化，缓存才有用
-  const key = `${which}${i}${q}${n}`;
+  // 键按位拼成一个数：字符串直接连起来会串（第 1 档混合 + 夜色 24 档 和 第 12 档混合 + 夜色 4 档 都是 "124"），
+  // 夜里就会拿到傍晚算的颜色，山上出现一条条亮竖条
+  const key = ((LAYER_KEY[which] * BIOMES.length + i) * (STEPS + 1) + q) * (STEPS + 1) + n;
   let c = layerColorCache.get(key);
   if (!c) {
     const k = n / STEPS;

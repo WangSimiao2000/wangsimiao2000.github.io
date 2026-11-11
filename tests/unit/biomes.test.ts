@@ -84,3 +84,24 @@ test('onPath：只有小镇中心两侧铺土路', () => {
   assert.equal(onPath(village * SECTION + 100), false);
   assert.equal(onPath(0), false);
 });
+
+test('远景配色的缓存不串：傍晚算过的颜色，夜里不能被别的位置拿去用（秋林夜里右边一条条亮竖条）', async () => {
+  const { layerColor, SECTION } = await import('../../src/assets/js/pixel/sim/biomes.ts');
+  const { rgb } = await import('../../src/assets/js/pixel/sim/util.ts');
+  const luma = (c: string) => {
+    const [r, g, b] = rgb(c);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  // 秋林（-1 号板块）到起点之间的过渡带：每一列的混合档都不一样
+  const xs = Array.from({ length: 200 }, (_, k) => -SECTION + k * 2);
+  // 先像傍晚那样，夜色从 0 慢慢变到 1，每一档都算一遍（缓存里存满傍晚的颜色）
+  for (let n = 0; n <= 24; n++) for (const x of xs) for (const w of ['far', 'mid', 'near'] as const) layerColor(x, w, n / 24);
+  // 到了夜里，每一列都要比白天暗得多
+  for (const x of xs) {
+    for (const w of ['far', 'mid', 'near'] as const) {
+      const night = luma(layerColor(x, w, 1)[0]);
+      const day = luma(layerColor(x, w, 0)[0]);
+      assert.ok(night < day * 0.6, `${w} 在 x=${x} 夜里还是白天的亮度：${day.toFixed(0)} -> ${night.toFixed(0)}`);
+    }
+  }
+});
