@@ -74,30 +74,39 @@ function orb(dl: DrawList, cx: number, cy: number, r: number, tones: string[], a
 
 /**
  * 日月的位置：按 daytime.ts 的 arc 从左边地平线升起、越过天顶、落到右边地平线（贴着远山，会被山挡住一部分）。
- * 画布贴底、可能比视口高（手机地址栏展开时顶上一截在屏幕外），高度按屏幕上实际看得到的部分算
+ * 画布贴底、可能比视口高（手机地址栏展开时顶上一截在屏幕外），高度按屏幕上实际看得到的部分算。
+ * 横坐标不含视差，视差由 drawSky 统一处理
  */
 function orbAt(fr: Frame): [number, number] {
   const { W, H, day } = fr;
-  const drift = fr.camX * 0.012; // 极慢的视差：天上的东西几乎不动
   const vis = Math.min(H, fr.visH);
   const low = H - GROUND - 34;
   const high = H - vis + Math.round(Math.max(12, vis * 0.12));
-  const x = W * (0.1 + 0.8 * day.arc) - drift;
+  const x = W * (0.1 + 0.8 * day.arc);
   const y = low - Math.sin(Math.PI * day.arc) * (low - high);
   return [Math.round(x), Math.round(y)];
 }
 
+/**
+ * 天上的东西随镜头极慢地往反方向挪（视差）。挪动按整格画，剩下的小数写进 dl.shift.sky，
+ * 渲染器合成时补上：翻页时日月星星是平滑滑过去的，不会隔几帧跳一格
+ */
+const DRIFT = 0.012;
+
 export function drawSky(fr: Frame, stars: Star[]) {
   const { dl, W } = fr;
-  const drift = fr.camX * 0.012;
-  const [cx, cy] = orbAt(fr);
+  const drift = fr.camX * DRIFT;
+  const step = Math.floor(drift);
+  dl.shift.sky = step - drift;
+  const [ox, cy] = orbAt(fr);
+  const cx = ox - step;
   dl.sun = [cx, cy];
   if (!fr.dark) {
     disc(dl, cx, cy, 7, mix(SUN.noon, SUN.low, fr.day.golden));
     return;
   }
   for (const st of stars) {
-    let x = (st.x - drift * 0.6) % W;
+    let x = (st.x - step) % W;
     if (x < 0) x += W;
     const tw = fr.reduced ? 0.7 : 0.5 + 0.5 * Math.sin(fr.time * st.speed + st.phase);
     const a = (st.big ? 0.3 : 0.12) + tw * (st.big ? 0.3 : 0.22);

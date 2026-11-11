@@ -275,7 +275,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     const top = rgb(dl.env.skyTop);
     d.set([top[0] / 255, top[1] / 255, top[2] / 255, dl.env.skyY[1]], 28);
     d.set([fog[0] / 255, fog[1] / 255, fog[2] / 255, dl.env.skyY[0]], 32);
-    d.set([view.hero[0] / scale, view.hero[1] / scale, 0, 0], 36);
+    // 天空在画布上往右挪多少：对齐屏幕（主角画布不做亚像素平移），再加上天空自己视差的小数（sky.ts）
+    const skyX = view.hero[0] / scale + (dl.shift.sky ?? 0);
+    d.set([skyX, view.hero[1] / scale, 0, 0], 36);
     d.set(FADE_STOPS.flat(), 40);
     lights.forEach((l, i) => {
       const [r, g, b] = rgb(l.color);
@@ -284,7 +286,6 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     });
     device.queue.writeBuffer(frameBuf, 0, d);
     // 天空按主角画布（不平移、不下沉）对齐屏幕，世界跟着主角画布往下沉
-    const skyX = view.hero[0] / scale;
     const sink = view.hero[1] / scale;
     for (const { canvas, g, buf } of groups) {
       const s = canvas === 'glass' ? 1 : scale;

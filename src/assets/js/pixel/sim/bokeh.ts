@@ -22,7 +22,9 @@ const ALPHA = { day: 0.2, night: 0.12 };
 export function drawBokeh(fr: Frame) {
   const { dl, W, H } = fr;
   const vis = Math.min(H, fr.visH);
-  const [sx, sy] = dl.sun;
+  // 光源按天空视差的真实位置（含小数），光斑跟着日月一起平滑滑动
+  const sx = dl.sun[0] + (dl.shift.sky ?? 0);
+  const sy = dl.sun[1];
   const cx = W / 2;
   const cy = H - vis / 2;
   const alpha = fr.dark ? ALPHA.night : ALPHA.day;
