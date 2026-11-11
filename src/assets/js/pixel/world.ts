@@ -39,7 +39,7 @@ import { startRenderer } from './render/index.js';
 import { drawFront } from './sim/front.js';
 import { drawBackRow } from './sim/backrow.js';
 import { drawBokeh } from './sim/bokeh.js';
-import { daytime } from './sim/daytime.js';
+import { daytime, handover } from './sim/daytime.js';
 import { blobShadow, castShadow } from './sim/shadow.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
@@ -443,13 +443,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     }
     dl.env = {
       tint,
-      rays: biomeNum(fr.camX, (b) => b.rays) * fr.day.rays,
+      // 主光源从太阳换成月亮那一下（夜色过半），体积光和影子先淡掉再淡回来，方向不会一下跳到天空另一边
+      rays: biomeNum(fr.camX, (b) => b.rays) * fr.day.rays * handover(fr.day),
       light: fr.day.light,
       ambient: fr.day.ambient,
       skyTop: fr.day.skyTop,
       skyHorizon: mix(fr.day.skyHorizon, tint, 0.3 + (0.12 - 0.3) * fr.day.night),
       skyY: [fr.H - Math.min(fr.H, fr.visH || fr.H), fr.H - GROUND - 6],
-      shadow: fr.day.shadow,
+      shadow: { ...fr.day.shadow, alpha: fr.day.shadow.alpha * handover(fr.day) },
     };
   }
 
