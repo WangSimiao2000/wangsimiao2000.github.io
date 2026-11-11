@@ -570,7 +570,7 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
   .panel .post-list li:nth-child(n + 5) { display: none; }
   .panel .grid.friends li:nth-child(n + 4) { display: none; }
 }
-@media (max-height: 700px) {
+@media (max-height: 730px) {
   .panel .post-list li:nth-child(n + 4) { display: none; }
   .panel .grid.tools li:nth-child(n + 3) { display: none; }
   .panel .hero .hint { display: none; }
