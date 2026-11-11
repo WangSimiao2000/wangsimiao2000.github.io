@@ -41,10 +41,10 @@ export interface Group {
   /** 被点光源照亮：灯光加在环境光上（白天也有，营火旁边比别处亮、偏暖） */
   lit?: boolean;
   /**
-   * 自己发光，亮度是本身颜色的几倍（线性空间）。超过 1 的部分经调色压成发白的芯，也按这个倍数进辉光，
-   * 所以白天也压得过亮的天和草地
+   * 自己发光，亮度是本身颜色的几倍（线性空间），白天和夜里各一个数。超过 1 的部分经调色压成发白的芯，
+   * 也按这个倍数进辉光
    */
-  emit?: number;
+  emit?: { day: number; night: number };
   /** 每层离对焦的主平面多远（0 = 主平面），开了景深时按这个模糊；镜头前的前景也用正数 */
   depth?: number[];
 }
@@ -57,7 +57,7 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
     { layers: ['fg'], night: true, lit: true },
     { layers: ['shadow'] },
     { layers: ['emissive'], darkOnly: true },
-    { layers: ['glow'], emit: 2.4 },
+    { layers: ['glow'], emit: { day: 1.5, night: 2.4 } },
     { layers: ['actors'], night: true, lit: true },
     { layers: ['over'] },
   ],

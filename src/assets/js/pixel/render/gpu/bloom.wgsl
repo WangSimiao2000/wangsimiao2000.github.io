@@ -28,7 +28,7 @@ fn covered(p: vec2i) -> f32 {
 @fragment fn fs(v: V) -> @location(0) vec4f {
   if (!fx(FX_BLOOM)) { return vec4f(0.0); }
   let w = world(v.pos.xy);
-  // 营火火焰白天夜里一样亮：按自发光倍数进辉光，不打昼夜的折扣。灯窗、日月按昼夜的辉光强度（F.tint.a）
+  // 营火火焰按自发光倍数进辉光（白天比夜里弱，见 drawlist.ts 的 emit）。灯窗、日月按昼夜的辉光强度（F.tint.a）
   var c = textureLoad(glow, w, 0) * F.ambient.w * FIRE_BLOOM;
   var rest = vec4f(0.0);
   if (isDark()) { rest += textureLoad(emissive, w, 0); }
