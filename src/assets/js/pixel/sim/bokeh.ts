@@ -20,12 +20,12 @@ const GHOSTS: readonly (readonly [number, number, number, string, number])[] = [
 const ALPHA = { day: 0.2, night: 0.12 };
 
 export function drawBokeh(fr: Frame) {
-  const { dl, W, H } = fr;
+  const { dl, H } = fr;
   const vis = Math.min(H, fr.visH);
-  // 光源按天空视差的真实位置（含小数），光斑跟着日月一起平滑滑动
+  // 镜头光斑长在镜头上：全用屏幕坐标（光源 = 日月在屏幕上的真实位置，含天空视差的小数；中心 = 屏幕中心）
   const sx = dl.sun[0] + (dl.shift.sky ?? 0);
   const sy = dl.sun[1];
-  const cx = W / 2;
+  const cx = fr.HALF;
   const cy = H - vis / 2;
   const alpha = fr.dark ? ALPHA.night : ALPHA.day;
   const base = rgb(dl.env.light);
@@ -37,6 +37,7 @@ export function drawBokeh(fr: Frame) {
       r,
       color: css(mixRGB(base, rgb(tint), mix)),
       alpha: alpha * k,
+      screen: true,
     });
   }
 }

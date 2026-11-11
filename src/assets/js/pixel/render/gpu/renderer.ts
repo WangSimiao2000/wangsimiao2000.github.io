@@ -312,16 +312,19 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   }
 
   /**
-   * 失焦的光点按所在的层排好、上传，返回每层的 [起始实例号, 个数]。前景的光点跟着前景画布一起在对焦拉近时淡出
+   * 失焦的光点按所在的层排好、上传，返回每层的 [起始实例号, 个数]。前景的光点跟着前景画布一起在对焦拉近时淡出。
+   * 光点画在世界画布上：屏幕坐标的（镜头光斑）要抵消世界画布的亚像素平移，世界坐标的阅读时跟着世界下沉
    */
-  function uploadBokeh(dl: DrawList, focus: number): Partial<Record<LayerName, [number, number]>> {
+  function uploadBokeh(dl: DrawList, view: View): Partial<Record<LayerName, [number, number]>> {
     const out: Partial<Record<LayerName, [number, number]>> = {};
     if (!(effects & FX.bokeh)) return out;
+    const toCanvas = view.hero[0] / scale;
+    const sink = view.hero[1] / scale;
     const dots = [...dl.bokeh].sort((a, b) => LAYERS.indexOf(a.layer) - LAYERS.indexOf(b.layer)).slice(0, MAX_BOKEH);
     dots.forEach((b, i) => {
       const [r, g, bl] = rgb(b.color);
-      const alpha = b.layer === 'front' ? b.alpha * (1 - focus) : b.alpha;
-      bokehData.set([b.x, b.y, b.r, alpha, r / 255, g / 255, bl / 255, 0], i * BOKEH_FLOATS);
+      const alpha = b.layer === 'front' ? b.alpha * (1 - view.focus) : b.alpha;
+      bokehData.set([b.x + (b.screen ? toCanvas : 0), b.y + (b.screen ? 0 : sink), b.r, alpha, r / 255, g / 255, bl / 255, 0], i * BOKEH_FLOATS);
       const range = (out[b.layer] ??= [i, 0]);
       range[1]++;
     });
@@ -487,7 +490,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         blur(enc, T.glassBlurBinds, T.scratch, T.glassBlur, LOGICAL);
         blur(enc, T.glassSharpBinds, T.scratch, T.glassSharp, LOGICAL);
       }
-      const dots = uploadBokeh(dl, view.focus);
+      const dots = uploadBokeh(dl, view);
       for (const k of CANVASES) composeTo(enc, k, dark, glassCount, dots);
       device.queue.submit([enc.finish()]);
     },

@@ -93,8 +93,8 @@ export class Lanterns {
       const x = Math.round(p.x - camLeft - sp.width / 2);
       const y = Math.round(p.y);
       if (x > W || x + sp.width < 0 || p.alpha <= 0) continue;
-      if (dark) halo(dl, 'sky', x + 4, y + 7, 12, '#ffc96a', 0.32 * p.alpha);
-      dl.sprite('sky', sp, x, y, { alpha: p.alpha });
+      if (dark) halo(dl, 'aloft', x + 4, y + 7, 12, '#ffc96a', 0.32 * p.alpha);
+      dl.sprite('aloft', sp, x, y, { alpha: p.alpha });
       // 刚从树后冒头时还被树挡着，露出来以后才能点
       if (p.alpha > 0.5 && y < p.start - 6) this.hits.push({ note: this.notes[i], x0: x - 2, y0: y - 2, x1: x + sp.width + 2, y1: y + sp.height + 2 });
     }
