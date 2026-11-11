@@ -57,8 +57,8 @@ const LIGHT: Record<GlowKind, { radius: number; intensity: number; color: string
   window: { radius: 28, intensity: 0.8, color: '#ffc874', beam: { dir: [0, 1], cos: -1, length: 34 } },
   fire: { radius: 44, intensity: 1.2, color: '#ff9a4a', beam: { dir: [0, -1], cos: -1, length: 42 } },
 };
-/** 营火白天的光照是夜里的几成 */
-const FIRE_DAY = 0.8;
+/** 营火白天照亮周围的光是夜里的几成 */
+const FIRE_DAY = 0.5;
 
 /** 营火的火焰（画在夜色之上、角色之下，角色经过会挡光）和每处光源的点光源 */
 export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
