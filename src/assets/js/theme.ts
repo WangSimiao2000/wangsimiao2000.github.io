@@ -50,11 +50,11 @@ const now = document.querySelector<HTMLButtonElement>('[data-time-now]');
  * 换到 h 点。fade：深浅色变了时用 View Transitions 整页交叉淡化（颜色是一组 CSS 变量，渐变背景没法用 transition 过渡）；
  * 拖动时不淡化，跟手
  */
-function apply(h: number, fade: boolean) {
-  d.dataset.hour = h.toFixed(2);
-  if (range && document.activeElement !== range) range.value = String(h);
+function show(h: number, fade: boolean) {
+  d.dataset.hour = h.toFixed(3);
+  // 拖动条自己拖出来的变化不往回写（手正按在上面，写回去会和指针抢）；「回到现在」、跟着时钟走时滑块跟着动
+  if (range && !fromRange) range.value = String(h);
   if (out) out.value = label(h);
-  if (now) now.hidden = urlHour === null && stored() === null;
   const theme = themeOf(h);
   if (d.dataset.theme === theme) return;
   const set = () => {
@@ -64,6 +64,63 @@ function apply(h: number, fade: boolean) {
     d.classList.add('theme-switching');
     document.startViewTransition(set).finished.finally(() => d.classList.remove('theme-switching'));
   } else set();
+}
+
+/*
+ * 换时刻不是一下跳过去，而是平滑地挪过去：拖动条拖到哪、点「回到现在」，显示的时刻（日月、天色、读数）
+ * 按临界阻尼的弹簧追过去——起步加速、快到时减速，中途目标又变了（还在拖）也接得上，速度不会突变。
+ * 开了「减少动态效果」就直接跳过去。
+ */
+const SMOOTH = 0.25; // 追上目标大约要多久（秒）
+let target = current();
+let shown = target;
+let speed = 0; // 时刻每秒变多少小时
+let fadeOnArrive = false; // 这一段是不是该用淡化切深浅色（拖动时不用）
+let fromRange = false; // 这一段是不是拖动条拖出来的
+let raf = 0;
+let last = 0;
+
+/** 临界阻尼弹簧走一步（Game Programming Gems 4 的 SmoothDamp），返回新位置，并更新速度 */
+function step(dt: number) {
+  const w = 2 / SMOOTH;
+  const x = w * dt;
+  const k = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const diff = shown - target;
+  const temp = (speed + w * diff) * dt;
+  speed = (speed - w * temp) * k;
+  shown = target + (diff + temp) * k;
+}
+
+function tick(now: number) {
+  // 弹簧这个解法步长多大都稳定；只防切回标签页时一步跨太久
+  const dt = Math.min(0.5, (now - last) / 1000);
+  last = now;
+  step(dt);
+  const done = Math.abs(shown - target) < 0.002 && Math.abs(speed) < 0.01;
+  if (done) {
+    shown = target;
+    speed = 0;
+  }
+  show(shown, fadeOnArrive);
+  raf = done ? 0 : requestAnimationFrame(tick);
+}
+
+/** 目标时刻换成 h，显示的时刻平滑地追过去 */
+function moveTo(h: number, fade: boolean, byRange = false) {
+  target = h;
+  fadeOnArrive = fade;
+  fromRange = byRange;
+  if (now) now.hidden = urlHour === null && stored() === null;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    shown = target;
+    speed = 0;
+    show(shown, fade);
+    return;
+  }
+  if (!raf) {
+    last = performance.now();
+    raf = requestAnimationFrame(tick);
+  }
 }
 
 function open(on: boolean) {
@@ -77,11 +134,11 @@ toggle?.addEventListener('click', () => open(pop?.hidden ?? false));
 range?.addEventListener('input', () => {
   const h = parseFloat(range.value);
   store(h);
-  apply(h, false);
+  moveTo(h, false, true);
 });
 now?.addEventListener('click', () => {
   store(null);
-  apply(clock(), true);
+  moveTo(clock(), true);
 });
 // 点到别处或按 Esc 收起
 document.addEventListener('pointerdown', (e) => {
@@ -94,10 +151,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-apply(current(), false);
+show(shown, false);
+if (now) now.hidden = urlHour === null && stored() === null;
 // 跟着时钟走：没固定时刻的话每分钟更新一次
 setInterval(() => {
-  if (urlHour === null && stored() === null) apply(clock(), true);
+  if (urlHour === null && stored() === null) moveTo(clock(), true);
 }, 60_000);
 // 旧版本记过的深浅色偏好（现在由时刻决定），清掉
 try {
