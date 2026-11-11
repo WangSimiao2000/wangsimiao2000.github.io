@@ -11,9 +11,9 @@
 .post-info { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* ---- 正文排版（字号阶梯：12 / 13 / 14 / 16 / 18 / 22 / 28） ---- */
-.prose { font-size: 16px; line-height: 1.85; overflow-wrap: anywhere; font-family: var(--font-text); }
+.prose { font-size: 16px; line-height: 1.85; overflow-wrap: anywhere; }
 .prose > :first-child { margin-top: 0; }
-.prose h2, .prose h3, .prose h4 { line-height: 1.4; scroll-margin-top: 80px; font-family: var(--font); }
+.prose h2, .prose h3, .prose h4 { line-height: 1.4; scroll-margin-top: 80px; }
 .prose h2 { font-size: 22px; margin: 2.2em 0 0.8em; padding-left: 16px; position: relative; }
 .prose h2::before {
   content: ''; position: absolute; left: 0; top: 0.45em; width: 6px; height: 6px; background: var(--accent);
