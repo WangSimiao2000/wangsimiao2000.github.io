@@ -31,6 +31,7 @@ import { Eggs, inside } from './sim/eggs.js';
 import { CHAR_H, Hero } from './sim/hero.js';
 import { Fireworks, isBirthday } from './sim/festive.js';
 import { Lanterns } from './sim/lanterns.js';
+import { MAX_PINWHEELS, Pinwheels } from './sim/pinwheels.js';
 import { clamp, easeInOut, mix } from './sim/util.js';
 import type { Frame } from './sim/frame.js';
 import { DrawList, type Renderer } from './drawlist.js';
@@ -86,6 +87,9 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   hero.hat = birthday;
   const fireworks = birthday ? new Fireworks() : null;
   const lanterns = new Lanterns();
+  // 友链板块地上插的彩色纸风车，个数 = 友链数（模板写在 #friends 的 data-friends 上）
+  const friendsAt = sections.findIndex((s) => s.id === 'friends');
+  const pinwheels = new Pinwheels(friendsAt, friendsAt < 0 ? 0 : Math.min(MAX_PINWHEELS, Number(sections[friendsAt].dataset.friends) || 0));
   let fireX: number | null = null; // 画面里营火的世界坐标（烟花从这里升起）
 
   const fr: Frame = {
@@ -367,6 +371,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     const sec0 = Math.floor((camLeft - 160) / SECTION);
     const sec1 = Math.ceil((camLeft + W + 160) / SECTION);
     for (let s = Math.max(-OFF, sec0); s <= Math.min(N - 1, sec1); s++) items.push(...setPieces(s, sc));
+    items.push(...pinwheels.items(fr));
     items.sort((p, q) => p.z - q.z || p.wx - q.wx);
     for (const it of items) {
       const sp = it.sprite;
@@ -421,6 +426,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       hero.stride += dt * clamp(speed / 5, 6, 14) * 5;
     } else runTimer -= dt;
     fr.running = runTimer > 0 && !fr.reduced;
+    pinwheels.update(fr, dt);
 
     const left = fr.camX - fr.HALF;
     fr.camLeft = Math.floor(left);

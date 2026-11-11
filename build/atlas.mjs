@@ -41,10 +41,10 @@ const REQUIRED = [
   ...['r', 'l'].flatMap((s) => [`hero.${s}.idle.0`, `hero.${s}.idle.1`, `hero.${s}.run.*`, `hero.${s}.sit.0`, `hero.${s}.sit.1`, `hero.${s}.sit.2`]),
   ...['r', 'l'].flatMap((s) => [`girl.${s}.idle`, `girl.${s}.walk.*`, `girl.${s}.wave.0`]),
   'cat.l.idle.*', 'cat.l.blink', 'cat.l.jump',
-  'hat', 'lantern.day', 'lantern.night',
+  'hat', 'lantern.day', 'lantern.night', 'pinwheel.*',
 ];
 /** 这些前缀下的所有帧必须同样大（同一个角色的帧尺寸不同，切帧时脚底和头顶会上下跳） */
-const SAME_SIZE = ['hero.r', 'hero.l', 'girl.r', 'girl.l', 'cat.l'];
+const SAME_SIZE = ['hero.r', 'hero.l', 'girl.r', 'girl.l', 'cat.l', 'pinwheel'];
 /**
  * 这些角色只画一个朝向就行：hero/r/... 和 hero/l/... 缺了哪一边，就把另一边水平翻转补上。
  * 两边都画了就用手画的（比如翻过去别扭的那一帧单独画一张）。
