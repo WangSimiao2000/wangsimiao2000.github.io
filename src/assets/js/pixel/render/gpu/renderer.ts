@@ -187,7 +187,10 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
 
   function makeTargets() {
     const tex = (label: string, fmt: GPUTextureFormat = LOGICAL) => device.createTexture({ label, size: [W, H], format: fmt, usage });
-    const layers = Object.fromEntries(LAYERS.map((l) => [l, tex(l)])) as Record<LayerName, GPUTexture>;
+    // 按屏幕分辨率画的层（drawlist.ts 的 hires）：纹理和世界画布一样大
+    const hires = new Set(groups.flatMap(({ g }) => (g.hires ? g.layers : [])));
+    const big = (label: string) => device.createTexture({ label, size: [Math.round(W * scale), Math.round(H * scale)], format: LOGICAL, usage });
+    const layers = Object.fromEntries(LAYERS.map((l) => [l, hires.has(l) ? big(l) : tex(l)])) as Record<LayerName, GPUTexture>;
     const blurred: Partial<Record<LayerName, GPUTexture>> = {};
     for (const { g } of groups) g.depth?.forEach((d, i) => d > 0 && (blurred[g.layers[i]] = tex(`${g.layers[i]}-dof`)));
     const t = {
@@ -307,7 +310,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const fade = g.fade && !aerial ? 1 : 0;
       const fog = [0, 1, 2].map((i) => (aerial ? (g.depth?.[i] ?? 0) * (dark ? FOG.night : FOG.day) : 0));
       const ambient = effects & FX.grade && (g.lit || g.fade) ? 1 : 0;
-      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient, g.emit ? g.emit[dark ? 'night' : 'day'] : 0, 0, 0, 0]));
+      device.queue.writeBuffer(buf, 0, new Float32Array([g.layers.length, fade, g.night ? 1 : 0, g.lit ? 1 : 0, ...soft, s, grade, opacity, look, vignette, ...shift, rise, ...fog, ambient, g.emit ? g.emit[dark ? 'night' : 'day'] : 0, g.hires ? scale : 0, 0, 0]));
     }
   }
 

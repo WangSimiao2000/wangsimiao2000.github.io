@@ -1,15 +1,17 @@
 /**
  * 友链板块（花林）地上插的彩色纸风车：有几个友链就插几个（首页友链板块的 data-friends，构建时按 friends.yml 写好）。
  *
- * 风车头和杆子是分开的两张图（src/art/pinwheel/head、stick，头压在杆子图的上半截、钉子在头的正中）。
- * 头不换帧，每帧按当前角度绕钉子转（绘制清单的 rotate），角度是连续的，所以转起来是顺的，不是序列帧那种一顿一顿。
+ * 风车头和杆子是分开的图（src/art/pinwheel/head、stick/0-3，头压在杆子图的上半截、钉子在头的正中）。
+ * 杆子有四种高度，每个风车按位置固定挑一种，高低错落。
+ * 头不换帧，每帧按当前角度绕钉子转（绘制清单的 rotate），画在按屏幕分辨率画的 spin 层：角度连续、
+ * 转出来的边缘按屏幕像素走，不是序列帧那种一顿一顿，也不是逻辑像素那种一格一格地跳。
  *
  * 风车是普通布景（Item）：和植被一起按 z 排序、落地、投影、入夜变暗。每个风车的起始角度和转速都错开一点，
  * 像被同一阵风吹着；镜头在走时风大一些、转得快，停下来慢慢缓回去。开了「减少动态效果」就不转。
  */
 import { SECTION, type Item } from './biomes.js';
 import { hash } from './sprites.js';
-import { sprite, type Sprite } from '../atlas.js';
+import { sprite, sprites, type Sprite } from '../atlas.js';
 import type { Frame } from './frame.js';
 
 /** 最多插几个：再多就排到邻近板块去了（左右各 5 个，最外面离中心约 150） */
@@ -32,7 +34,7 @@ export function pinwheelDx(i: number): number {
 export const pinwheelAngle = (turns: number) => (((turns % 1) + 1) % 1) * Math.PI * 2;
 
 export class Pinwheels {
-  private stick: Sprite | null = null;
+  private sticks: Sprite[] = [];
   private head: Sprite | null = null;
   private turns: number[] = []; // 每个风车转了多少圈
   private wind = 1; // 当前的风：1 = 平时，GUST = 镜头在走
@@ -58,15 +60,15 @@ export class Pinwheels {
   items(fr: Frame): Item[] {
     const c = this.sec * SECTION;
     if (!this.count || fr.camLeft > c + SECTION / 2 || fr.camLeft + fr.W < c - SECTION / 2) return [];
-    this.stick ??= sprite('pinwheel.stick');
+    if (!this.sticks.length) this.sticks = sprites('pinwheel.stick');
     this.head ??= sprite('pinwheel.head');
     const head = this.head;
     const { dl } = fr;
     return this.turns.map((t, i) => ({
-      sprite: this.stick!,
+      sprite: this.sticks[Math.floor(hash(i * 3.9 + 0.4) * this.sticks.length)],
       wx: c + pinwheelDx(i),
       z: 2,
-      paint: (x: number, y: number) => dl.sprite('fg', head, x, y, { rotate: pinwheelAngle(t) }),
+      paint: (x: number, y: number) => dl.sprite('spin', head, x, y, { rotate: pinwheelAngle(t) }),
     }));
   }
 }

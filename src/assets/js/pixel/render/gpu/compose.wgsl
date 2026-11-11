@@ -14,7 +14,7 @@ struct Group {
   c: vec4f, // 往群系色调偏多少, 整组的不透明度, 调色, 压暗角
   d: vec4f, // 三层各自往右挪的亚像素（逻辑像素，drawlist.ts 的 shift）, 整组往下挪多少（毛玻璃里对齐天空用）
   e: vec4f, // 三层各自往天空的颜色靠多少（空气透视）, 乘环境光（光照）
-  f: vec4f, // 自发光倍数（0 = 不发光）, -, -, -
+  f: vec4f, // 自发光倍数（0 = 不发光）, 这组的层是不是按屏幕分辨率画的（纹理像素 / 逻辑像素，0 = 逻辑分辨率）, -, -
 };
 @group(0) @binding(1) var<uniform> G: Group;
 @group(0) @binding(2) var t0: texture_2d<f32>;
@@ -36,6 +36,8 @@ fn pick(t: texture_2d<f32>, soft: f32, lp: vec2f) -> vec4f {
   if (soft > 0.5) { return textureSampleLevel(t, samp, lp / F.size.xy, 0.0); }
   // 挪出纹理范围的地方是空的（越界的 textureLoad 结果不确定）
   if (any(lp < vec2f(0.0)) || any(lp >= F.size.xy)) { return vec4f(0.0); }
+  // 按屏幕分辨率画的层：逻辑坐标换成它自己的像素
+  if (G.f.y > 0.0) { return textureLoad(t, vec2i(lp * G.f.y), 0); }
   return textureLoad(t, vec2i(lp), 0);
 }
 
