@@ -8,7 +8,7 @@
  *             所以按整格画在这里、跟着镜头走的东西，在屏幕上是连续移动的
  *   屏幕坐标  原点在屏幕左上角：sky 层，和标了 screen 的光斑。渲染器替它们抵消世界画布的平移；
  *             sky 层整层随视差挪动的小数写在 shift.sky，渲染器合成、辉光、毛玻璃时都按它取样
- * 跟着世界走、但要画在远山后面的东西（孔明灯、烟花）放 aloft 层，不能放 sky 层。
+ * 天上跟着世界走的东西（孔明灯、烟花）放 aloft 层，不能放 sky 层。
  */
 import type { Sprite } from './atlas.js';
 import { rgb } from './sim/util.js';
@@ -16,13 +16,14 @@ import { rgb } from './sim/util.js';
 /**
  * 图层，按合成顺序排列。每层先单独画好，再合成：
  *   sky      日月星：屏幕坐标，阅读时不跟着下沉
- *   aloft    天上跟着世界走的东西（孔明灯、烟花）：世界坐标，画在远山后面
  *   far      远山 \
  *   mid      丘陵  > 远景三层：越远越糊、越往天空的颜色靠（空气透视）
  *   near     树线 /
  *   back     后排树：树线和主平面之间一排真正的树，比主平面走得慢、糊一点
  *   fg       布景和地面，深色模式下变暗
  *   shadow   布景和主角投在地上的影子（被日月压扁、往背光的一边斜过去）
+ *   aloft    天上跟着世界走的东西（孔明灯、烟花）：世界坐标，和人物在同一个平面上（不被远山、树线挡住），
+ *            不吃夜色（夜里单独一套亮着的颜色），画在布景前面、人物后面
  *   emissive 灯泡、亮着的窗：只在深色模式合成，叠在夜色之上
  *   glow     营火火焰
  *   actors   女孩、猫：画在火焰之后（经过窗前会挡光），深色模式下变暗
@@ -30,7 +31,7 @@ import { rgb } from './sim/util.js';
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移
  *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害
  */
-export const LAYERS = ['sky', 'aloft', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'aloft', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
 /** 合成组：组里的层按顺序叠好以后，再整体处理（变暗、照亮、调色……），然后叠到画布上 */
@@ -58,11 +59,11 @@ export type CanvasName = 'world' | 'hero' | 'front';
 export const COMPOSE: Record<CanvasName, Group[]> = {
   world: [
     { layers: ['sky'], screen: true },
-    { layers: ['aloft'] },
     { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3.5, 3] },
     { layers: ['back'], night: true, lit: true, depth: [2] },
     { layers: ['fg'], night: true, lit: true },
     { layers: ['shadow'] },
+    { layers: ['aloft'] },
     { layers: ['emissive'], darkOnly: true },
     { layers: ['glow'], emit: { day: 1.5, night: 2.4 } },
     { layers: ['actors'], night: true, lit: true },
