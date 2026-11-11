@@ -21,6 +21,7 @@ import { rgb } from './sim/util.js';
  *   near     树线 /
  *   back     后排树：树线和主平面之间一排真正的树，比主平面走得慢、糊一点
  *   fg       布景和地面，深色模式下变暗
+ *   spin     转着画的东西（风车头）：和 fg 一样是布景，但这一层按屏幕分辨率画，转出来的边缘按屏幕像素走
  *   shadow   布景和主角投在地上的影子（被日月压扁、往背光的一边斜过去）
  *   aloft    天上跟着世界走的东西（孔明灯、烟花）：世界坐标，和人物在同一个平面上（不被远山、树线挡住），
  *            不吃夜色（夜里单独一套亮着的颜色），画在布景前面、人物后面
@@ -31,7 +32,7 @@ import { rgb } from './sim/util.js';
  *   hero     主角画布：始终在屏幕正中，不跟世界做亚像素平移
  *   front    镜头前的前景（画面两边的大树和灌木）：单独一张画布，压在卡片上面，糊得很厉害
  */
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'shadow', 'aloft', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
+export const LAYERS = ['sky', 'far', 'mid', 'near', 'back', 'fg', 'spin', 'shadow', 'aloft', 'emissive', 'glow', 'actors', 'over', 'hero', 'front'] as const;
 export type LayerName = (typeof LAYERS)[number];
 
 /** 合成组：组里的层按顺序叠好以后，再整体处理（变暗、照亮、调色……），然后叠到画布上 */
@@ -52,6 +53,11 @@ export interface Group {
    * 也按这个倍数进辉光
    */
   emit?: { day: number; night: number };
+  /**
+   * 这组的层按屏幕分辨率画（不是逻辑像素）：转着画的精灵（风车头）边缘按屏幕像素走，转起来是顺的。
+   * 精灵本身的像素还是图集里那么大，只是转出来的边不再一格一格地跳
+   */
+  hires?: boolean;
   /** 每层离对焦的主平面多远（0 = 主平面），开了景深时按这个模糊；镜头前的前景也用正数 */
   depth?: number[];
 }
@@ -62,6 +68,7 @@ export const COMPOSE: Record<CanvasName, Group[]> = {
     { layers: ['far', 'mid', 'near'], fade: true, depth: [4, 3.5, 3] },
     { layers: ['back'], night: true, lit: true, depth: [2] },
     { layers: ['fg'], night: true, lit: true },
+    { layers: ['spin'], night: true, lit: true, hires: true },
     { layers: ['shadow'] },
     { layers: ['aloft'] },
     { layers: ['emissive'], darkOnly: true },
