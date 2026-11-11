@@ -20,18 +20,21 @@ test('风车左右交替排开，前几个离中心最近（友链少的时候�
   assert.ok(Math.abs(pinwheelDx(1)) < Math.abs(pinwheelDx(3)));
 });
 
-test('风车头按角度现画：四种颜色都在、不出杆子图的范围、中间有钉子；转一档形状就变，转一圈回到原样', async () => {
-  const { pinwheelHead } = await import('../../src/assets/js/pixel/sim/pinwheels.ts');
-  const STEPS = 32;
-  const shape = (s: number) => pinwheelHead(s).map(([x, y, c]) => `${x},${y},${c}`).sort().join(' ');
-  for (let s = 0; s < STEPS; s++) {
-    const px = pinwheelHead(s);
-    assert.ok(px.length > 40, `第 ${s} 档只有 ${px.length} 个像素`);
-    for (const [x, y] of px) assert.ok(x >= 0 && x < 13 && y >= 0 && y < 13, `第 ${s} 档有像素画到 (${x},${y})，出了 13×13`);
-    for (const tones of [['#f68476', '#de5248', '#b03434'], ['#ffe080', '#f2be48', '#cc922e'], ['#80baf0', '#4c8ed6', '#3466aa'], ['#8cd688', '#58b060', '#3c8848']])
-      assert.ok(px.some(([, , col]) => tones.includes(col)), `第 ${s} 档缺了一片叶片（${tones[1]}）`);
-    assert.ok(px.some(([x, y]) => x === 6 && y === 6), `第 ${s} 档中心没有钉子`);
-    assert.notEqual(shape(s), shape(s + 1), `第 ${s} 档和下一档一模一样，看不出在转`);
+test('风车头整张转：转角随转过的圈数连续变化、一圈回到 0；绘制命令带 ROTATE 和转角', async () => {
+  const { pinwheelAngle } = await import('../../src/assets/js/pixel/sim/pinwheels.ts');
+  const { DrawList, ROTATE, STRIDE } = await import('../../src/assets/js/pixel/drawlist.ts');
+  let prev = pinwheelAngle(0);
+  for (let k = 1; k < 100; k++) {
+    const a = pinwheelAngle(k * 0.01);
+    assert.ok(Math.abs(a - prev - Math.PI * 2 * 0.01) < 1e-9, `第 ${k} 步转角跳了：${prev} -> ${a}`);
+    prev = a;
   }
-  assert.equal(shape(0), shape(STEPS), '转一圈应该回到原样');
+  assert.ok(Math.abs(pinwheelAngle(1)) < 1e-9 && Math.abs(pinwheelAngle(-0.25) - Math.PI * 1.5) < 1e-9);
+  const dl = new DrawList();
+  const head = { name: 'h', width: 13, height: 13, rect: [0, 0, 13, 13] as [number, number, number, number] };
+  dl.sprite('fg', head, 3, 4, { rotate: 1.25 });
+  const d = dl.layers.fg.data.subarray(0, STRIDE);
+  assert.ok((d[0] & ROTATE) !== 0, '没带 ROTATE');
+  assert.equal(d[13], 1.25);
+  assert.deepEqual([...d.subarray(2, 6)], [3, 4, 13, 13], '目标矩形不变，渲染器绕它的中心转');
 });
