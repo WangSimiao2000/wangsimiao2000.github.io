@@ -260,6 +260,8 @@ export interface Item {
   glow?: GlowKind;
   egg?: EggKind;
   lift?: number;
+  /** 精灵画完以后自己再画的部分（x, y 是精灵左上角）：比如风车头，每帧按角度现画 */
+  paint?: (x: number, y: number) => void;
 }
 
 /** 第 s 个植被槽位长什么（或者什么都不长）。同一个槽位永远返回同一个结果 */

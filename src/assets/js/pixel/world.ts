@@ -384,6 +384,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       if (!it.egg || !eggs.drawItem(fr, it, x, y, base)) {
         dl.sprite('fg', sp, x, y);
         emit(fr, sp, x, y);
+        it.paint?.(x, y);
       }
       castShadow(fr, sp, x, base);
       const at = it.kind && GLOW_AT[it.kind];
