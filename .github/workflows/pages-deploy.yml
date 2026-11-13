@@ -122,9 +122,8 @@ jobs:
         uses: actions/deploy-pages@v4
 
   # 百度的爬虫连不上 GitHub Pages，部署后把首页和最近改过的地址主动推给百度「普通收录」（build/baidu-push.mjs）。
-  # 密钥放在仓库 Secret BAIDU_PUSH_TOKEN 里，没有就跳过；每天定时重建时不推（地址没变）；失败不算部署失败
+  # 剩下的名额每天轮流补推旧文章，所以每天凌晨的定时重建也推。密钥放在仓库 Secret BAIDU_PUSH_TOKEN 里，没有就跳过；失败不算部署失败
   baidu:
-    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     needs: deploy
     continue-on-error: true
