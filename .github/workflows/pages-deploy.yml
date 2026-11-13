@@ -120,3 +120,28 @@ jobs:
         id: retry
         if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
+
+  # 百度的爬虫连不上 GitHub Pages，部署后把首页和最近改过的地址主动推给百度「普通收录」（build/baidu-push.mjs）。
+  # 密钥放在仓库 Secret BAIDU_PUSH_TOKEN 里，没有就跳过；每天定时重建时不推（地址没变）；失败不算部署失败
+  baidu:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    needs: deploy
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Download built site
+        uses: actions/download-artifact@v5
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/site
+      - name: Push URLs to Baidu
+        env:
+          BAIDU_PUSH_TOKEN: ${{ secrets.BAIDU_PUSH_TOKEN }}
+        run: |
+          mkdir -p dist
+          tar -xf "$RUNNER_TEMP/site/artifact.tar" -C dist sitemap.xml
+          node build/baidu-push.mjs
