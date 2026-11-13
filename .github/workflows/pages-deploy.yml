@@ -143,5 +143,5 @@ jobs:
           BAIDU_PUSH_TOKEN: ${{ secrets.BAIDU_PUSH_TOKEN }}
         run: |
           mkdir -p dist
-          tar -xf "$RUNNER_TEMP/site/artifact.tar" -C dist sitemap.xml
+          tar -xf "$RUNNER_TEMP/site/artifact.tar" -C dist ./sitemap.xml # 产物里的路径带 ./
           node build/baidu-push.mjs
