@@ -55,7 +55,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log('没有 BAIDU_PUSH_TOKEN，跳过');
     process.exit(0);
   }
-  const res = await fetch(`http://data.zz.baidu.com/urls?site=${encodeURIComponent(SITE)}&token=${encodeURIComponent(token)}`, {
+  // site 照百度给的接口地址原样写（不编码）：百度按原样比对，编了码会报 site init fail
+  const res = await fetch(`http://data.zz.baidu.com/urls?site=${SITE}&token=${encodeURIComponent(token)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: urls.join('\n'),
