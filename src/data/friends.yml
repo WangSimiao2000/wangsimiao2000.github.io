@@ -40,3 +40,8 @@
   url: "https://wangyukun.net"
   # icon: (无图标，显示默认)
   description: "YK 的诗词集"
+
+- name: "Yutong's Site"
+  url: "https://www.lyt0112.com"
+  icon: "https://www.lyt0112.com/favicon/favicon.svg"
+  description: "My compass is curiosity."
