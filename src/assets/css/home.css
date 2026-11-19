@@ -360,6 +360,8 @@ html:not(.js) .play-tabs { display: none; }
 /* 阅读时：页面不再滚动，板块卡片和快捷栏让位，世界下沉成一条 */
 html.js.reading { overflow: hidden; }
 .reading .stages { opacity: 0; pointer-events: none; }
+/* 隐藏页卡片不在 .stages 里，外层 .panel 的透明度又由 world.ts 写内联样式，所以藏里面的 .card（和只看风景时一样） */
+.reading .secret-panel .card { opacity: 0; visibility: hidden; }
 .reading .hotbar { opacity: 0; pointer-events: none; visibility: hidden; }
 .hotbar { transition: opacity 0.25s, visibility 0.25s; }
 .reading body::before { opacity: 0.5; }
