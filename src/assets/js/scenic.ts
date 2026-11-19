@@ -43,7 +43,7 @@ function set(on: boolean): void {
   if (on) {
     // 焦点留在藏起来的卡片或快捷栏里，键盘操作会落到看不见的地方
     const a = document.activeElement as HTMLElement | null;
-    if (a?.closest('.stages, .hotbar, .secret-panel')) a.blur();
+    if (a?.closest('.panel, .hotbar')) a.blur();
     hint();
   }
 }

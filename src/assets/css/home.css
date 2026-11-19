@@ -357,27 +357,23 @@ html:not(.js) .play-tabs { display: none; }
 .js .reader-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; outline: none; }
 .reader-scroll .prose h2, .reader-scroll .prose h3, .reader-scroll .prose h4 { scroll-margin-top: 16px; }
 
-/* 阅读时：页面不再滚动，板块卡片和快捷栏让位，世界下沉成一条 */
-html.js.reading { overflow: hidden; }
-.reading .stages { opacity: 0; pointer-events: none; }
-/* 隐藏页卡片不在 .stages 里，外层 .panel 的透明度又由 world.ts 写内联样式，所以藏里面的 .card（和只看风景时一样） */
-.reading .secret-panel .card { opacity: 0; visibility: hidden; }
-.reading .hotbar { opacity: 0; pointer-events: none; visibility: hidden; }
+/*
+ * 世界卡片 = .panel > .card：六个板块卡片和隐藏页卡片，都由 world.ts 的 place() 按相机摆放，
+ * 外层 .panel 的位置、透明度、可见性每帧写内联样式，所以要藏卡片一律藏里面的 .card。
+ * 阅读（.reading）和只看风景（.scenic，右上角按钮 / H）时，世界卡片和快捷栏都淡出。
+ */
+.js .panel > .card { transition: opacity 0.25s, visibility 0.25s; }
 .hotbar { transition: opacity 0.25s, visibility 0.25s; }
+:is(.reading, .scenic) :is(.panel > .card, .hotbar) { opacity: 0; visibility: hidden; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .js .panel > .card, .hotbar { transition: none; } }
+
+/* 阅读时：页面不再滚动，世界下沉成一条 */
+html.js.reading { overflow: hidden; }
 .reading body::before { opacity: 0.5; }
 /* 阅读时主角往下沉，只露出一条地面；世界由渲染器跟着主角画布一起沉、天空不动（ui-bridge.ts 量主角画布的位置） */
 .js #hero { transition: transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
 .reading #hero { transform: translateY(var(--sink)); }
-.stages, .hotbar { transition: opacity 0.25s; }
-
-/*
- * 只看风景（右上角按钮 / H）：板块卡片、隐藏页卡片和快捷栏淡出，世界照常可以翻页、点彩蛋。
- * 外层 .panel 的透明度和可见性由 world.ts 每帧写内联样式，所以藏的是里面的 .card
- */
-.js .stages .card, .js .secret-panel .card { transition: opacity 0.25s, visibility 0.25s; }
-.scenic .stages .card, .scenic .secret-panel .card { opacity: 0; visibility: hidden; }
-.scenic .hotbar { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.25s, visibility 0.25s; }
-@media (prefers-reduced-motion: reduce) { .js .stages .card, .js .secret-panel .card, .scenic .hotbar { transition: none; } }
+.stages { transition: opacity 0.25s; }
 
 /*
  * 刚打开页面、脚本还没跑起来的那一小会儿，板块卡片都叠在屏幕正中（左右位置是脚本按相机算的）。
@@ -388,7 +384,7 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 @keyframes stages-fallback { to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .js #world, .js #hero, .stages, .hotbar { transition: none; }
+  .js #world, .js #hero, .stages { transition: none; }
 }
 
 @media (max-width: 640px) {
@@ -756,7 +752,7 @@ html[data-glass] { --glass-a: 42%; }
 html[data-glass][data-theme='dark'] { --glass-a: 48%; }
 html[data-glass] .reader-card { --glass-a: 62%; }
 html[data-glass][data-theme='dark'] .reader-card { --glass-a: 64%; }
-html[data-glass] :is(.stages .card, .secret-panel .card, .reader-card, .reader-side) {
+html[data-glass] :is(.panel > .card, .reader-card, .reader-side) {
   background: linear-gradient(145deg, color-mix(in srgb, var(--surface-hi) var(--glass-a), transparent), color-mix(in srgb, var(--surface-lo) var(--glass-a), transparent));
 }
 html[data-glass] :is(.hotbar, .toplinks > a, .toplinks .theme-btn, .time-pop) {

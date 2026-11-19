@@ -110,6 +110,27 @@ await page.waitForTimeout(800);
 t.ok(await page.evaluate(() => { const b = document.querySelector('.topbar'); return b.scrollWidth <= b.clientWidth + 1; }), '320 宽首页顶栏放得下');
 await page.close();
 
+// 阅读时世界卡片（.panel > .card，含隐藏页卡片）一律藏起来，不能透过阅读面板看到
+page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+page.on('pageerror', (e) => errors.push(e.message));
+for (const path of ['/guestbook/', POST, '/about/', '/friends/']) {
+  await page.goto(BASE + path, { waitUntil: 'load' });
+  await page.waitForTimeout(900);
+  const shown = await page.evaluate(() =>
+    [...document.querySelectorAll('.panel > .card')].filter((el) => {
+      let a = 1;
+      for (let e = el; e; e = e.parentElement) {
+        const cs = getComputedStyle(e);
+        if (cs.visibility === 'hidden' || cs.display === 'none') return false;
+        a *= +cs.opacity;
+      }
+      return a > 0.01;
+    }).length,
+  );
+  t.ok(shown === 0, `${path} 阅读时面板后面没有可见的世界卡片（${shown}）`);
+}
+await page.close();
+
 t.ok(errors.length === 0, `没有 JS 报错${errors.length ? '：' + errors.join(' | ') : ''}`);
 await browser.close();
 t.done();
