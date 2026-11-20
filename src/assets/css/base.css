@@ -4,7 +4,6 @@
   --stage: 200px;
   --ground: 128px;
   --strip: 180px; /* 阅读时露出的世界高度，由 world.ts 按像素比例改写 */
-  --sink: 110px;
   --tint: #cdebff;
   /*
    * 整页固定层的叠放顺序（从下到上）。像素世界的画布在最下面（不设 z-index）；

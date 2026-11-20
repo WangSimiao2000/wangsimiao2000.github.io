@@ -20,7 +20,12 @@ export async function removeLegacyServiceWorker(): Promise<void> {
       await Promise.all((await caches.keys()).filter((k) => k.startsWith('chirpy')).map((k) => caches.delete(k)));
     };
     const regs = await sw.getRegistrations();
-    if (!regs.length && !sw.controller) return clear();
+    if (!regs.length && !sw.controller) {
+      await clear();
+      // 刚因为旧 Service Worker 刷新过：它注销后还活着一小会儿，刷新前没完成的请求可能这时才存进缓存，过一会儿再清一次
+      if (sessionStorage.getItem('legacy-sw-reloaded')) setTimeout(() => void clear(), 1500);
+      return;
+    }
     await Promise.all(regs.map((r) => r.unregister()));
     await clear();
     if (sw.controller && !sessionStorage.getItem('legacy-sw-reloaded')) {

@@ -1,4 +1,5 @@
 import { html, raw } from '../../build/html.mjs';
+import { initScript } from '../assets/js/daycycle.ts';
 import { site } from '../site.mjs';
 
 /**
@@ -8,11 +9,8 @@ import { site } from '../site.mjs';
  */
 export const BUILT = Date.now();
 
-/**
- * 首帧前定下时刻和深浅色，避免亮 -> 暗闪一下。规则和 js/theme.ts 一致：网址 ?tod=小时 > localStorage 的 tod > 系统时钟；
- * 6 点到 18 点是白天（浅色），其余是夜里（深色）
- */
-const THEME_INIT = `(()=>{const d=document.documentElement;d.classList.add('js');const ok=(h)=>h>=0&&h<=24;let h=parseFloat(new URLSearchParams(location.search).get('tod'));if(!ok(h)){try{h=parseFloat(localStorage.getItem('tod'))}catch{}}if(!ok(h)){const n=new Date;h=n.getHours()+n.getMinutes()/60}d.dataset.hour=h.toFixed(2);d.dataset.theme=h>=6&&h<18?'light':'dark'})();`;
+/** 首帧前定下时刻和深浅色，规则在 assets/js/daycycle.ts */
+const THEME_INIT = initScript();
 
 export const topbar = () => html`
   <header class="topbar">

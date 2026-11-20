@@ -11,6 +11,7 @@ import type { World } from './pixel/world.js';
 import { bindToc } from './toc.js';
 import { mountComments } from './comments.js';
 import { paintStatus } from './status.js';
+import { SECRET } from './sections.js';
 import { pushLayer, reducedMotion, setState } from './ui.js';
 
 /** 服务器地图页：只有它要加载地图查看器（mcmap.ts） */
@@ -73,7 +74,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
 
   /** 相机移到某个板块：页面滚动瞬间到位，世界里的小人自己跑过去 */
   function moveTo(id: string) {
-    if (id === 'secret') {
+    if (id === SECRET.id) {
       window.scrollTo({ top: 0, behavior: 'instant' });
       world.enterSecret();
       return;

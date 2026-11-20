@@ -6,6 +6,7 @@
  */
 import { hash, type Sprite } from './sprites.js';
 import type { Scenery } from './scenery.js';
+import { SECTIONS, WORLD } from '../../sections.js';
 import { clamp, css, mix, mixRGB, noise1, rgb, smooth, type RGB } from './util.js';
 
 /** Scenery 里「一组变体」的键（树、灌木、草……） */
@@ -71,11 +72,8 @@ export type WeatherKind = 'snow' | 'petal' | 'leaf';
 
 const SOIL: [string, string, string] = ['#a8805b', '#8a6548', '#6c4f3c'];
 
-/**
- * 群系按世界里的板块顺序排列。第 0 个是起点左边藏着的「秋林」：双击起点的路牌把它翻过来，
- * 才能往回走进去（世界坐标为负）。OFF 是起点在数组里的下标。
- */
-export const BIOMES: Biome[] = [
+/** 各群系的数据，按名字查；在世界里的顺序由 sections.ts 决定 */
+const ALL: Biome[] = [
   {
     name: 'autumn', rays: 0.9, tint: '#ffe0bf', far: '#d9c3b4', mid: '#d9a77a', near: '#c98a5a', treeline: 0.9, spiky: false,
     line: '#6a360d', rim: '#f3dc8e', top: '#d6b45c', shade: '#b48d43', soil: SOIL, amp: 9, blades: true,
@@ -159,7 +157,16 @@ export const BIOMES: Biome[] = [
   },
 ];
 
-export const OFF = 1; // 起点（板块 0）在 BIOMES 里的下标
+/**
+ * 群系按世界里的板块顺序排列（sections.ts 的 WORLD）。第 0 个是起点左边藏着的「秋林」：双击起点的路牌把它翻过来，
+ * 才能往回走进去（世界坐标为负）
+ */
+export const BIOMES: Biome[] = WORLD.map((s) => {
+  const b = ALL.find((x) => x.name === s.biome);
+  if (!b) throw new Error(`sections.ts 里的群系 ${s.biome} 在 biomes.ts 里没有`);
+  return b;
+});
+export const OFF = WORLD.indexOf(SECTIONS[0]); // 起点（板块 0）在 BIOMES 里的下标
 export const SECTION = 320; // 相邻板块间的世界距离（逻辑像素）
 export const GROUND = 32; // 板块中心处地面高度
 export const SLOT = 9; // 植被的槽位间距

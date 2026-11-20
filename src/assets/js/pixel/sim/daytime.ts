@@ -8,12 +8,14 @@
  *   太阳低的时候（日出、日落）光是暖的：日盘偏橘红、场景偏暖、体积光变浓。
  */
 import { clamp, mix, smooth } from './util.js';
+import { SUNRISE, SUNSET as SUNSET_H, TWILIGHT } from '../../daycycle.js';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-/** 晨昏过渡：傍晚从 DUSK[0] 点开始暗、DUSK[1] 点全黑；清晨反过来 */
-const DUSK = [17, 19] as const;
-const DAWN = [5, 7] as const;
+/** 晨昏过渡：傍晚从 DUSK[0] 点开始暗、DUSK[1] 点全黑；清晨反过来。正中间是日落 / 日出，界面在那一刻切深浅色 */
+const DUSK = [SUNSET_H - TWILIGHT, SUNSET_H + TWILIGHT] as const;
+const DAWN = [SUNRISE - TWILIGHT, SUNRISE + TWILIGHT] as const;
+const DAY_LEN = SUNSET_H - SUNRISE;
 
 export interface Orb {
   /** 在天上走了多少：0 刚从左边地平线升起，0.5 最高，1 落到右边；小于 0、大于 1 是沉到地平线以下 */
@@ -63,9 +65,9 @@ export function daytime(hour: number): Daytime {
   const h = ((hour % 24) + 24) % 24;
   const night = nightAt(h);
   // 太阳：6 点 -> 0，18 点 -> 1；半夜（-0.5 / 1.5）在地平线下面最深处
-  const sunArc = (h - 6) / 12;
+  const sunArc = (h - SUNRISE) / DAY_LEN;
   // 月亮：18 点 -> 0，次日 6 点 -> 1
-  const moonArc = ((h - 18 + 24) % 24) / 12;
+  const moonArc = ((h - SUNSET_H + 24) % 24) / (24 - DAY_LEN);
   // 离地平线越近越暖：两头 1，升高到 1/4 弧以上就是正午的光；沉下去以后天还暖一会儿，再交给夜色
   const golden = 1 - smooth(0.04, 0.26, Math.min(Math.abs(sunArc), Math.abs(1 - sunArc)));
   const day = {

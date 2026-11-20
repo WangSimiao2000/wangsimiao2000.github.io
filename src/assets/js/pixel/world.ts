@@ -47,9 +47,11 @@ import { blobShadow, castShadow } from './sim/shadow.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
 import { isOn, onState, reducedMotion, setState } from '../ui.js';
+import { FRIENDS_ID } from '../sections.js';
 
 const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
 const SECRET_DUR = 0.55; // 进出隐藏页的时长，和浏览器平滑滚动一致
+const SINK_DUR = 0.55; // 打开 / 关闭文章时世界下沉 / 升回来的时长
 const MIN_RUN = 15; // 相机速度（逻辑像素/秒）低于这个就算停下
 
 export interface WorldOptions {
@@ -91,7 +93,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   const fireworks = birthday ? new Fireworks() : null;
   const lanterns = new Lanterns();
   // 友链板块地上插的彩色纸风车，个数 = 友链数（模板写在 #friends 的 data-friends 上）
-  const friendsAt = sections.findIndex((s) => s.id === 'friends');
+  const friendsAt = sections.findIndex((s) => s.id === FRIENDS_ID);
   const pinwheels = new Pinwheels(friendsAt, friendsAt < 0 ? 0 : Math.min(MAX_PINWHEELS, Number(sections[friendsAt].dataset.friends) || 0));
   let fireX: number | null = null; // 画面里营火的世界坐标（烟花从这里升起）
 
@@ -150,7 +152,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     root.style.setProperty('--stage', `${(GROUND + CHAR_H + 14) * S}px`);
     root.style.setProperty('--ground', `${GROUND * S}px`);
     root.style.setProperty('--strip', `${(STRIP_GROUND + CHAR_H + 8) * S}px`);
-    root.style.setProperty('--sink', `${(GROUND - STRIP_GROUND) * S}px`);
   }
   resize();
   window.addEventListener('resize', resize);
@@ -187,6 +188,8 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   let activeIdx = -1;
   let lastTint = '';
   let reading = isOn('reading');
+  let sinkMix = reading ? 1 : 0; // 世界下沉了多少（0..1）；直接打开文章时一开始就沉好
+  let lastSink = -1;
   let readStart = 0; // 进入阅读后先全速跑一会（小人坐下、世界下沉），再降帧
   let lastDraw = 0;
   let secret = false; // 正在隐藏页里
@@ -405,6 +408,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     fr.reduced = reducedMotion();
     fr.p = progress();
     secretMix = fr.reduced ? (secret ? 1 : 0) : clamp(secretMix + (secret ? dt : -dt) / SECRET_DUR);
+    // 阅读时世界下沉，只露出一条地面：动画只有这一个来源。主角画布按它平移（带小数），
+    // 渲染器量主角画布的位置把世界沉同样多（ui-bridge.ts），两边不会一个跟一个
+    sinkMix = fr.reduced ? (reading ? 1 : 0) : clamp(sinkMix + (reading ? dt : -dt) / SINK_DUR);
+    const sink = (1 - (1 - sinkMix) ** 3) * (GROUND - STRIP_GROUND) * fr.S; // 先快后慢
+    if (sink !== lastSink) {
+      lastSink = sink;
+      heroCanvas.style.transform = sink ? `translateY(${sink.toFixed(2)}px)` : '';
+    }
     const target = camTarget();
     if (fr.reduced) fr.camX = target;
     else fr.camX += (target - fr.camX) * Math.min(1, dt * 10);

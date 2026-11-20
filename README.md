@@ -20,11 +20,12 @@ npm run build    # 输出到 dist/
 
 ```bash
 npm i --prefix ~/pw playwright-core && npx --prefix ~/pw playwright-core install chromium chromium-headless-shell
-npm run dev   # 另开一个终端
-PLAYWRIGHT_CORE=~/pw node tests/e2e/flow.mjs
+PLAYWRIGHT_CORE=~/pw npm run test:e2e              # 构建、在随机端口起静态服务器、跑全部浏览器测试、关掉服务器
+PLAYWRIGHT_CORE=~/pw npm run test:e2e -- flow      # 只跑几个；--no-build 跳过构建，--webgpu 加上 WebGPU 自检
 ```
 
-交互和时序测试用 headless shell。要看 WebGPU 画面的测试（`webgpu.mjs` 自检、`world-pixels.mjs` 画面回归）用完整版 Chromium，配合 SwiftShader 软件渲染。
+部署流程（`.github/workflows/pages-deploy.yml`）在构建后也跑这些测试，失败就不部署。
+交互和时序测试用 headless shell。要看 WebGPU 画面的测试（`webgpu.mjs` 自检、`world-pixels.mjs` 画面回归）用完整版 Chromium，配合 SwiftShader 软件渲染，只在本地跑。
 
 ## 依赖
 
