@@ -11,6 +11,25 @@ import type { World } from './pixel/world.js';
 import { bindToc } from './toc.js';
 import { mountComments } from './comments.js';
 import { paintStatus } from './status.js';
+import { pushLayer, reducedMotion, setState } from './ui.js';
+
+/** 服务器地图页：只有它要加载地图查看器（mcmap.ts） */
+const MAP_PATH = '/server/map/';
+const loadMap = () => import('./mcmap.js');
+
+type Cleanup = (() => void) | void;
+/**
+ * 阅读面板里的内容换上来以后，按内容挂上的功能：面板里有 has 选择器的元素才挂。
+ * mount 返回卸载函数（换页、关闭时调用）。idle 的等开合动画播完、浏览器空闲时再挂，不抢动画的帧。
+ * 加新的页面功能只在这里加一项，router 不用认识它
+ */
+const ENHANCERS: { has: string; mount: (root: HTMLElement) => Cleanup | Promise<Cleanup>; idle?: boolean }[] = [
+  { has: '[data-toc]', mount: bindToc },
+  { has: '[data-mc-status]', mount: (r) => paintStatus(r) },
+  { has: '[data-mc-map]', mount: (r) => loadMap().then((m) => m.bindMap(r)) },
+  // Giscus 评论的 iframe 很重
+  { has: '[data-giscus]', mount: mountComments, idle: true },
+];
 
 interface RouterOptions {
   world: World;
@@ -39,15 +58,13 @@ interface NavState {
 const LISTS = new Set(['/archives/', '/browse/']);
 
 export function startRouter({ world, sections, reader }: RouterOptions) {
-  const root = document.documentElement;
   const stages = document.querySelector<HTMLElement>('main.stages');
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const siteTitle = document.querySelector('.brand')?.textContent?.trim() || document.title;
   const cache = new Map<string, Promise<string>>();
   let source: HTMLElement | null = null; // 打开面板的链接，关闭后把焦点还给它
   let token = 0;
-  let unbindToc = () => {};
-  let unbindMap = () => {};
+  let unmount: (() => void)[] = []; // 面板里这页挂上的功能（ENHANCERS）的卸载函数
+  let unlayer = () => {}; // 阅读面板登记的浮层（Esc 退一级）
   let pendingSection: string | null = null; // 关闭后要去的板块（经 history.back() 时暂存）
 
   const isOpen = () => !reader.hidden;
@@ -171,7 +188,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
    * from：打开时从这张首页卡片放大出来；to：关闭时缩回这张卡片
    */
   async function transition(update: () => void, from?: HTMLElement | null, to?: HTMLElement | null) {
-    if (reduced.matches) {
+    if (reducedMotion()) {
       update();
       return;
     }
@@ -214,8 +231,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     }
     // 关闭：世界、首页卡片和快捷栏立刻开始回来，面板同时缩回原卡片的位置，最后一小段淡掉。
     // 世界也要立刻知道：阅读时它降到约 20 帧省电，不马上恢复的话，主角跟着 CSS 平滑上来，世界却一顿一顿地跟
-    root.classList.remove('reading');
-    world.setReading(false);
+    setState('reading', false);
     const r1 = to?.getBoundingClientRect();
     if (r1 && r1.width) {
       c.style.transformOrigin = '0 0';
@@ -240,32 +256,39 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     const el = hash.length > 1 ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
     if (!sc || !el || !sc.contains(el)) return false;
     const top = sc.scrollTop + el.getBoundingClientRect().top - sc.getBoundingClientRect().top - 12;
-    sc.scrollTo({ top, behavior: smooth && !reduced.matches ? 'smooth' : 'instant' });
+    sc.scrollTo({ top, behavior: smooth && !reducedMotion() ? 'smooth' : 'instant' });
     return true;
   }
 
+  /** 面板里这页的功能：先卸掉上一页的，打开着就按内容挂上这一页的 */
+  function mountContent(on: boolean) {
+    unmount.forEach((off) => off());
+    unmount = [];
+    if (!on) return;
+    const my = token;
+    for (const e of ENHANCERS) {
+      if (!reader.querySelector(e.has)) continue;
+      const run = () => {
+        if (my !== token || !isOpen()) return;
+        void Promise.resolve(e.mount(reader)).then((off) => {
+          if (!off) return;
+          if (my === token && isOpen()) unmount.push(off);
+          else off(); // 挂好时已经换页或关闭了
+        });
+      };
+      if (e.idle) setTimeout(() => (window.requestIdleCallback ?? setTimeout)(run), 450);
+      else run();
+    }
+  }
+
   function setReading(on: boolean) {
-    unbindToc();
     reader.hidden = !on;
-    root.classList.toggle('reading', on);
+    setState('reading', on);
     if (stages) stages.inert = on;
-    world.setReading(on);
-    unbindToc = on ? bindToc(reader) : () => {};
-    if (on) paintStatus(reader);
-    unbindMap();
-    unbindMap = () => {};
-    // 服务器地图：只有地图页才加载查看器脚本
-    if (on && reader.querySelector('[data-mc-map]')) {
-      const my = token;
-      void import('./mcmap.js').then((m) => {
-        if (my === token && isOpen()) unbindMap = m.bindMap(reader);
-      });
-    }
-    // 评论（Giscus iframe）很重：等开合动画播完、浏览器空闲时再加载，不抢动画的帧
-    if (on) {
-      const my = token;
-      setTimeout(() => (window.requestIdleCallback ?? setTimeout)(() => my === token && isOpen() && mountComments(reader)), 450);
-    }
+    // 面板开着时登记成浮层：Esc 退回上一级（换页时重新登记，开在它上面的搜索、目录照样先关）
+    unlayer();
+    unlayer = on ? pushLayer(goBack) : () => {};
+    mountContent(on);
   }
 
   async function open(href: string, push: boolean, from?: HTMLElement) {
@@ -450,7 +473,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     const url = a && routable(a);
     if (url && url.pathname !== '/' && url.pathname.endsWith('/') && !isApp(url.pathname)) {
       load(url.href).catch(() => {});
-      if (url.pathname === '/server/map/') void import('./mcmap.js').then((m) => m.warmMap(true)).catch(() => {});
+      if (url.pathname === MAP_PATH) void loadMap().then((m) => m.warmMap(true)).catch(() => {});
     }
   };
   document.addEventListener('pointerover', prefetch, { passive: true });
@@ -475,7 +498,7 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
       const u = urls.shift();
       if (!u) {
         // 最后预热世界地图：查看器脚本、manifest 和出生点附近的粗图
-        if (document.querySelector('.stages a[href="/server/map/"]')) void import('./mcmap.js').then((m) => m.warmMap()).catch(() => {});
+        if (document.querySelector(`.stages a[href="${MAP_PATH}"]`)) void loadMap().then((m) => m.warmMap()).catch(() => {});
         return;
       }
       load(u)
@@ -497,13 +520,13 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
     idle(next);
   }
   // 停到服务器板块（「世界地图」按钮露出来）时，提前取开图视野里的清晰瓦片
-  const mapBtn = document.querySelector('.stages a[href="/server/map/"]');
+  const mapBtn = document.querySelector(`.stages a[href="${MAP_PATH}"]`);
   if (mapBtn && 'IntersectionObserver' in window) {
     const io = new IntersectionObserver((es) => {
       if (!es.some((e) => e.isIntersecting)) return;
       io.disconnect();
       const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-      if (!conn?.saveData) void import('./mcmap.js').then((m) => m.warmMap(true)).catch(() => {});
+      if (!conn?.saveData) void loadMap().then((m) => m.warmMap(true)).catch(() => {});
     }, { threshold: 0.6 });
     io.observe(mapBtn);
   }
@@ -520,18 +543,6 @@ export function startRouter({ world, sections, reader }: RouterOptions) {
   setTimeout(maybeCheck, 1500);
   document.addEventListener('visibilitychange', maybeCheck);
 
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isOpen()) {
-      // 二维码浮层开着时，Esc 交给浏览器关浮层，不退回上一级
-      try {
-        if (document.querySelector(':popover-open')) return;
-      } catch {
-        /* 不支持 popover 的浏览器 */
-      }
-      e.preventDefault();
-      goBack();
-    }
-  });
 
   // 直接打开的是带正文的页面（刷新时 history.state 还在，返回按钮照样写明上一级）
   if (isOpen()) {

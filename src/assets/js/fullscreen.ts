@@ -3,6 +3,7 @@
  * Fullscreen API 只能由用户手势触发；iPhone Safari 不支持网页元素全屏，那里按钮保持隐藏
  * （iPhone 走「添加到主屏幕」，manifest 里 display=fullscreen）。
  */
+import { hotkeyOff } from './ui.js';
 type FsDoc = Document & {
   webkitFullscreenEnabled?: boolean;
   webkitFullscreenElement?: Element | null;
@@ -103,11 +104,7 @@ if (btn && supported && !installed) {
   document.addEventListener('webkitfullscreenchange', sync);
 
   window.addEventListener('keydown', (e) => {
-    if (e.key !== 'f' && e.key !== 'F') return;
-    if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
-    const t = e.target as HTMLElement | null;
-    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    if (document.querySelector('[data-search]:not([hidden])')) return;
+    if ((e.key !== 'f' && e.key !== 'F') || hotkeyOff(e)) return;
     e.preventDefault();
     hideHint();
     toggle();

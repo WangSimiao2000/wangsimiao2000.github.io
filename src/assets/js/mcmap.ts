@@ -9,6 +9,7 @@
  *
  * canvas 自绘：放大时最近邻（像素保持锐利），缩小时平滑；没加载好的瓦片先用上一级的放大顶着。
  */
+import { reducedMotion } from './ui.js';
 
 interface Manifest {
   generated_at: string | null;
@@ -100,7 +101,6 @@ export function bindMap(root: ParentNode): () => void {
   const ctx = canvas.getContext('2d')!;
   const status = box.querySelector<HTMLElement>('[data-map-status]');
   const stamp = root.querySelector<HTMLElement>('[data-map-stamp]');
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const ac = new AbortController();
   const sig = { signal: ac.signal };
 
@@ -260,7 +260,7 @@ export function bindMap(root: ParentNode): () => void {
 
   function animateTo(nk: number, mx: number, my: number) {
     cancelAnimationFrame(anim);
-    if (reduced.matches) return zoomAt(nk, mx, my);
+    if (reducedMotion()) return zoomAt(nk, mx, my);
     const from = k;
     const to = clampK(nk);
     const t0 = performance.now();

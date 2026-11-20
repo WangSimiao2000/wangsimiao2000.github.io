@@ -6,6 +6,7 @@
  * 用它自己的 getBoundingClientRect 换算，平移就算进去了。
  */
 import type { GlassRect, View } from './drawlist.js';
+import { isOn } from '../ui.js';
 
 /** 半透明的表面（见 home.css 里 data-renderer='webgpu' 那段）：卡片、阅读面板、快捷栏、顶栏按钮 */
 const GLASS = '.panel > .card, .reader-card, .reader-side, .hotbar, .toplinks > a, .toplinks .theme-btn, .time-pop';
@@ -26,7 +27,6 @@ function opacityOf(el: Element): number {
 
 export class UiBridge {
   private focus = 0;
-  private readonly root = document.documentElement;
   private readonly canvas: HTMLCanvasElement;
   private readonly hero: HTMLCanvasElement;
 
@@ -38,7 +38,7 @@ export class UiBridge {
 
   /** dt：距上一帧的秒数；reduced：减少动态效果时直接到位 */
   view(dt: number, reduced: boolean): View {
-    const target = this.root.classList.contains('reading') ? 1 : 0;
+    const target = isOn('reading') ? 1 : 0;
     const step = reduced ? 1 : dt / FOCUS_TIME;
     this.focus = target > this.focus ? Math.min(target, this.focus + step) : Math.max(target, this.focus - step);
     const cv = this.canvas.getBoundingClientRect();

@@ -4,6 +4,7 @@
  * 手势判定是纯逻辑（WheelGesture、classifySwipe、TapTracker），可以脱离 DOM 单测；
  * bindInput 只负责把浏览器事件喂给它们，再回调 world.ts。
  */
+import { hotkeyOff, isOn } from '../ui.js';
 
 /**
  * 滚轮 / 触控板：一次手势只翻一页。触控板松手后的惯性会持续发几十个递减的 wheel 事件，
@@ -77,9 +78,7 @@ export function bindInput(h: InputHandlers) {
   const root = document.documentElement;
 
   window.addEventListener('keydown', (e) => {
-    if (e.altKey || e.ctrlKey || e.metaKey || h.reading()) return;
-    const t = e.target as HTMLElement;
-    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (hotkeyOff(e, true) || h.reading()) return;
     const n = Number(e.key);
     if (n >= 1 && n <= h.sections) {
       e.preventDefault();
@@ -97,7 +96,7 @@ export function bindInput(h: InputHandlers) {
   window.addEventListener(
     'wheel',
     (e) => {
-      if (h.reading() || root.classList.contains('searching') || e.ctrlKey) return; // ctrl+滚轮是缩放
+      if (h.reading() || isOn('searching') || e.ctrlKey) return; // ctrl+滚轮是缩放
       const t = e.target as Element | null;
       const horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY);
       if (horizontal && t?.closest('pre, .table-wrap, .math-block')) return; // 能横向滚动的内容优先

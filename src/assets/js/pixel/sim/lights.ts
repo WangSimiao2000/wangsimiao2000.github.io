@@ -29,16 +29,22 @@ export function emit(fr: Frame, sp: Sprite, x: number, y: number) {
   if (sp.glow) fr.dl.sprite('emissive', sp, x, y, { glow: true, alpha: n });
 }
 
-function drawFlame(fr: Frame, x: number, y: number, worldX: number, particles: Particles) {
+function drawFlame(fr: Frame, x: number, y: number) {
   const { dl } = fr;
   const flick = fr.reduced ? 0 : Math.floor(fr.time * 10) % 3;
   dl.rect('glow', x - 3, y - 5 + flick, 6, 5 - flick, '#ff7a2a');
   dl.rect('glow', x - 1, y - 8 + flick, 3, 3, '#ff7a2a');
   dl.rect('glow', x - 2, y - 4 + (flick === 1 ? 1 : 0), 4, 4, '#ffc14d');
   dl.rect('glow', x - 1, y - 2, 2, 2, '#fff2b0');
-  if (!fr.reduced && Math.random() < 0.15) {
+}
+
+/** 营火往上冒火星和烟（world.ts 的 update 里按上一帧的光源位置调用） */
+export function emitSparks(fr: Frame, glows: Glow[], particles: Particles) {
+  if (fr.reduced) return;
+  for (const gl of glows) {
+    if (gl.kind !== 'fire' || Math.random() >= 0.15) continue;
     const spark = Math.random() < 0.35;
-    particles.spawn({ x: worldX + (Math.random() - 0.5) * 4, y: y - 7, vx: (Math.random() - 0.5) * 0.1, vy: -0.25 - Math.random() * 0.2, life: 0, max: 60 + Math.random() * 40, color: spark ? '#ffb84d' : '#9aa0aa', size: 1, kind: spark ? 'spark' : 'smoke' });
+    particles.spawn({ x: gl.wx + (Math.random() - 0.5) * 4, y: gl.y - 7, vx: (Math.random() - 0.5) * 0.1, vy: -0.25 - Math.random() * 0.2, life: 0, max: 60 + Math.random() * 40, color: spark ? '#ffb84d' : '#9aa0aa', size: 1, kind: spark ? 'spark' : 'smoke' });
   }
 }
 
@@ -56,10 +62,10 @@ const LIGHT: Record<GlowKind, { radius: number; intensity: number; color: string
 const FIRE_DAY = 0.5;
 
 /** 营火的火焰（画在夜色之上、角色之下，角色经过会挡光）和每处光源的点光源 */
-export function drawGlows(fr: Frame, glows: Glow[], particles: Particles) {
+export function drawGlows(fr: Frame, glows: Glow[]) {
   for (const gl of glows) {
     const flicker = gl.kind === 'fire' ? 0.85 + 0.15 * Math.sin(fr.time * 9 + gl.wx) * Math.sin(fr.time * 5.3) : gl.kind === 'lamp' ? 0.92 + 0.08 * Math.sin(fr.time * 3 + gl.wx) : 1;
-    if (gl.kind === 'fire') drawFlame(fr, gl.x, gl.y, gl.wx, particles);
+    if (gl.kind === 'fire') drawFlame(fr, gl.x, gl.y);
     const l = LIGHT[gl.kind];
     const ly = gl.kind === 'fire' ? gl.y - 3 : gl.y;
     const floor = fr.H - Math.round(heightAt(gl.wx));

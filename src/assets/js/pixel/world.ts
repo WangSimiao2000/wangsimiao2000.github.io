@@ -19,14 +19,17 @@
  *   render/      渲染器：只读绘制清单
  *   input.ts     滚轮、触屏、键盘、点击
  *
- * 每帧写清单的顺序：天空 -> 远景 -> 布景、地面 -> 角色 -> 主角 -> 光晕 -> 气泡、粒子（随机数的取用顺序也按这个）。
+ * 每帧分两步：update(dt) 推进所有会动的东西（相机、主角、粒子、彩蛋、烟花、风车），render() 只按当前状态往清单里写，
+ * 不拿 dt、不改状态（画面里光源、烟囱在哪是 render 量出来的布局，下一帧的 update 按它生成火星和炊烟）。
+ * 写清单的顺序：天空 -> 远景 -> 布景、地面 -> 角色 -> 主角 -> 光晕 -> 气泡、粒子。
+ * 同一层里后写的盖住先写的；不同层之间的前后只看 drawlist.ts 的 LAYERS，和写的先后无关
  */
 import { BIOMES, GROUND, OFF, SECTION, SLOT, biomeNum, heightAt, paletteAt, setPieces, slotItem, weights, type Item } from './sim/biomes.js';
 import { buildScenery, COTTAGE, GLOW_AT } from './sim/scenery.js';
 import { drawGround, drawLayer } from './sim/terrain.js';
 import { drawSky, makeStars } from './sim/sky.js';
 import { Particles } from './sim/particles.js';
-import { drawGlows, emit, type Glow } from './sim/lights.js';
+import { drawGlows, emit, emitSparks, type Glow } from './sim/lights.js';
 import { Eggs, inside } from './sim/eggs.js';
 import { CHAR_H, Hero } from './sim/hero.js';
 import { Fireworks, isBirthday } from './sim/festive.js';
@@ -34,7 +37,7 @@ import { Lanterns } from './sim/lanterns.js';
 import { MAX_PINWHEELS, Pinwheels } from './sim/pinwheels.js';
 import { clamp, easeInOut, mix } from './sim/util.js';
 import type { Frame } from './sim/frame.js';
-import { DrawList, type Renderer } from './drawlist.js';
+import { DrawList, type Renderer, type View } from './drawlist.js';
 import { startRenderer } from './render/index.js';
 import { drawFront } from './sim/front.js';
 import { drawBackRow } from './sim/backrow.js';
@@ -43,6 +46,7 @@ import { daytime, handover } from './sim/daytime.js';
 import { blobShadow, castShadow } from './sim/shadow.js';
 import { UiBridge } from './ui-bridge.js';
 import { bindInput } from './input.js';
+import { isOn, onState, reducedMotion, setState } from '../ui.js';
 
 const STRIP_GROUND = 10; // 阅读时世界下沉，只露出这么高的地面
 const SECRET_DUR = 0.55; // 进出隐藏页的时长，和浏览器平滑滚动一致
@@ -76,7 +80,6 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   const renderer: Renderer = startRenderer({ world: canvas, hero: heroCanvas, front: frontCanvas });
   const ui = new UiBridge(canvas, heroCanvas);
   const dl = new DrawList();
-  const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
   const N = sections.length;
   const sc = buildScenery();
@@ -94,7 +97,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   const fr: Frame = {
     dl, W: 0, H: 0, S: 4, HALF: 0, camX: 0, camLeft: 0, frac: 0, p: 0,
-    time: 0, reduced: reducedMq.matches, running: false, visH: 0, day: daytime(12),
+    time: 0, reduced: reducedMotion(), running: false, visH: 0, day: daytime(12),
   };
   // 时刻由 theme.ts 维护在 <html data-hour> 上（跟着系统时钟，或者右上角拖动条拖到的时刻）
   const clockHour = () => {
@@ -183,7 +186,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   let runTimer = 0;
   let activeIdx = -1;
   let lastTint = '';
-  let reading = root.classList.contains('reading');
+  let reading = isOn('reading');
   let readStart = 0; // 进入阅读后先全速跑一会（小人坐下、世界下沉），再降帧
   let lastDraw = 0;
   let secret = false; // 正在隐藏页里
@@ -196,12 +199,12 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   function enterSecret() {
     secret = true;
-    root.classList.add('secret-open');
+    setState('secret-open', true);
   }
   function exitSecret() {
     secret = false;
     eggs.signOpen = false; // 走出来就翻回去，想再进得重新双击
-    root.classList.remove('secret-open');
+    setState('secret-open', false);
   }
 
   /* ---------- 面板与快捷栏 ---------- */
@@ -243,7 +246,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   function goTo(i: number) {
     if (secret) exitSecret();
     const target = sections[clamp(i, 0, N - 1)];
-    target.scrollIntoView({ behavior: reducedMq.matches ? 'auto' : 'smooth' });
+    target.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' });
   }
 
   slots.forEach((s, i) =>
@@ -343,7 +346,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
         if (reading) return;
         const v = progress();
         const k = Math.round(v);
-        if (v !== k) sections[k].scrollIntoView({ behavior: reducedMq.matches ? 'auto' : 'smooth' });
+        if (v !== k) sections[k].scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' });
       }, 160);
     },
     { passive: true },
@@ -351,11 +354,14 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
 
   /* ---------- 布景 ---------- */
 
+  // 这一帧画面里的光源和烟囱（drawItems 量出来的布局）：下一帧的 update 按它们生成火星和炊烟
   const glows: Glow[] = [];
+  const chimneys: { wx: number; y: number }[] = [];
 
   function drawItems() {
     const { W, H, camLeft } = fr;
     glows.length = 0;
+    chimneys.length = 0;
     const items: Item[] = [];
     for (let s = Math.floor((camLeft - 60) / SLOT), s1 = Math.ceil((camLeft + W + 60) / SLOT); s <= s1; s++) {
       const it = slotItem(s, sc);
@@ -385,11 +391,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       if (it.glow === 'window') {
         glows.push({ x: x + COTTAGE.window[0], y: y + COTTAGE.window[1], kind: 'window', wx: it.wx });
         glows.push({ x: x + COTTAGE.lantern[0], y: y + COTTAGE.lantern[1], kind: 'lamp', wx: it.wx + 7 });
-        // 炊烟
-        if (!fr.reduced && Math.random() < 0.06) {
-          const cx = it.wx - sp.width / 2 + COTTAGE.chimney[0];
-          particles.spawn({ x: cx + (Math.random() - 0.5) * 2, y: y + COTTAGE.chimney[1], vx: 0.05 + Math.random() * 0.06, vy: -0.12 - Math.random() * 0.08, life: 0, max: 140 + Math.random() * 60, color: fr.day.night > 0.5 ? '#7d8494' : '#c9ced8', size: Math.random() < 0.4 ? 2 : 1, kind: 'smoke' });
-        }
+        chimneys.push({ wx: it.wx - sp.width / 2 + COTTAGE.chimney[0], y: y + COTTAGE.chimney[1] }); // 炊烟从这里冒（update 里生成）
       }
     }
     fireX = glows.find((gl) => gl.kind === 'fire')?.wx ?? null;
@@ -400,7 +402,7 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
   /** 推进相机、小人和时间 */
   function update(dt: number) {
     fr.time += dt;
-    fr.reduced = reducedMq.matches;
+    fr.reduced = reducedMotion();
     fr.p = progress();
     secretMix = fr.reduced ? (secret ? 1 : 0) : clamp(secretMix + (secret ? dt : -dt) / SECRET_DUR);
     const target = camTarget();
@@ -452,10 +454,25 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
       skyY: [fr.H - Math.min(fr.H, fr.visH || fr.H), fr.H - GROUND - 6],
       shadow: { ...fr.day.shadow, alpha: fr.day.shadow.alpha * handover(fr.day) },
     };
+
+    // 会动的东西都在这里推进，render 只按当前状态画（不拿 dt）
+    emitSparks(fr, glows, particles);
+    if (!fr.reduced) {
+      for (const c of chimneys) {
+        if (Math.random() >= 0.06) continue;
+        particles.spawn({ x: c.wx + (Math.random() - 0.5) * 2, y: c.y, vx: 0.05 + Math.random() * 0.06, vy: -0.12 - Math.random() * 0.08, life: 0, max: 140 + Math.random() * 60, color: fr.day.night > 0.5 ? '#7d8494' : '#c9ced8', size: Math.random() < 0.4 ? 2 : 1, kind: 'smoke' });
+      }
+    }
+    particles.update(fr, dt);
+    eggs.update(fr, dt);
+    fireworks?.update(fr, dt, fireX);
   }
 
-  /** 写这一帧的绘制清单，交给渲染器（各层怎么合成见 drawlist.ts 的 COMPOSE） */
-  function render(dt: number) {
+  /**
+   * 写这一帧的绘制清单，交给渲染器（各层怎么合成见 drawlist.ts 的 COMPOSE）。
+   * view 是卡片、阅读面板这些表面这一帧的位置（毛玻璃、对焦）
+   */
+  function render(view: View) {
     dl.clear(); // 环境（dl.env）在 update 里按相机位置算好，不随清单清掉
     fr.visH = Math.ceil(window.innerHeight / fr.S);
     drawSky(fr, stars);
@@ -467,19 +484,17 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     drawItems();
     // 孔明灯、烟花在布景之后画：它们在布景前面，自发光层里的光不能被布景擦掉（见 lights.ts 的 emit）
     lanterns.draw(fr);
-    fireworks?.draw(fr, dt, fireX);
+    fireworks?.draw(fr);
     drawGround(fr);
-    eggs.drawActors(fr, dt);
+    eggs.drawActors(fr);
     hero.draw(fr, fr.running, reading && !fr.running && Math.abs(camTarget() - fr.camX) < 1.5);
     blobShadow(fr, fr.HALF + fr.frac, Math.round(hero.y), 8);
-    drawGlows(fr, glows, particles);
-    eggs.drawBubbles(fr, dt);
-    particles.weather(fr, dt);
-    particles.draw(fr, dt);
+    drawGlows(fr, glows);
+    eggs.drawBubbles(fr);
+    particles.draw(fr);
     drawFront(fr, sc);
     drawBokeh(fr);
-    // 毛玻璃要量卡片这一帧的位置，所以面板先摆好（frame 里 updatePanels 在 render 之前）
-    renderer.draw(dl, fr.day.night, ui.view(dt, fr.reduced));
+    renderer.draw(dl, fr.day.night, view);
   }
 
   /**
@@ -505,21 +520,23 @@ export function startWorld({ canvas, sections, panels, slots, secretPanel }: Wor
     last = now;
     guard(() => update(dt));
     guard(updatePanels);
-    guard(() => render(dt));
+    // 毛玻璃要量卡片这一帧的位置，所以面板先摆好再量
+    guard(() => render(ui.view(dt, fr.reduced)));
   }
   requestAnimationFrame(frame);
   updatePanels();
   // 卡片摆好位置了，可以淡入（home.css 在这之前把它们藏着，免得叠在一起）
   root.classList.add('world-on');
 
+  // 进入 / 离开阅读状态（router.ts 改状态）：小人到地方后坐下看书，世界降帧；离开时马上恢复满帧
+  onState('reading', (on) => {
+    reading = on;
+    readStart = fr.time;
+    hero.resetReading(fr.time);
+  });
+
   return {
     goTo,
-    /** 进入 / 离开阅读状态：小人到地方后坐下看书，世界降帧 */
-    setReading(on: boolean) {
-      reading = on;
-      readStart = fr.time;
-      hero.resetReading(fr.time);
-    },
     /** 留言板等隐藏页里的面板页：相机停在秋林 */
     enterSecret() {
       if (!secret) enterSecret();

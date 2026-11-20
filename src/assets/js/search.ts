@@ -4,6 +4,7 @@
  * 多个关键词用空格分开，要求全部命中；标题命中排在前面。
  * 顶栏放大镜、/ 或 Ctrl+K 打开；↑↓ 选择、Enter 打开、Esc 关闭。结果交给路由，在阅读面板里展开。
  */
+import { isTyping, pushLayer, reducedMotion, setState } from './ui.js';
 interface Doc {
   u: string; // 地址
   t: string; // 标题
@@ -18,7 +19,6 @@ interface Hit {
   at: number; // 正文里第一个命中位置，-1 表示只命中了标题 / 标签
 }
 
-const root = document.documentElement;
 const box = document.querySelector<HTMLElement>('[data-search]');
 const input = box?.querySelector<HTMLInputElement>('[data-search-input]');
 const list = box?.querySelector<HTMLElement>('[data-search-results]');
@@ -30,7 +30,6 @@ let timer = 0;
 let active = -1;
 let terms: string[] = [];
 let hideTimer = 0;
-const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function load() {
   docs ??= fetch('/search.json')
@@ -128,6 +127,8 @@ function select(i: number) {
 }
 
 
+let unlayer = () => {};
+
 function open() {
   if (!box || !input || !box.hidden) return;
   opener = document.activeElement as HTMLElement | null;
@@ -135,7 +136,8 @@ function open() {
   box.hidden = false;
   void box.offsetWidth; // 先让 hidden 生效再加类，过渡才会播放
   box.classList.add('is-open');
-  root.classList.add('searching');
+  setState('searching', true);
+  unlayer = pushLayer(close);
   input.focus();
   input.select();
   void load().catch(() => {}); // 打开时就开始加载索引入口
@@ -144,8 +146,9 @@ function open() {
 function close() {
   if (!box || box.hidden || !box.classList.contains('is-open')) return;
   box.classList.remove('is-open');
-  root.classList.remove('searching');
-  hideTimer = window.setTimeout(() => (box.hidden = true), reducedMotion.matches ? 0 : 200);
+  setState('searching', false);
+  unlayer();
+  hideTimer = window.setTimeout(() => (box.hidden = true), reducedMotion() ? 0 : 200);
   opener?.focus({ preventScroll: true });
 }
 
@@ -165,14 +168,10 @@ if (box && input && list) {
   window.addEventListener(
     'keydown',
     (e) => {
-      const t = e.target as HTMLElement | null;
-      const typing = !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+      const typing = isTyping(e);
+      // Esc 由 ui.ts 的浮层统一处理：搜索开在最上面，先关它，不会顺带关掉下面的阅读面板
       if (!box.hidden) {
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          e.stopImmediatePropagation(); // 不顺带关掉下面的阅读面板
-          close();
-        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           e.preventDefault();
           e.stopImmediatePropagation();
           select(active + (e.key === 'ArrowDown' ? 1 : -1));

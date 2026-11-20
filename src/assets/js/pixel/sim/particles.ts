@@ -29,29 +29,10 @@ export class Particles {
     if (this.list.length < MAX) this.list.push(pt);
   }
 
-  /** 按离各群系的远近（滚动进度）撒天气粒子 */
-  weather(fr: Frame, dt: number) {
-    if (fr.reduced) return;
-    const k = dt * 60;
+  /** 推进：按离各群系的远近（滚动进度）撒天气粒子，所有粒子按速度走一步；落地、出屏、寿命到了的移除 */
+  update(fr: Frame, dt: number) {
+    this.weather(fr, dt);
     const { W, H, camLeft } = fr;
-    BIOMES.forEach((b, bi) => {
-      const near = clamp(1 - Math.abs(fr.p - (bi - OFF)) * 1.3);
-      if (near <= 0) return;
-      const wt = b.weather;
-      if (wt && Math.random() < near * wt.rate * k) {
-        if (wt.kind === 'snow') this.spawn({ x: camLeft + Math.random() * W, y: H * 0.35, vx: 0, vy: 0.16 + Math.random() * 0.18, life: 0, max: 900, color: fr.day.night > 0.5 ? '#dfe7f5' : '#ffffff', size: Math.random() < 0.2 ? 2 : 1, kind: 'snow' });
-        if (wt.kind === 'petal') this.spawn({ x: camLeft + Math.random() * W * 1.2, y: H * 0.4, vx: -0.15 - Math.random() * 0.15, vy: 0.2 + Math.random() * 0.12, life: 0, max: 900, color: Math.random() < 0.5 ? '#ffd6e6' : '#ef9fc2', size: Math.random() < 0.3 ? 2 : 1, kind: 'petal' });
-        if (wt.kind === 'leaf') this.spawn({ x: camLeft + Math.random() * W * 1.2, y: H - GROUND - 40 - Math.random() * 20, vx: -0.1 - Math.random() * 0.1, vy: 0.12 + Math.random() * 0.08, life: 0, max: 600, color: Math.random() < 0.5 ? '#8fc66b' : '#c9b25a', size: 1, kind: 'leaf' });
-      }
-      if (b.fireflies && Math.random() < near * b.fireflies * k * fr.day.night) {
-        this.spawn({ x: camLeft + Math.random() * W, y: H - GROUND - 6 - Math.random() * 36, vx: 0, vy: 0, life: 0, max: 240 + Math.random() * 200, color: '#fff27a', size: 1, kind: 'firefly' });
-      }
-    });
-  }
-
-  /** 推进并绘制所有粒子；落地、出屏、寿命到了的移除 */
-  draw(fr: Frame, dt: number) {
-    const { dl, W, H, camLeft } = fr;
     const k = dt * 60;
     const list = this.list;
     for (let i = list.length - 1; i >= 0; i--) {
@@ -72,11 +53,34 @@ export class Particles {
       pt.x += pt.vx * k;
       pt.y += pt.vy * k;
       const sx = Math.round(pt.x - camLeft);
-      const groundY = H - heightAt(pt.x);
-      if (pt.life > pt.max || pt.y > groundY + 1 || sx < -20 || sx > W + 20) {
-        list.splice(i, 1);
-        continue;
+      if (pt.life > pt.max || pt.y > H - heightAt(pt.x) + 1 || sx < -20 || sx > W + 20) list.splice(i, 1);
+    }
+  }
+
+  private weather(fr: Frame, dt: number) {
+    if (fr.reduced) return;
+    const k = dt * 60;
+    const { W, H, camLeft } = fr;
+    BIOMES.forEach((b, bi) => {
+      const near = clamp(1 - Math.abs(fr.p - (bi - OFF)) * 1.3);
+      if (near <= 0) return;
+      const wt = b.weather;
+      if (wt && Math.random() < near * wt.rate * k) {
+        if (wt.kind === 'snow') this.spawn({ x: camLeft + Math.random() * W, y: H * 0.35, vx: 0, vy: 0.16 + Math.random() * 0.18, life: 0, max: 900, color: fr.day.night > 0.5 ? '#dfe7f5' : '#ffffff', size: Math.random() < 0.2 ? 2 : 1, kind: 'snow' });
+        if (wt.kind === 'petal') this.spawn({ x: camLeft + Math.random() * W * 1.2, y: H * 0.4, vx: -0.15 - Math.random() * 0.15, vy: 0.2 + Math.random() * 0.12, life: 0, max: 900, color: Math.random() < 0.5 ? '#ffd6e6' : '#ef9fc2', size: Math.random() < 0.3 ? 2 : 1, kind: 'petal' });
+        if (wt.kind === 'leaf') this.spawn({ x: camLeft + Math.random() * W * 1.2, y: H - GROUND - 40 - Math.random() * 20, vx: -0.1 - Math.random() * 0.1, vy: 0.12 + Math.random() * 0.08, life: 0, max: 600, color: Math.random() < 0.5 ? '#8fc66b' : '#c9b25a', size: 1, kind: 'leaf' });
       }
+      if (b.fireflies && Math.random() < near * b.fireflies * k * fr.day.night) {
+        this.spawn({ x: camLeft + Math.random() * W, y: H - GROUND - 6 - Math.random() * 36, vx: 0, vy: 0, life: 0, max: 240 + Math.random() * 200, color: '#fff27a', size: 1, kind: 'firefly' });
+      }
+    });
+  }
+
+  /** 画所有粒子 */
+  draw(fr: Frame) {
+    const { dl, H, camLeft } = fr;
+    for (const pt of this.list) {
+      const sx = Math.round(pt.x - camLeft);
       let a = Math.min(1, pt.life / 30); // 从半空淡入
       if (pt.kind === 'dust' || pt.kind === 'smoke' || pt.kind === 'spark') a = 1 - pt.life / pt.max;
       if (pt.kind === 'firefly') a = (0.5 + 0.5 * Math.sin(pt.life * 0.08)) * Math.min(1, (pt.max - pt.life) / 40);

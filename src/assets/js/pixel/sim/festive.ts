@@ -59,12 +59,11 @@ export class Fireworks {
   private flashes: { x: number; y: number; t: number; color: string }[] = [];
 
   /**
-   * 推进并画到 aloft 层（和人物同一个平面，不被远山挡住、不吃夜色，在卡片上方也看得见）。
-   * fireX = 画面里营火的世界坐标；营火不在画面里就在画面内随机找个地方放
+   * 推进：发射、上升、炸开、下落、消失。fireX = 画面里营火的世界坐标；营火不在画面里就在画面内随机找个地方放
    */
-  draw(fr: Frame, dt: number, fireX: number | null) {
+  update(fr: Frame, dt: number, fireX: number | null) {
     if (fr.reduced) return;
-    const { dl, W, H, camLeft, time } = fr;
+    const { W, H, camLeft, time } = fr;
     const k = dt * 60;
     if (time > this.next) {
       this.next = time + 1.1 + Math.random() * 1.8;
@@ -83,7 +82,6 @@ export class Fireworks {
         if (s.y <= (s.burstAt ?? 0) || s.vy > -0.4) {
           list.splice(i, 1);
           this.burst(s.x, s.y);
-          continue;
         }
       } else {
         s.vy += 0.012 * k;
@@ -91,11 +89,21 @@ export class Fireworks {
         s.vy *= 0.985 ** k;
         s.x += s.vx * k;
         s.y += s.vy * k;
-        if (s.life > s.max) {
-          list.splice(i, 1);
-          continue;
-        }
+        if (s.life > s.max) list.splice(i, 1);
       }
+    }
+    for (let i = this.flashes.length - 1; i >= 0; i--) {
+      const fl = this.flashes[i];
+      fl.t += dt;
+      if (fl.t > 0.35) this.flashes.splice(i, 1);
+    }
+  }
+
+  /** 画到 aloft 层（和人物同一个平面，不被远山挡住、不吃夜色，在卡片上方也看得见） */
+  draw(fr: Frame) {
+    if (fr.reduced) return;
+    const { dl, W, camLeft } = fr;
+    for (const s of this.list) {
       const sx = Math.round(s.x - camLeft);
       const sy = Math.round(s.y);
       if (sx < -10 || sx > W + 10) continue;
@@ -109,16 +117,8 @@ export class Fireworks {
         dl.rect('aloft', sx, sy + 5, 2, 3, s.color, 0.25);
       }
     }
-    for (let i = this.flashes.length - 1; i >= 0; i--) {
-      const fl = this.flashes[i];
-      fl.t += dt;
-      if (fl.t > 0.35) {
-        this.flashes.splice(i, 1);
-        continue;
-      }
-      // 炸开的一瞬间是一个点光源：照亮附近的树和地面，很快暗下去
-      dl.light(fl.x - camLeft, fl.y, 40, 1.2 * (1 - fl.t / 0.35), fl.color);
-    }
+    // 炸开的一瞬间是一个点光源：照亮附近的树和地面，很快暗下去
+    for (const fl of this.flashes) dl.light(fl.x - camLeft, fl.y, 40, 1.2 * (1 - fl.t / 0.35), fl.color);
   }
 
   private burst(x: number, y: number) {
