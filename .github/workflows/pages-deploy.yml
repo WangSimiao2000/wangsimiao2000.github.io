@@ -88,6 +88,18 @@ jobs:
       - name: Verify
         run: node build/verify.mjs
 
+      - name: Install browser for e2e
+        # playwright-core 不进项目依赖（访客和构建用不到），只在这里装；浏览器用 headless shell（tests/e2e/browser.mjs）
+        run: |
+          npm i --no-save --prefix "$RUNNER_TEMP/pw" playwright-core@1.58.2
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright-core" install --with-deps chromium-headless-shell
+
+      - name: Browser tests
+        # 对刚构建好的 dist 跑（tests/e2e/run.mjs）；要软件渲染 WebGPU 画面的测试不在这里跑
+        env:
+          PLAYWRIGHT_CORE: ${{ runner.temp }}/pw
+        run: npm run test:e2e -- --no-build
+
       - name: Keep previous assets
         # 部署后 10 分钟内拿着旧 HTML 的访客，仍能加载到配套的旧样式和脚本；失败不阻塞部署
         continue-on-error: true

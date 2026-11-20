@@ -7,35 +7,18 @@
  * 首帧的值由 <head> 里的内联脚本按同样的规则先算好（templates/layout.mjs 的 THEME_INIT），不会闪。
  */
 import { pushLayer, reducedMotion } from './ui.js';
+import { store as ls } from './common.js';
+import { clockHour as clock, themeOf, TOD_KEY as KEY, validHour } from './daycycle.js';
 const d = document.documentElement;
-const KEY = 'tod';
 
 const parse = (v: string | null) => {
   const h = v === null ? NaN : parseFloat(v);
-  return h >= 0 && h <= 24 ? h : null;
+  return validHour(h) ? h : null;
 };
-const urlHour = parse(new URLSearchParams(location.search).get('tod'));
-function stored(): number | null {
-  try {
-    return parse(localStorage.getItem(KEY));
-  } catch {
-    return null; // 隐私模式下不可读写，就跟着时钟
-  }
-}
-function store(h: number | null) {
-  try {
-    if (h === null) localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, String(h));
-  } catch {
-    /* 隐私模式下不可写，忽略 */
-  }
-}
-const clock = () => {
-  const n = new Date();
-  return n.getHours() + n.getMinutes() / 60;
-};
+const urlHour = parse(new URLSearchParams(location.search).get(KEY));
+const stored = () => parse(ls.get(KEY)); // 隐私模式下读不到，就跟着时钟
+const store = (h: number | null) => ls.set(KEY, h === null ? null : String(h));
 const current = () => urlHour ?? stored() ?? clock();
-const themeOf = (h: number) => (h >= 6 && h < 18 ? 'light' : 'dark');
 const label = (h: number) => {
   const m = Math.round(h * 60) % (24 * 60);
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
@@ -161,11 +144,7 @@ setInterval(() => {
   if (urlHour === null && stored() === null) moveTo(clock());
 }, 60_000);
 // 旧版本记过的深浅色偏好（现在由时刻决定），清掉
-try {
-  localStorage.removeItem('theme');
-} catch {
-  /* 忽略 */
-}
+ls.set('theme', null);
 
 /* 滚动条默认隐藏：哪个容器在滚，就给它加 .is-scrolling，停下 900ms 后去掉（样式见 base.css） */
 const scrollTimers = new WeakMap<Element, number>();

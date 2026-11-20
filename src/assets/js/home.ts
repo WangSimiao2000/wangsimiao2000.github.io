@@ -8,6 +8,7 @@ import { paintStatus } from './status.js';
 import { startPlayTabs } from './play-tabs.js';
 import { removeLegacyServiceWorker } from './legacy-sw.js';
 import { isBirthday } from './pixel/sim/festive.js';
+import { SECRET } from './sections.js';
 import { fitCards } from './fit.js';
 
 void removeLegacyServiceWorker();
@@ -52,7 +53,7 @@ const world = startWorld({
   slots: [...document.querySelectorAll<HTMLElement>('.hb-slot')],
   secretPanel: document.querySelector<HTMLElement>('[data-secret-panel]'),
 });
-if (initial === 'secret') world.enterSecret();
+if (initial === SECRET.id) world.enterSecret();
 startRouter({ world, sections, reader });
 
 // MC 状态（首页游戏板块的 MC 服务器页、地图页侧栏）

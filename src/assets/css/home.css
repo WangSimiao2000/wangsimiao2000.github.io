@@ -29,7 +29,7 @@ html[data-renderer='none'].reading .no-webgpu { display: none; }
 #hero { pointer-events: none; }
 .js #world, .js #hero { will-change: transform, translate; }
 html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-behavior-x: none; }
-@media (prefers-reduced-motion: reduce) { html.js { scroll-behavior: auto; } body, #world, #hero { transition: none; } }
+@media (prefers-reduced-motion: reduce) { html.js { scroll-behavior: auto; } body, #world { transition: none; } }
 
 /* ---- 每屏 ---- */
 /*
@@ -366,9 +366,7 @@ html:not(.js) .play-tabs { display: none; }
 /* 阅读时：页面不再滚动，世界下沉成一条 */
 html.js.reading { overflow: hidden; }
 .reading body::before { opacity: 0.5; }
-/* 阅读时主角往下沉，只露出一条地面；世界由渲染器跟着主角画布一起沉、天空不动（ui-bridge.ts 量主角画布的位置） */
-.js #hero { transition: transform 0.55s cubic-bezier(0.3, 0.7, 0.2, 1); }
-.reading #hero { transform: translateY(var(--sink)); }
+/* 阅读时世界下沉成一条：由 world.ts 逐帧平移主角画布，渲染器跟着把世界沉同样多、天空不动 */
 .stages { transition: opacity 0.25s; }
 
 /*
@@ -380,7 +378,7 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 @keyframes stages-fallback { to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .js #world, .js #hero, .stages { transition: none; }
+  .js #world, .stages { transition: none; }
 }
 
 @media (max-width: 640px) {

@@ -4,6 +4,7 @@
  * （iPhone 走「添加到主屏幕」，manifest 里 display=fullscreen）。
  */
 import { hotkeyOff } from './ui.js';
+import { hintNear, store } from './common.js';
 type FsDoc = Document & {
   webkitFullscreenEnabled?: boolean;
   webkitFullscreenElement?: Element | null;
@@ -41,16 +42,17 @@ function sync(): void {
 
 /* ---------- 首次访问：几秒后在按钮旁冒一个小气泡，自动淡出，只出现一次 ---------- */
 const HINT_KEY = 'fs-hint';
-let hint: HTMLElement | null = null;
+let hideShown: (() => void) | null = null; // 提示正显示着：提前收起它
 let hintTimer = 0;
 
-function seen(): boolean {
+/** 看过提示了；localStorage 读不到时（隐私模式）也当看过：不能记住就干脆不打扰 */
+const seen = () => {
   try {
     return localStorage.getItem(HINT_KEY) === '1';
   } catch {
-    return true; // 不能记住就干脆不打扰
+    return true;
   }
-}
+};
 
 function scheduleHint(): void {
   if (seen()) return;
@@ -59,38 +61,15 @@ function scheduleHint(): void {
 
 function showHint(): void {
   if (!btn || isFull() || btn.offsetParent === null) return;
-  try {
-    localStorage.setItem(HINT_KEY, '1');
-  } catch {
-    /* 隐私模式 */
-  }
-  hint = document.createElement('div');
-  hint.className = 'fs-hint';
-  hint.setAttribute('role', 'status');
-  hint.textContent = '试试全屏浏览，更沉浸';
-  document.body.append(hint);
-  const r = btn.getBoundingClientRect();
-  hint.style.top = `${r.bottom + 12}px`;
-  hint.style.right = `${Math.max(8, window.innerWidth - r.right - 6)}px`;
-  requestAnimationFrame(() => hint?.classList.add('show'));
-  hintTimer = window.setTimeout(hideHint, 4500);
+  store.set(HINT_KEY, '1');
+  hideShown = hintNear(btn, '试试全屏浏览，更沉浸', 4500);
 }
 
 function hideHint(): void {
   clearTimeout(hintTimer);
-  const h = hint;
-  hint = null;
-  if (!h) {
-    // 用户在气泡出现前就用过全屏：以后也不用提示了
-    try {
-      localStorage.setItem(HINT_KEY, '1');
-    } catch {
-      /* 隐私模式 */
-    }
-    return;
-  }
-  h.classList.remove('show');
-  setTimeout(() => h.remove(), 400);
+  if (hideShown) hideShown();
+  else store.set(HINT_KEY, '1'); // 用户在气泡出现前就用过全屏：以后也不用提示了
+  hideShown = null;
 }
 
 if (btn && supported && !installed) {

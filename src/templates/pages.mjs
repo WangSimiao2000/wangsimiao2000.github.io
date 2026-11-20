@@ -14,6 +14,7 @@ import { contactIcons, contactPopovers } from './contact.mjs';
 import { comments, gameTile, shell, toolLink } from './home.mjs';
 import { hasArt, playtime } from '../../build/steam-data.mjs';
 import { compact } from '../../build/creator-data.mjs';
+import { SECRET } from '../assets/js/sections.ts';
 import { categoryUrl, formatDate, slugify, tagUrl } from './util.mjs';
 
 /* ---------- 共用小件 ---------- */
@@ -383,7 +384,7 @@ export function guestbookPage(home) {
       ${pageHead('留言板', '藏在路牌背后的小地方。用 GitHub 账号登录就能留言，打个招呼、提个建议、随便聊聊都行。')}
     </article>
     ${comments()}`;
-  return shell(home, { title: '留言板', path: '/guestbook/', reader: { section: 'secret', body } });
+  return shell(home, { title: '留言板', path: '/guestbook/', reader: { section: SECRET.id, body } });
 }
 
 /* ---------- 游戏：Steam 游戏库 ---------- */

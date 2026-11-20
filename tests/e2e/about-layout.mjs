@@ -1,11 +1,13 @@
 // 关于页瀑布流：两列宽屏时卡片按内容高度排、同列卡片间距一致、没有卡片被拆到两列；
-// 所有卡片（含旅行、B 站、GitHub）都在瀑布流里，两列底部差不多齐；窄屏变单列。
+// 所有卡片（含旅行，以及有数据时的 B 站、GitHub）都在瀑布流里，两列底部尽量齐；窄屏变单列。
+// 「尽量齐」不按固定像素判断（卡片多少、高矮跟着构建时拉到的数据变）：较高那列的最后一张卡片
+// 挪到较矮那列只会更不齐，才算排得对。
 // 跑法：先 npm run build，起一个指向 dist 的静态服务器（默认 127.0.0.1:4399），再 node tests/e2e/about-layout.mjs
-import { launch, BASE } from './browser.mjs';
+import { launch, BASE, checker } from './browser.mjs';
 
 const browser = await launch();
-let failed = 0;
-const check = (ok, msg) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${msg}`); if (!ok) failed++; };
+const t = checker();
+const check = (ok, msg) => t.ok(ok, msg);
 
 for (const [w, h, cols] of [[1440, 900, 2], [1280, 720, 2], [390, 844, 1]]) {
   const page = await browser.newPage({ viewport: { width: w, height: h } });
@@ -36,9 +38,13 @@ for (const [w, h, cols] of [[1440, 900, 2], [1280, 720, 2], [390, 844, 1]]) {
   check(r.wide === 0, `${w}x${h}: 没有通栏卡片，全部在瀑布流里`);
   check(r.cards.some((c) => c.n.startsWith('旅行')), `${w}x${h}: 旅行卡片在瀑布流里`);
   if (cols === 2) {
-    const bottoms = xs.map((x) => Math.max(...r.cards.filter((c) => c.x === x).map((c) => c.b)));
+    const cols2 = xs.map((x) => r.cards.filter((c) => c.x === x).sort((a, b) => a.y - b.y));
+    const bottoms = cols2.map((col) => col[col.length - 1].b);
     const diff = Math.abs(bottoms[0] - bottoms[1]);
-    check(diff <= 260, `${w}x${h}: 两列底部高差 ${diff}px`);
+    const taller = cols2[bottoms[0] > bottoms[1] ? 0 : 1];
+    const last = taller[taller.length - 1];
+    const lastH = last.b - last.y;
+    check(diff <= lastH + 24, `${w}x${h}: 两列底部高差 ${diff}px，不超过较高那列最后一张「${last.n}」的高度 ${lastH}px`);
   }
   check(errors.length === 0, `${w}x${h}: 没有 JS 报错 ${errors.join('; ')}`);
   console.log('     ', r.cards.map((c) => `${c.n}@(${c.x},${c.y})`).join('  '));
@@ -46,4 +52,4 @@ for (const [w, h, cols] of [[1440, 900, 2], [1280, 720, 2], [390, 844, 1]]) {
   await page.close();
 }
 await browser.close();
-process.exit(failed ? 1 : 0);
+t.done();

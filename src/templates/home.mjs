@@ -8,16 +8,8 @@ import { site } from '../site.mjs';
 import { contactIcons, contactPopovers } from './contact.mjs';
 import { layout, topbar } from './layout.mjs';
 import { formatDate } from './util.mjs';
+import { SECRET, SECTIONS } from '../assets/js/sections.ts';
 import { featured, hasArt, playedOn, playtime } from '../../build/steam-data.mjs';
-
-const SECTIONS = [
-  { id: 'home', label: '起点', biome: '草甸' },
-  { id: 'posts', label: '博文', title: '最新博文', biome: '森林' },
-  { id: 'tools', label: '工具', biome: '沙丘' },
-  { id: 'games', label: '游戏', biome: '小镇' },
-  { id: 'friends', label: '友链', biome: '花林' },
-  { id: 'about', label: '关于', biome: '雪松林' },
-];
 
 const hero = ({ posts, friends }) => {
   const categories = new Set(posts.flatMap((p) => p.categories)).size;
@@ -178,7 +170,7 @@ const CONTENT = { home: hero, posts: postList, tools: toolGrid, games, friends: 
 
 /** 板块 id -> 序号与名称，路由和阅读面板用 */
 export const sectionOf = (id) => {
-  if (id === 'secret') return { index: -1, id: 'secret', label: '？？？', biome: '秋林' };
+  if (id === SECRET.id) return { index: -1, ...SECRET };
   const i = SECTIONS.findIndex((s) => s.id === id);
   return { index: Math.max(0, i), ...SECTIONS[Math.max(0, i)] };
 };
@@ -200,9 +192,9 @@ export function shell(ctx, page = {}) {
   <canvas id="world" aria-hidden="true"></canvas>
   <p class="no-webgpu" role="note">这个浏览器不支持 WebGPU，像素世界没有显示。换用新版的 Chrome、Edge，或 iOS 26 以上的 Safari 就能看到。</p>
   ${topbar()}
-  <div class="panel secret-panel" id="secret" data-secret-panel inert aria-hidden="true">
+  <div class="panel secret-panel" id="${SECRET.id}" data-secret-panel inert aria-hidden="true">
     <div class="card">
-      <h2 class="card-title"><span class="title-dot" aria-hidden="true"></span><span>？？？</span><span class="biome-chip">秋林</span></h2>
+      <h2 class="card-title"><span class="title-dot" aria-hidden="true"></span><span>${SECRET.label}</span><span class="biome-chip">${SECRET.place}</span></h2>
       <p class="secret-text">你发现了路牌背后的小路。</p>
       <p class="secret-text muted">藏在路牌背后的留言板：随便写点什么，打个招呼也好。往前走就能回到起点。</p>
       <p class="more"><a class="btn btn-open" href="/guestbook/">打开留言板<span class="open-icon" aria-hidden="true"></span></a></p>
@@ -215,7 +207,7 @@ export function shell(ctx, page = {}) {
       <div class="panel" data-panel="${i}">
         <div class="card">
           ${(() => {
-            const title = html`<h2 class="card-title" id="${s.id}-title"><span class="title-dot" aria-hidden="true"></span><span>${s.title ?? s.label}</span><span class="biome-chip">${s.biome}</span></h2>`;
+            const title = html`<h2 class="card-title" id="${s.id}-title"><span class="title-dot" aria-hidden="true"></span><span>${s.title ?? s.label}</span><span class="biome-chip">${s.place}</span></h2>`;
             const extra = HEAD_EXTRA[s.id]?.(ctx);
             return extra ? html`<div class="card-head">${title}${extra}</div>` : title;
           })()}
@@ -247,10 +239,10 @@ export function shell(ctx, page = {}) {
     ${reader.left ?? ''}
     <div class="reader-card card" data-section="${sec.id}">
       <div class="reader-bar">
-        <a class="reader-back" href="/#${sec.id}" data-reader-back title="返回（Esc）"><span aria-hidden="true">←</span> <span data-back-label>回到${sec.biome}</span></a>
+        <a class="reader-back" href="/#${sec.id}" data-reader-back title="返回（Esc）"><span aria-hidden="true">←</span> <span data-back-label>回到${sec.place}</span></a>
         <span class="reader-bar-end">
           ${reader.toc ? html`<button type="button" class="toc-btn" data-toc-toggle aria-expanded="false" aria-controls="reader-toc">目录</button>` : ''}
-          <a class="reader-close" href="/#${sec.id}" data-reader-close title="关闭，回到${sec.biome}" aria-label="关闭，回到${sec.biome}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></a>
+          <a class="reader-close" href="/#${sec.id}" data-reader-close title="关闭，回到${sec.place}" aria-label="关闭，回到${sec.place}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></a>
         </span>
       </div>
       <div class="reader-scroll" data-reader-scroll tabindex="-1">

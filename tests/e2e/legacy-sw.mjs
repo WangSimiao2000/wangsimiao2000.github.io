@@ -12,6 +12,7 @@ const legacy = `
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', (e) => {
+  if (new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
     if (e.request.method === 'GET') { const c = res.clone(); caches.open('chirpy-old').then((k) => k.put(e.request, c)); }
     return res;
@@ -68,6 +69,8 @@ try {
     await page.goto(BASE + '/');
     await page.waitForTimeout(3000);
     const s = await state(page);
+    // 没清干净时记下缓存里剩了什么，方便查是哪个请求晚到
+    if (s.caches) console.log('     缓存里还有：', await page.evaluate(async () => Promise.all((await caches.keys()).map(async (k) => [k, (await (await caches.open(k)).keys()).map((r) => new URL(r.url).pathname)]))));
     t.ok(s.regs === 0 && s.caches === 0 && !s.controlled, `页面脚本注销旧 Service Worker 并清缓存（${JSON.stringify(s)}）`);
     t.ok(loads === 2, `只刷新一次（load ${loads} 次）`);
     await ctx.close();

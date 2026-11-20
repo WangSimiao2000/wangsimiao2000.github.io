@@ -4,6 +4,7 @@
  * 不记住状态：下次进站卡片照常显示，免得访客以为页面坏了。
  */
 import { hotkeyOff, isOn as stateOn, onState, pushLayer, setState } from './ui.js';
+import { hintNear } from './common.js';
 
 const btn = document.querySelector<HTMLButtonElement>('[data-scenic-toggle]');
 const LABEL_OFF = '隐藏卡片，只看风景（H）';
@@ -16,19 +17,7 @@ let hinted = false;
 function hint(): void {
   if (hinted || !btn) return;
   hinted = true;
-  const el = document.createElement('div');
-  el.className = 'fs-hint';
-  el.setAttribute('role', 'status');
-  el.textContent = matchMedia('(pointer: coarse)').matches ? '再点一下这个按钮，卡片就回来' : '按 H 或 Esc 恢复卡片';
-  document.body.append(el);
-  const r = btn.getBoundingClientRect();
-  el.style.top = `${r.bottom + 12}px`;
-  el.style.right = `${Math.max(8, window.innerWidth - r.right - 6)}px`;
-  requestAnimationFrame(() => el.classList.add('show'));
-  setTimeout(() => {
-    el.classList.remove('show');
-    setTimeout(() => el.remove(), 400);
-  }, 2600);
+  hintNear(btn, matchMedia('(pointer: coarse)').matches ? '再点一下这个按钮，卡片就回来' : '按 H 或 Esc 恢复卡片', 2600);
 }
 
 function set(on: boolean): void {
