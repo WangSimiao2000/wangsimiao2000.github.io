@@ -4,8 +4,9 @@
  *   1. 图层      每层画到自己的纹理（逻辑分辨率，layer.wgsl）
  *   2. 光照图    点光源照到哪里、多亮（lightmap.wgsl）
  *   3. 景深      远景、后排、前景按离镜头的远近各自模糊（blur.wgsl）
- *   4. 辉光      发光的层和天空里的日月叠在一起，逐级缩小再放大叠回来（bloom.wgsl）
- *   5. 体积光    太阳 / 月亮从山脊、树冠缝里漏下来的光束（rays.wgsl）；夜里灯光洒出来的光束，人物会挡出影子（beams.wgsl）
+ *   4. 辉光      先把挡住天空的层（drawlist.ts 的 OCCLUDERS）画成一张挡光遮罩（occlude.wgsl）；
+ *                发光的层和天空里没被挡住的日月叠在一起，逐级缩小再放大叠回来（bloom.wgsl）
+ *   5. 体积光    太阳 / 月亮从挡光遮罩的缝里漏下来的光束（rays.wgsl）；夜里灯光洒出来的光束，人物会挡出影子（beams.wgsl）
  *   6. 合成      世界画布先画天空渐变（sky.wgsl），再按 COMPOSE 把各组叠到各张画布上（compose.wgsl，顺带调色），
  *                镜头光斑紧跟在自己那层后面（bokeh.wgsl），最后叠辉光和光束（overlay.wgsl）
  *   7. 毛玻璃    天空 + 世界再合成一份逻辑分辨率的、模糊掉，只画在卡片、阅读面板这些表面后面（glass.wgsl）；
@@ -16,7 +17,7 @@
  * 所有画布都按屏幕像素画（scale = 逻辑像素 × 设备像素比，最多 2 倍）：模糊和泛光才是平滑的，清晰的层按最近邻取像素。
  */
 import { loadAtlas } from '../../atlas.js';
-import { COMPOSE, ERASE, LAYERS, NIGHT, STRIDE, type CanvasName, type Canvases, type DrawList, type Group, type LayerName, type Renderer, type View } from '../../drawlist.js';
+import { CMD_FLAGS, COMPOSE, ERASE, LAYERS, NIGHT, OCCLUDERS, STRIDE, type CanvasName, type Canvases, type DrawList, type Group, type LayerName, type Renderer, type View } from '../../drawlist.js';
 import { FADE_STOPS, rgb } from '../../sim/util.js';
 
 export const FX = { lights: 1, dof: 2, bloom: 4, rays: 8, grade: 16, beams: 32, glass: 64, front: 128, bokeh: 256, vignette: 512, shadow: 1024 } as const;
@@ -30,7 +31,7 @@ const FRONT_ALPHA = 0.92; // 前景压在卡片上，留一点点透
 const MAX_LIGHTS = 48;
 const MAX_BOKEH = 64;
 const BOKEH_FLOATS = 8; // 和 bokeh.wgsl 的 Dot 一一对应
-const FRAME_FLOATS = (10 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应
+const FRAME_FLOATS = (10 + 2 + MAX_LIGHTS * 3) * 4; // 和 frame.wgsl 的 Frame 一一对应（10 个 vec4、淡出控制点 2 个、每个光源 3 个）
 const DOF_SIGMA = 0.5; // 每一级深度模糊多少（逻辑像素的标准差）：远山 4 级 = 2，后排 2 级 = 1，前景 6 级 = 3
 const BLOOM_LEVELS = 4; // 辉光逐级缩小几次（每级一半），再逐级放大叠回来：光晕大而柔
 const BLOOM = { day: 0.22, night: 0.45 };
@@ -44,6 +45,17 @@ const GLOW_EMIT = COMPOSE.world.find((g) => g.layers.includes('glow'))?.emit ?? 
 
 const shader = (name: string) => fetch(new URL(`./${name}.wgsl`, import.meta.url)).then((r) => r.text());
 
+/**
+ * 着色器和 TS 共用的常量只在 TS 里定义（FX、drawlist.ts 的 CMD_FLAGS、MAX_LIGHTS），这里生成 WGSL，
+ * 拼在每个着色器最前面。两边不再各写一份，改了一边另一边自动跟着变
+ */
+const PRELUDE = [
+  '// renderer.ts 生成，不要手改',
+  ...Object.entries(FX).map(([k, v]) => `const FX_${k.toUpperCase()} = ${v}u;`),
+  ...Object.entries(CMD_FLAGS).map(([k, v]) => `const ${k} = ${v}u;`),
+  `const MAX_LIGHTS = ${MAX_LIGHTS};`,
+].join('\n');
+
 /** 拿不到 WebGPU（浏览器不支持、没有适配器）时 reject，调用方决定怎么退回 */
 export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<Renderer> {
   if (!('gpu' in navigator)) throw new Error('浏览器不支持 WebGPU');
@@ -51,7 +63,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   if (!adapter) throw new Error('拿不到 WebGPU 适配器');
   const device = await adapter.requestDevice();
   device.lost.then((info) => console.error('[world] WebGPU 设备丢失', info.message));
-  const names = ['frame', 'layer', 'lightmap', 'blur', 'bloom', 'rays', 'beams', 'compose', 'overlay', 'glass', 'bokeh', 'sky'] as const;
+  const names = ['frame', 'layer', 'lightmap', 'blur', 'occlude', 'bloom', 'rays', 'beams', 'compose', 'overlay', 'glass', 'bokeh', 'sky'] as const;
   const src = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await shader(n)]))) as Record<(typeof names)[number], string>;
   const format = navigator.gpu.getPreferredCanvasFormat();
   const contexts = Object.fromEntries(
@@ -64,7 +76,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
 
   /* ---------- 管线 ---------- */
 
-  const module = (name: (typeof names)[number], withFrame = true) => device.createShaderModule({ label: name, code: withFrame ? src.frame + '\n' + src[name] : src[name] });
+  const module = (name: (typeof names)[number], withFrame = true) => device.createShaderModule({ label: name, code: [PRELUDE, withFrame ? src.frame : '', src[name]].join('\n') });
   const over: GPUBlendState = {
     color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
     alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
@@ -111,6 +123,9 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
   const lightPipe = fullPipe(module('lightmap'), HDR);
   const blurModule = module('blur', false);
   const blurPipe = { [LOGICAL]: fullPipe(blurModule, LOGICAL) } as Record<string, GPURenderPipeline>;
+  // 挡光遮罩：各层取不透明度的最大值
+  const max: GPUBlendState = { color: { srcFactor: 'one', dstFactor: 'one', operation: 'max' }, alpha: { srcFactor: 'one', dstFactor: 'one', operation: 'max' } };
+  const occludePipe = fullPipe(module('occlude'), LOGICAL, max);
   const bloomModule = module('bloom');
   const bloomPipe = fullPipe(bloomModule, HDR);
   const bloomDownPipe = fullPipe(bloomModule, HDR, undefined, 'down');
@@ -166,6 +181,12 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
     ...CANVASES.flatMap((k) => COMPOSE[k].map((g) => entry(k, g))),
     ...COMPOSE.world.map((g) => entry('glass', g)),
   ];
+  /** 这一层离主平面多远（drawlist.ts 的 depth；不在任何组里、或在主平面上是 0） */
+  const depthOf = (l: LayerName) => groups.flatMap(({ g }) => g.layers.map((x, i) => [x, g.depth?.[i] ?? 0] as const)).find(([x]) => x === l)?.[1] ?? 0;
+  /** 这一层合成时往右挪的亚像素：只有景深模糊过的层（线性插值取样）才挪，清晰的层按最近邻取，挪了也还是跳格 */
+  const shiftOf = (dl: DrawList, l: LayerName) => (effects & FX.dof && depthOf(l) > 0 ? (dl.shift[l] ?? 0) : 0);
+  /** 挡光遮罩里每层一份偏移参数 */
+  const occludeBufs = OCCLUDERS.map(() => uniform(16));
   /** 这一组这一帧画不画：只在深色模式合成的组、影子开没开 */
   const skip = (e: (typeof groups)[number], night: number) => (e.g.darkOnly && night <= 0) || (e.g.layers.includes('shadow') && !(effects & FX.shadow));
 
@@ -198,6 +219,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       blurred,
       scratch: tex('blur-scratch'),
       lightmap: tex('lightmap', HDR),
+      occlusion: tex('occlusion'),
       bloomSrc: tex('bloom-src', HDR),
       // 辉光的几级：一级比一级小一半
       bloom: Array.from({ length: BLOOM_LEVELS }, (_, i) =>
@@ -219,7 +241,6 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       h: bind(pipe, [{ buffer: uniform(16, new Float32Array([1, 0, sigma, 0])) }, from]),
       v: bind(pipe, [{ buffer: uniform(16, new Float32Array([0, 1, sigma, 0])) }, mid]),
     });
-    const depthOf = (l: LayerName) => groups.flatMap(({ g }) => g.layers.map((x, i) => [x, g.depth?.[i] ?? 0] as const)).find(([x]) => x === l)?.[1] ?? 0;
     const F = { buffer: frameBuf };
     return {
       ...t,
@@ -228,7 +249,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       dofBinds: Object.fromEntries(Object.keys(blurred).map((l) => [l, blurBinds(layers[l as LayerName], t.scratch, blurPipe[LOGICAL], depthOf(l as LayerName) * DOF_SIGMA)])) as Partial<Record<LayerName, { h: GPUBindGroup; v: GPUBindGroup }>>,
       bloomSrcBind: device.createBindGroup({
         layout: bloomPipe.getBindGroupLayout(0),
-        entries: [F, layers.emissive, layers.glow, layers.sky, null, linear, layers.far, layers.mid, layers.near, layers.back, layers.fg]
+        entries: [F, layers.emissive, layers.glow, layers.sky, null, linear, t.occlusion]
           .map((r, i) => r && { binding: i, resource: r instanceof GPUTexture ? r.createView() : r })
           .filter((e) => e !== null),
       }),
@@ -237,7 +258,8 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       bloomUp: t.bloom.slice(1).map((from) => device.createBindGroup({ layout: bloomUpPipe.getBindGroupLayout(0), entries: [{ binding: 4, resource: from.createView() }, { binding: 5, resource: linear }] })),
       skyBind: bind(skyPipe, [F, { buffer: scaleBuf }]),
       skyGlassBind: bind(skyGlassPipe, [F, { buffer: unitBuf }]),
-      raysBind: bind(raysPipe, [F, layers.far, layers.mid, layers.near, layers.fg, linear]),
+      occludeBinds: OCCLUDERS.map((l, i) => bind(occludePipe, [F, layers[l], linear, { buffer: occludeBufs[i] }])),
+      raysBind: bind(raysPipe, [F, t.occlusion, linear]),
       beamsBind: bind(beamsPipe, [F, layers.actors, layers.hero, layers.fg]),
       glassBlurBinds: blurBinds(t.glassSrc, t.scratch, blurPipe[LOGICAL], GLASS_SIGMA),
       glassSharpBinds: blurBinds(t.glassSrc, t.scratch, blurPipe[LOGICAL], GLASS_SHARP),
@@ -290,6 +312,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       d.set([l.x, l.y, l.radius, l.intensity, r / 255, g / 255, b / 255, bm?.floor ?? 1e6, bm?.dir[0] ?? 0, bm?.dir[1] ?? 0, bm?.cos ?? 1, bm?.length ?? 0], 48 + i * 12);
     });
     device.queue.writeBuffer(frameBuf, 0, d);
+    OCCLUDERS.forEach((l, i) => device.queue.writeBuffer(occludeBufs[i], 0, new Float32Array([shiftOf(dl, l), 0, 0, 0])));
     // 天空按主角画布（不平移、不下沉）对齐屏幕，世界跟着主角画布往下沉
     const sink = view.hero[1] / scale;
     for (const { canvas, g, buf } of groups) {
@@ -301,7 +324,8 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       const soft = [0, 1, 2].map((i) => (canvas === 'glass' || (effects & FX.dof && (g.depth?.[i] ?? 0) > 0) ? 1 : 0));
       const grade = effects & FX.grade && (g.lit || g.fade) ? GRADE : 0;
       // 亚像素偏移只对模糊过的层有意义（线性插值取样）；清晰的层按最近邻取，偏移了也还是跳格
-      const shift = [0, 1, 2].map((i) => (soft[i] ? (dl.shift[g.layers[i]] ?? 0) : 0));
+      const shift = g.layers.map((l, i) => (canvas === 'glass' ? (dl.shift[l] ?? 0) : shiftOf(dl, l)));
+      while (shift.length < 3) shift.push(0);
       const inWorld = canvas === 'world' || canvas === 'glass';
       if (g.screen && inWorld) shift[0] = skyX;
       const rise = !g.screen && inWorld ? sink : 0;
@@ -461,7 +485,7 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
         c[k].width = Math.round(w * scale);
         c[k].height = Math.round(h * scale);
       }
-      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.lightmap, T.bloomSrc, ...T.bloom, T.rays, T.beams, T.glassSrc, T.glassBlur, T.glassSharp]) v!.destroy();
+      if (T) for (const v of [...Object.values(T.layers), ...Object.values(T.blurred), T.scratch, T.lightmap, T.occlusion, T.bloomSrc, ...T.bloom, T.rays, T.beams, T.glassSrc, T.glassBlur, T.glassSharp]) v!.destroy();
       device.queue.writeBuffer(sizeBuf, 0, new Float32Array([w, h, 0, 0]));
       T = makeTargets();
     },
@@ -476,6 +500,15 @@ export async function createGpuRenderer(c: Canvases, effects = FX_ALL): Promise<
       if (effects & FX.lights) full(enc, T.lightmap, lightPipe, T.lightBind);
       if (effects & FX.dof) {
         for (const l of Object.keys(T.blurred) as LayerName[]) blur(enc, T.dofBinds[l]!, T.scratch, T.blurred[l]!, LOGICAL);
+      }
+      if (effects & (FX.bloom | FX.rays)) {
+        const p = pass(enc, T.occlusion);
+        p.setPipeline(occludePipe);
+        for (const b of T.occludeBinds) {
+          p.setBindGroup(0, b);
+          p.draw(3);
+        }
+        p.end();
       }
       if (effects & FX.bloom) {
         full(enc, T.bloomSrc, bloomPipe, T.bloomSrcBind);
