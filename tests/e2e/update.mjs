@@ -75,6 +75,9 @@ const FAKE = '/_s/0000000000/';
   reqs.length = 0;
 
   const t0 = Date.now();
+  // 有 Steam 数据时游戏板块默认显示「最近在玩」，地图按钮在「MC 服务器」那页
+  const mcTab = await page.$('.stages [data-tab="mc"]');
+  if (mcTab) await mcTab.click();
   await page.click('.stages a[href="/server/map/"]');
   const painted = await page
     .waitForFunction(
