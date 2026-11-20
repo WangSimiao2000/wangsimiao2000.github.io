@@ -11,16 +11,12 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { site } from '../src/site.mjs';
 import { shapeCalendar, signWbi, sumPlays, wbiKey } from './creator-data.mjs';
+import { get, live } from './fetch-util.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const OUT = path.join(ROOT, 'src/data/creator.json');
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 
-async function getJSON(url, init = {}) {
-  const r = await fetch(url, { signal: AbortSignal.timeout(20_000), ...init });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
 
 async function bili() {
   const mid = site.links.bilibili.match(/space\.bilibili\.com\/(\d+)/)?.[1];
@@ -32,7 +28,7 @@ async function bili() {
     for (let i = 0; ; i++) {
       await sleep(i ? 4000 * i : 800);
       try {
-        const j = await getJSON(`https://api.bilibili.com/${p}`, { headers });
+        const j = await get(`https://api.bilibili.com/${p}`, { headers });
         if (j.code !== 0 && !(p.startsWith('x/web-interface/nav') && j.data?.wbi_img)) throw new Error(`${p.split('?')[0]} code ${j.code} ${j.message}`);
         return j.data;
       } catch (err) {
@@ -65,7 +61,7 @@ async function github() {
   const login = site.links.github.replace(/\/$/, '').split('/').pop();
   const query = `query($login: String!) { user(login: $login) { contributionsCollection { contributionCalendar {
     totalContributions weeks { contributionDays { date contributionCount contributionLevel } } } } } }`;
-  const j = await getJSON('https://api.github.com/graphql', {
+  const j = await get('https://api.github.com/graphql', {
     method: 'POST',
     headers: { authorization: `bearer ${token}`, 'content-type': 'application/json', 'user-agent': 'blog-build' },
     body: JSON.stringify({ query, variables: { login } }),
@@ -75,14 +71,14 @@ async function github() {
   return { login, ...shapeCalendar(cal.weeks, cal.totalContributions) };
 }
 
-const live = await getJSON(`${site.url}/creator.json`).catch(() => ({}));
+const prev = await live('creator.json').catch(() => ({}));
 const out = { updated: new Date().toISOString() };
 for (const [name, fn] of [['bili', bili], ['gh', github]]) {
   try {
     out[name] = await fn();
   } catch (err) {
-    console.log(`创作与开源：${name} 读取失败（${err.message}）${live[name] ? '，沿用线上上一版' : '，这一块不显示'}`);
-    if (live[name]) out[name] = live[name];
+    console.log(`创作与开源：${name} 读取失败（${err.message}）${prev[name] ? '，沿用线上上一版' : '，这一块不显示'}`);
+    if (prev[name]) out[name] = prev[name];
   }
 }
 if (!out.bili && !out.gh) process.exit(0);

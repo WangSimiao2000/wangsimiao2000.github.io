@@ -18,7 +18,7 @@
 html[data-renderer='none'] :is(#world, #hero, #front) { display: none; }
 .no-webgpu { display: none; }
 html[data-renderer='none'] .no-webgpu {
-  display: block; position: fixed; z-index: 2; left: 50%; bottom: calc(var(--stage, 160px) / 2); transform: translateX(-50%);
+  display: block; position: fixed; z-index: var(--z-cards); left: 50%; bottom: calc(var(--stage, 160px) / 2); transform: translateX(-50%);
   width: min(420px, calc(100vw - 48px)); margin: 0; text-align: center;
   font-size: 13px; line-height: 1.6; color: var(--muted);
 }
@@ -43,7 +43,7 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 
 .panel { max-width: 760px; margin: 0 auto 28px; }
 .js .panel {
-  position: fixed; z-index: 2;
+  position: fixed; z-index: var(--z-cards);
   top: 72px; bottom: var(--stage);
   --pw: min(calc(760px * var(--ui, 1)), calc(100vw - 32px));
   left: 50%; width: var(--pw); max-width: none; margin-left: calc(var(--pw) / -2);
@@ -66,7 +66,7 @@ html.js { scroll-snap-type: y mandatory; scroll-behavior: smooth; overscroll-beh
 @keyframes bday-in { from { opacity: 0; transform: translateY(4px); } }
 /* 秋林灯笼上的留言：浮在灯笼正上方，指针不挡住画布 */
 .lantern-tip {
-  position: fixed; z-index: 3; transform: translate(-50%, calc(-100% - 8px)); max-width: min(260px, calc(100vw - 32px));
+  position: fixed; z-index: var(--z-bar); transform: translate(-50%, calc(-100% - 8px)); max-width: min(260px, calc(100vw - 32px));
   padding: 8px 12px; border-radius: var(--r-md); background: var(--surface); color: var(--text); box-shadow: var(--e3);
   font-size: 13px; line-height: 1.6; pointer-events: none;
 }
@@ -279,7 +279,7 @@ html:not(.js) .play-tabs { display: none; }
 /* ---- 底部板块切换：凸起底座，当前项按下 ---- */
 .hotbar { display: none; }
 .js .hotbar {
-  position: fixed; z-index: 3; left: 50%; transform: translateX(-50%);
+  position: fixed; z-index: var(--z-bar); left: 50%; transform: translateX(-50%);
   bottom: max(10px, calc(var(--ground) / 2 - 26px));
   display: flex; gap: calc(4px * var(--ui, 1)); padding: calc(6px * var(--ui, 1));
   border-radius: calc(19px * var(--ui, 1)); /* 格子圆角 13 + 底座内边距 6，同心 */
@@ -322,7 +322,7 @@ html:not(.js) .play-tabs { display: none; }
 .has-reader .stages { display: none; } /* 无 JS：有正文的页面只显示正文 */
 .js .has-reader .stages { display: block; }
 .js .reader {
-  position: fixed; z-index: 4; top: 70px; bottom: var(--strip); left: 50%;
+  position: fixed; z-index: var(--z-reader); top: 70px; bottom: var(--strip); left: 50%;
   width: min(calc(860px * var(--ui, 1)), calc(100vw - 32px)); max-width: none; margin: 0; padding: 0; transform: translateX(-50%);
 }
 /* 大屏：面板和两侧卡片的内容按 --ui 整体放大（地图本身不缩放，只是面板变大） */
@@ -568,7 +568,7 @@ html.js:not(.world-on):not(.reading) .stages { animation: stages-fallback 0s 3s 
 /* ---- 搜索：浮在一切之上的卡片 ---- */
 .search[hidden] { display: none !important; }
 .search {
-  position: fixed; inset: 0; z-index: 8; display: flex; justify-content: center; align-items: flex-start;
+  position: fixed; inset: 0; z-index: var(--z-search); display: flex; justify-content: center; align-items: flex-start;
   padding: 12vh 16px 16px; background: color-mix(in srgb, var(--bg) 55%, transparent);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
@@ -724,5 +724,5 @@ html[data-glass] :is(.hotbar, .toplinks > a, .toplinks .theme-btn, .time-pop) {
 }
 
 /* 镜头前的前景：压在卡片和快捷栏上面、手机目录和搜索下面，点击穿透 */
-#front { position: fixed; left: 0; bottom: 0; z-index: 5; display: none; pointer-events: none; }
+#front { position: fixed; left: 0; bottom: 0; z-index: var(--z-front); display: none; pointer-events: none; }
 .js #front { display: block; }
