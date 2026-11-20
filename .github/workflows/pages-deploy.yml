@@ -24,7 +24,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # 固定 24.04：构建后要跑浏览器测试，Playwright 1.58 还不支持 ubuntu-latest（26.04）
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v5
