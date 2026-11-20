@@ -14,6 +14,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse } from 'yaml';
 import { site } from '../src/site.mjs';
+import { get, live } from './fetch-util.mjs';
 import { shapeSteam } from './steam-data.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -28,11 +29,6 @@ const KINDS = {
   h: ['header', 'header.jpg'],
 };
 
-const get = async (url, as = 'json') => {
-  const r = await fetch(url, { signal: AbortSignal.timeout(20_000), headers: { 'user-agent': 'blog-build' } });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return as === 'json' ? r.json() : Buffer.from(await r.arrayBuffer());
-};
 
 async function steamId(key) {
   if (process.env.STEAM_ID) return process.env.STEAM_ID;
@@ -77,7 +73,7 @@ async function download(id, kind, item) {
   ].filter(Boolean);
   for (const url of urls) {
     try {
-      const buf = await get(url, 'buf');
+      const buf = await get(url, { as: 'buf' });
       if (isJpeg(buf)) return buf;
     } catch {}
   }
@@ -122,9 +118,9 @@ async function fromSteam() {
 
 /** 线上上一版：/games.json + /games/covers/<id>.<种类>.jpg */
 async function fromLive() {
-  const data = await get(`${site.url}/games.json`);
+  const data = await live('games.json');
   if (!data.art) throw new Error('线上是旧格式');
-  const got = await downloadAll(data, (id, k) => get(`${site.url}/games/covers/${id}.${k}.jpg`, 'buf').catch(() => null));
+  const got = await downloadAll(data, (id, k) => live(`games/covers/${id}.${k}.jpg`, 'buf').catch(() => null));
   return { data, got };
 }
 
