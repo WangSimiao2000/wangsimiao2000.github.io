@@ -63,6 +63,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     signal: AbortSignal.timeout(30_000),
   });
   // 百度返回 {"success": 推了几条, "remain": 今天还剩几条}，或者 {"error": ..., "message": ...}
-  console.log(res.status, await res.text());
+  const text = await res.text();
+  console.log(res.status, text);
+  // 每天的额度（这个站 10 条）用完是正常情况：同一天合并好几次时，后面几次都会这样。不算失败，明天凌晨的定时构建接着推
+  if (res.status === 400 && /over quota/.test(text)) {
+    console.log('::notice::百度今天的推送额度已经用完，这次跳过，明天凌晨的定时构建接着推');
+    process.exit(0);
+  }
   if (!res.ok) process.exit(1);
 }
