@@ -165,9 +165,8 @@ export class Eggs {
     return true;
   }
 
-  /** 推进彩蛋动画；女孩和猫画到角色层（夜色会盖上去，经过窗前会挡光） */
-  drawActors(fr: Frame, dt: number) {
-    const { dl, H, camLeft } = fr;
+  /** 推进彩蛋动画：路牌翻转、草堆抖动、女孩进出门、猫跳出来坐下、气泡倒计时 */
+  update(fr: Frame, dt: number) {
     // 路牌只往一个方向转：0 -> 1 翻过去，1 -> 2（即 0）转回来，都是顺时针
     const goal = this.signOpen ? 1 : 0;
     if (this.signFlip !== goal) {
@@ -180,7 +179,6 @@ export class Eggs {
     const girl = this.girl;
     if (girl.state !== 'none') {
       girl.t += dt;
-      const doorX = this.cottageWx + COTTAGE.doorCenter;
       if (girl.state === 'out') {
         girl.off = Math.max(-GIRL_WALK, -Math.max(0, girl.t - 0.35) * 20);
         if (girl.off <= -GIRL_WALK) Object.assign(girl, { state: 'wave', t: 0 });
@@ -189,7 +187,26 @@ export class Eggs {
         girl.off = Math.min(0, -GIRL_WALK + girl.t * 20);
         if (girl.off >= 0 && girl.t > 1.2) Object.assign(girl, { state: 'none', t: 0, off: 0 });
       }
-      const wx = doorX + girl.off;
+    }
+    // 彩狸猫：从草堆里跳出来落在旁边
+    const cat = this.cat;
+    if (cat.state !== 'hidden') {
+      cat.t += dt;
+      if (cat.state === 'jump') {
+        const u = Math.min(1, cat.t / 0.7);
+        cat.x = this.hayX - 2 - u * 16;
+        if (u >= 1) Object.assign(cat, { state: 'sit', t: 0, x: this.hayX - 18 });
+      } else cat.x = this.hayX - 18;
+    }
+    if (this.cat.meow > 0) this.cat.meow -= dt;
+  }
+
+  /** 女孩和猫画到角色层（夜色会盖上去，经过窗前会挡光） */
+  drawActors(fr: Frame) {
+    const { dl, H, camLeft } = fr;
+    const girl = this.girl;
+    if (girl.state !== 'none') {
+      const wx = this.cottageWx + COTTAGE.doorCenter + girl.off;
       const fr2 = girl.state !== 'in' ? this.girlL : this.girlR;
       const walking = (girl.state === 'out' && girl.t > 0.35) || (girl.state === 'in' && girl.off < 0);
       const sp = girl.state === 'wave' ? fr2.wave : walking ? fr2.walk[Math.floor(girl.t * 6.67) % fr2.walk.length] : fr2.idle; // 打招呼：举着手不晃
@@ -203,26 +220,21 @@ export class Eggs {
       if (girl.state === 'in' && girl.off > -4) alpha = clamp(-girl.off / 4);
       if (alpha > 0) dl.sprite('actors', sp, x, gy - sp.height, { alpha });
     }
-    // 彩狸猫：从草堆里跳出来落在旁边，坐着甩尾巴、眨眼
+    // 彩狸猫：跳的时候走一条抛物线；坐着甩尾巴（每帧 0.15 秒），每 4 秒眨一次眼
     const cat = this.cat;
     if (cat.state !== 'hidden') {
-      cat.t += dt;
       const frames = this.catL;
+      const cx = cat.x;
       let sp = frames.idle[0];
-      let cx = this.hayX - 18;
       let cy = H - Math.round(heightAt(cx));
       if (cat.state === 'jump') {
         const u = Math.min(1, cat.t / 0.7);
-        cx = this.hayX - 2 - u * 16;
         cy = Math.round(this.hayBase - 6 + (H - heightAt(cx) - this.hayBase + 6) * u - Math.sin(u * Math.PI) * 16);
         sp = frames.jump;
-        if (u >= 1) Object.assign(cat, { state: 'sit', t: 0 });
       } else {
-        // 坐着甩尾巴（每帧 0.15 秒），每 4 秒眨一次眼
         const ph = cat.t % 4;
         sp = ph > 1.5 && ph < 1.65 ? frames.blink : frames.idle[Math.floor(cat.t / 0.15) % frames.idle.length];
       }
-      cat.x = cx;
       const x = Math.round(cx - sp.width / 2 - camLeft);
       dl.sprite('actors', sp, x, cy - sp.height + 1);
       this.spots.push({ kind: 'cat', x0: x - 2, y0: cy - sp.height - 2, x1: x + sp.width + 2, y1: cy + 1 });
@@ -230,16 +242,13 @@ export class Eggs {
   }
 
   /** 招呼和喵的气泡画在夜色之上，晚上也看得清 */
-  drawBubbles(fr: Frame, dt: number) {
+  drawBubbles(fr: Frame) {
     const { dl, H, camLeft } = fr;
     const girl = this.girl;
     if (girl.state === 'wave' && girl.t > 0.2) {
       const wx = this.cottageWx + COTTAGE.doorCenter + girl.off;
       bubble(dl, wx - camLeft, H - Math.round(heightAt(wx)) - 22, 'Hi!', '#d0603a');
     }
-    if (this.cat.meow > 0) {
-      this.cat.meow -= dt;
-      bubble(dl, this.cat.x - camLeft, H - Math.round(heightAt(this.cat.x)) - 10, '♥', '#e85d7a');
-    }
+    if (this.cat.meow > 0) bubble(dl, this.cat.x - camLeft, H - Math.round(heightAt(this.cat.x)) - 10, '♥', '#e85d7a');
   }
 }

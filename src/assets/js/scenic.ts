@@ -3,14 +3,14 @@
  * 藏起来时世界照常能翻页（滚轮、方向键、1-6、滑动）和点彩蛋。打开阅读面板时自动退出。
  * 不记住状态：下次进站卡片照常显示，免得访客以为页面坏了。
  */
-const root = document.documentElement;
+import { hotkeyOff, isOn as stateOn, onState, pushLayer, setState } from './ui.js';
+
 const btn = document.querySelector<HTMLButtonElement>('[data-scenic-toggle]');
 const LABEL_OFF = '隐藏卡片，只看风景（H）';
 const LABEL_ON = '显示卡片（H 或 Esc）';
 
-const isOn = () => root.classList.contains('scenic');
-const busy = () =>
-  root.classList.contains('reading') || !!document.querySelector('[data-search]:not([hidden])');
+const isOn = () => stateOn('scenic');
+let unlayer = () => {};
 
 let hinted = false;
 function hint(): void {
@@ -33,7 +33,9 @@ function hint(): void {
 
 function set(on: boolean): void {
   if (on === isOn()) return;
-  root.classList.toggle('scenic', on);
+  setState('scenic', on);
+  unlayer();
+  unlayer = on ? pushLayer(() => set(false)) : () => {};
   if (btn) {
     const label = on ? LABEL_ON : LABEL_OFF;
     btn.setAttribute('aria-label', label);
@@ -53,22 +55,15 @@ if (btn) {
   btn.setAttribute('aria-pressed', 'false');
   btn.addEventListener('click', () => set(!isOn()));
 
+  // Esc 由 ui.ts 的浮层统一处理
   window.addEventListener('keydown', (e) => {
-    if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
-    const t = e.target as HTMLElement | null;
-    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-    if (busy()) return;
+    if (hotkeyOff(e) || stateOn('reading')) return;
     if (e.key === 'h' || e.key === 'H') {
       e.preventDefault();
       set(!isOn());
-    } else if (e.key === 'Escape' && isOn()) {
-      e.preventDefault();
-      set(false);
     }
   });
 
   // 站内跳到文章（前进后退、点了彩蛋里的链接）时，退出只看风景
-  new MutationObserver(() => {
-    if (isOn() && root.classList.contains('reading')) set(false);
-  }).observe(root, { attributes: true, attributeFilter: ['class'] });
+  onState('reading', (on) => on && set(false));
 }

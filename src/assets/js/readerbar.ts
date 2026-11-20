@@ -2,6 +2,8 @@
  * 手机上看文章：正文往下读时顶栏收起，阅读面板顶到屏幕上沿，多出约 50px 给正文；往上滑、回到顶部、
  * 换页或关闭面板时顶栏回来。面板自己那条栏（返回、目录、关闭）一直在。电脑上不收起。
  */
+import { isOn, onState } from './ui.js';
+
 const root = document.documentElement;
 const reader = document.querySelector<HTMLElement>('[data-reader]');
 const narrow = matchMedia('(max-width: 640px)');
@@ -35,7 +37,7 @@ if (reader) {
       const y = el.scrollTop;
       const d = y - last;
       last = y;
-      if (!narrow.matches || !root.classList.contains('reading')) return set(false);
+      if (!narrow.matches || !isOn('reading')) return set(false);
       if (y < SHOW_NEAR_TOP) return set(false);
       if (performance.now() < settleUntil) return;
       acc = Math.sign(d) === Math.sign(acc) ? acc + d : d;
@@ -46,8 +48,6 @@ if (reader) {
   );
   // 站内换页（正文整块换掉）、关闭阅读面板、转成宽屏：顶栏回来
   new MutationObserver(reset).observe(reader, { childList: true });
-  new MutationObserver(() => {
-    if (!root.classList.contains('reading')) reset();
-  }).observe(root, { attributes: true, attributeFilter: ['class'] });
+  onState('reading', (on) => !on && reset());
   narrow.addEventListener('change', reset);
 }

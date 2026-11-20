@@ -6,6 +6,7 @@
  * 结果写在 <html data-hour>（像素世界按它摆日月、调天色，见 pixel/sim/daytime.ts）和 <html data-theme> 上。
  * 首帧的值由 <head> 里的内联脚本按同样的规则先算好（templates/layout.mjs 的 THEME_INIT），不会闪。
  */
+import { pushLayer, reducedMotion } from './ui.js';
 const d = document.documentElement;
 const KEY = 'tod';
 
@@ -61,7 +62,7 @@ function show(h: number) {
   const set = () => {
     d.dataset.theme = theme;
   };
-  if ('startViewTransition' in document && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if ('startViewTransition' in document && !reducedMotion()) {
     d.classList.add('theme-switching');
     document.startViewTransition(set).finished.finally(() => d.classList.remove('theme-switching'));
   } else set();
@@ -110,7 +111,7 @@ function moveTo(h: number, byRange = false) {
   target = h;
   fromRange = byRange;
   if (now) now.hidden = urlHour === null && stored() === null;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (reducedMotion()) {
     shown = target;
     speed = 0;
     show(shown);
@@ -122,9 +123,18 @@ function moveTo(h: number, byRange = false) {
   }
 }
 
+let unlayer = () => {};
 function open(on: boolean) {
-  if (!toggle || !pop) return;
+  if (!toggle || !pop || pop.hidden === !on) return;
   pop.hidden = !on;
+  // 开着时登记成浮层：Esc 收起，焦点回到按钮
+  unlayer();
+  unlayer = on
+    ? pushLayer(() => {
+        open(false);
+        toggle?.focus();
+      })
+    : () => {};
   toggle.setAttribute('aria-expanded', String(on));
   if (on) range?.focus();
 }
@@ -139,15 +149,9 @@ now?.addEventListener('click', () => {
   store(null);
   moveTo(clock());
 });
-// 点到别处或按 Esc 收起
+// 点到别处收起（Esc 见 open）
 document.addEventListener('pointerdown', (e) => {
   if (pop && !pop.hidden && !(e.target as Element).closest('.time-wrap')) open(false);
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && pop && !pop.hidden) {
-    open(false);
-    toggle?.focus();
-  }
 });
 
 show(shown);

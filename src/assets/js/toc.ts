@@ -2,6 +2,8 @@
  * 阅读面板的目录：跟随正文高亮当前章节、显示阅读进度；窄屏时由顶栏「目录」按钮开关。
  * 面板内容每次换页都会整体替换，所以每次打开后重新 bind，返回的函数用于解绑。
  */
+import { pushLayer } from './ui.js';
+
 export function bindToc(reader: HTMLElement): () => void {
   const scroller = reader.querySelector<HTMLElement>('[data-reader-scroll]');
   const side = reader.querySelector<HTMLElement>('.side-left');
@@ -47,8 +49,17 @@ export function bindToc(reader: HTMLElement): () => void {
   };
 
   let closeTimer = 0;
+  // 目录开着时登记成浮层：Esc 先收起目录（焦点回到目录按钮），这一下不关闭面板
+  let unlayer = () => {};
   function setOpen(on: boolean) {
     clearTimeout(closeTimer);
+    unlayer();
+    unlayer = on
+      ? pushLayer(() => {
+          setOpen(false);
+          btn?.focus();
+        })
+      : () => {};
     btn?.setAttribute('aria-expanded', String(on));
     if (on) {
       side!.classList.add('is-open');
@@ -67,20 +78,11 @@ export function bindToc(reader: HTMLElement): () => void {
     const t = e.target as Element;
     if (side.classList.contains('is-shown') && !side.contains(t) && !btn?.contains(t)) setOpen(false);
   };
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && side.classList.contains('is-shown')) {
-      // 先收起目录，这一下 Esc 不关闭面板
-      e.stopImmediatePropagation();
-      setOpen(false);
-      btn?.focus();
-    }
-  };
 
   scroller.addEventListener('scroll', onScroll, { passive: true });
   btn?.addEventListener('click', onBtn);
   list.addEventListener('click', onPick);
   document.addEventListener('pointerdown', onOutside);
-  window.addEventListener('keydown', onKey, true);
   update();
 
   return () => {
@@ -89,6 +91,6 @@ export function bindToc(reader: HTMLElement): () => void {
     btn?.removeEventListener('click', onBtn);
     list.removeEventListener('click', onPick);
     document.removeEventListener('pointerdown', onOutside);
-    window.removeEventListener('keydown', onKey, true);
+    unlayer();
   };
 }
