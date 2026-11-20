@@ -12,17 +12,12 @@ struct Uniforms {
 
 // 和 drawlist.ts 的命令格式一一对应（14 个 float）
 struct Cmd {
-  @location(0) flagsAlpha: vec2f, // flags, alpha
+  @location(0) flagsAlpha: vec2f, // flags（SOLID、FLIP、SHADOW、ROTATE 由 renderer.ts 从 drawlist.ts 生成）, alpha
   @location(1) dst: vec4f,        // 目标 x y w h
   @location(2) src: vec4f,        // 图集里的 x y w h
   @location(3) rgb: vec3f,        // 纯色（0-255）；ROTATE 时前两位是转轴
   @location(4) extra: f32,        // 影子的斜率 / 旋转的转角
 };
-
-const SOLID = 1u;
-const FLIP = 4u;
-const SHADOW = 8u;
-const ROTATE = 16u;
 
 struct V {
   @builtin(position) pos: vec4f,

@@ -62,6 +62,14 @@ export interface Group {
   depth?: number[];
 }
 export type CanvasName = 'world' | 'hero' | 'front';
+
+/**
+ * 挡住天空光的层：天空里的日月只有没被这些层挡住的部分进辉光，日月的体积光也被它们挡出一道道光束。
+ * 渲染器把它们画成一张挡光遮罩（occlude.wgsl），辉光和体积光都只读那一张。
+ * 人物不在里面：灯光的光束被人物挡出影子是另一回事（beams.wgsl）
+ */
+export const OCCLUDERS: LayerName[] = ['far', 'mid', 'near', 'back', 'fg'];
+
 export const COMPOSE: Record<CanvasName, Group[]> = {
   world: [
     { layers: ['sky'], screen: true },
@@ -151,6 +159,8 @@ export const ERASE = 2; // 擦除：按这块的不透明度把已画的东西�
 export const FLIP = 4; // 水平翻转图集里那块
 export const SHADOW = 8; // 画成影子：上下翻过来、只取轮廓（黑色）、按第 13 位斜过去
 export const ROTATE = 16; // 绕转轴（第 10-11 位，默认是目标矩形的中心）转第 13 位那么多：风车头、路牌；按最近邻取像素，转出来还是像素画
+/** 命令标志的唯一定义：renderer.ts 按这张表生成 layer.wgsl 里同名的常量，着色器那边不再手抄 */
+export const CMD_FLAGS = { SOLID, ERASE, FLIP, SHADOW, ROTATE } as const;
 
 export interface SpriteOpts {
   alpha?: number;

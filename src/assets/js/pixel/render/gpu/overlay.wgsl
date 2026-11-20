@@ -17,7 +17,7 @@
   let uv = lp / F.size.xy;
   let b = textureSampleLevel(bloom, samp, uv, 0.0).rgb; // 昼夜的强度在 bloom.wgsl 里已经乘过
   let ray = textureSampleLevel(rays, samp, uv, 0.0).rgb;
-  let beam = textureSampleLevel(beams, samp, (lp - vec2f(0.0, F.view.y)) / F.size.xy, 0.0).rgb;
+  let beam = textureSampleLevel(beams, samp, worldUV(lp), 0.0).rgb;
   let c = b + ray + beam;
   let a = clamp(max(c.r, max(c.g, c.b)), 0.0, 1.0);
   return vec4f(min(c, vec3f(a)), a);

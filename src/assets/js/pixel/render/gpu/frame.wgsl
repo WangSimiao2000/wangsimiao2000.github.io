@@ -1,5 +1,6 @@
-// 每帧共用的参数，拼在 lightmap / bloom / rays / beams / compose / overlay 几个着色器前面。
+// 每帧共用的参数和函数，拼在 lightmap / occlude / bloom / rays / beams / compose / overlay / bokeh / sky 前面。
 // 和 renderer.ts 的 writeFrame 一一对应。
+// 效果开关位 FX_*、命令标志、MAX_LIGHTS 这些常量不在这里写：renderer.ts 从 TS 那边的定义生成，拼在最前面（见 prelude）。
 
 struct Frame {
   size: vec4f,   // 逻辑宽, 逻辑高, 效果开关位, 光源数
@@ -16,20 +17,23 @@ struct Frame {
   view: vec4f,
   stops: array<vec4f, 2>,   // 淡出的四个控制点 (t, a)，两两一组
   // 每个光源三项：(x, y, 半径, 强度), (r, g, b, 光束停在哪一行), (光束方向 x, y, 半张角余弦, 光束长度；长度 0 = 没有光束)
-  lights: array<vec4f, 144>,
+  lights: array<vec4f, MAX_LIGHTS * 3>,
 };
 @group(0) @binding(0) var<uniform> F: Frame;
 
-const FX_LIGHTS = 1u;
-const FX_DOF = 2u;
-const FX_BLOOM = 4u;
-const FX_RAYS = 8u;
-const FX_GRADE = 16u;
-const FX_BEAMS = 32u;
-const FX_BOKEH = 256u;
-const FX_VIGNETTE = 512u;
-const FX_SKY = 1024u;
 fn fx(bit: u32) -> bool { return (u32(F.size.z) & bit) != 0u; }
+
+// ---- 坐标（两种坐标的定义见 drawlist.ts 开头） ----
+// 全屏通道拿到的位置是「画布上的位置」（逻辑像素）。世界层和天空层的纹理各在自己的坐标里：
+// 世界阅读时往下沉了 view.y，天空贴着屏幕、要抵消世界画布的亚像素平移 view.x。两个都带小数。
+// 取样任何层的纹理都经过下面这几个函数换算，并且线性插值取样（按整格取会把小数截掉，画面一格一格地跳）。
+
+/** 画布上的位置 -> 世界层纹理的 uv */
+fn worldUV(p: vec2f) -> vec2f { return (p - vec2f(0.0, F.view.y)) / F.size.xy; }
+/** 画布上的位置 -> 天空层纹理的 uv */
+fn skyUV(p: vec2f) -> vec2f { return (p - vec2f(F.view.x, 0.0)) / F.size.xy; }
+/** 天空层里的位置（比如 F.sun）-> 画布上的位置 */
+fn skyToCanvas(q: vec2f) -> vec2f { return q + vec2f(F.view.x, 0.0); }
 /** 夜色有多浓（0..1）：白天和夜里的效果都按它插值，没有开关 */
 fn night() -> f32 { return F.sun.w; }
 fn hash2(p: vec2f) -> f32 { return fract(sin(dot(p, vec2f(12.9898, 78.233))) * 43758.5453); }

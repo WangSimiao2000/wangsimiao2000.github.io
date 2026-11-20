@@ -64,7 +64,8 @@ if (mode === 'dump') {
       await page.keyboard.press(String(i));
       await page.waitForTimeout(150);
       await page.evaluate(() => window.__step(60));
-      out[`${theme}/${i}`] = (await page.screenshot()).toString('base64');
+      // 接管了动画时钟后，软件渲染下一张截图要 30 秒上下，默认的 30 秒超时不够
+      out[`${theme}/${i}`] = (await page.screenshot({ timeout: 180000 })).toString('base64');
     }
     await ctx.close();
   }

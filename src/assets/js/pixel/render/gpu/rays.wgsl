@@ -3,23 +3,16 @@
 // 太阳低的时候（日出日落）光源贴着山，光束最明显。颜色和强度跟着一天里的时刻走（daytime.ts）。
 // 起点按像素随机错开一点，消掉等距取样造成的一圈圈条纹。
 
-@group(0) @binding(1) var far: texture_2d<f32>;
-@group(0) @binding(2) var mid: texture_2d<f32>;
-@group(0) @binding(3) var near: texture_2d<f32>;
-@group(0) @binding(4) var fg: texture_2d<f32>;
-@group(0) @binding(5) var samp: sampler;
+@group(0) @binding(1) var occ: texture_2d<f32>; // 挡光遮罩（occlude.wgsl）
+@group(0) @binding(2) var samp: sampler;
 
-// 按画布上的位置算：太阳在天空里，要加上天空的偏移；世界阅读时往下沉，取样时换算回去（frame.wgsl 的 view）。
-// 下沉量带小数，挡光的形状要线性插值取，按整格取的话世界下沉时光束一格一格地跳
-fn blocked(q: vec2f) -> f32 {
-  let uv = (q - vec2f(0.0, F.view.y)) / F.size.xy;
-  let a = max(textureSampleLevel(far, samp, uv, 0.0).a, textureSampleLevel(mid, samp, uv, 0.0).a);
-  return max(a, max(textureSampleLevel(near, samp, uv, 0.0).a, textureSampleLevel(fg, samp, uv, 0.0).a));
-}
+/** 画布上这一点被挡住了多少 */
+fn blocked(q: vec2f) -> f32 { return textureSampleLevel(occ, samp, worldUV(q), 0.0).r; }
+
+/** 主光源（日 / 月）在画布上的位置 */
+fn sun() -> vec2f { return skyToCanvas(F.sun.xy); }
 
 /** 这一点有多少光射出来：是天空（没被挡住）、离光源越近越亮 */
-fn sun() -> vec2f { return F.sun.xy + vec2f(F.view.x, 0.0); }
-
 fn source(q: vec2f) -> f32 {
   return (1.0 - blocked(q)) * exp(-length(q - sun()) / 46.0);
 }

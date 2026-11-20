@@ -10,36 +10,21 @@
 @group(0) @binding(3) var sky: texture_2d<f32>;
 @group(0) @binding(4) var src: texture_2d<f32>;
 @group(0) @binding(5) var samp: sampler;
-@group(0) @binding(6) var far: texture_2d<f32>;
-@group(0) @binding(7) var mid: texture_2d<f32>;
-@group(0) @binding(8) var near: texture_2d<f32>;
-@group(0) @binding(9) var back: texture_2d<f32>;
-@group(0) @binding(10) var fg: texture_2d<f32>;
+@group(0) @binding(6) var occ: texture_2d<f32>; // 挡光遮罩（occlude.wgsl）
 
-/**
- * 画布上的位置换成世界里取样用的坐标（阅读时世界往下沉了 F.view.y，带小数）。
- * 按小数偏移取的都要线性插值，按整格取的话世界下沉时光晕一格一格地跳
- */
-fn world(p: vec2f) -> vec2f { return (p - vec2f(0.0, F.view.y)) / F.size.xy; }
 fn at(t: texture_2d<f32>, uv: vec2f) -> vec4f { return textureSampleLevel(t, samp, uv, 0.0); }
-
-/** 这一格天空被前面的东西挡住了多少 */
-fn covered(uv: vec2f) -> f32 {
-  let a = max(max(at(far, uv).a, at(mid, uv).a), at(near, uv).a);
-  return max(a, max(at(back, uv).a, at(fg, uv).a));
-}
 
 @fragment fn fs(v: V) -> @location(0) vec4f {
   if (!fx(FX_BLOOM)) { return vec4f(0.0); }
-  let w = world(v.pos.xy);
+  let w = worldUV(v.pos.xy);
   // 营火火焰按自发光倍数进辉光（白天比夜里弱，见 drawlist.ts 的 emit）。灯窗、日月按昼夜的辉光强度（F.tint.a）
   var c = at(glow, w) * F.ambient.w * FIRE_BLOOM;
   var rest = vec4f(0.0);
   rest += at(emissive, w); // 自发光层里的光本来就按夜色的浓淡画（白天是空的）
   // 天空：只取接近白的亮部（日盘、月盘、星星），天空底色和晚霞不算。
   // 天空的偏移带小数（视差的亚像素，见 sky.ts），线性插值取样，光晕才跟着日月平滑挪动，不会一格一格地跳
-  let s = textureSampleLevel(sky, samp, (v.pos.xy - vec2f(F.view.x, 0.0)) / F.size.xy, 0.0);
-  let bright = smoothstep(0.7, 0.95, max(s.r, max(s.g, s.b)) / max(s.a, 1e-3)) * s.a * (1.0 - covered(w));
+  let s = at(sky, skyUV(v.pos.xy));
+  let bright = smoothstep(0.7, 0.95, max(s.r, max(s.g, s.b)) / max(s.a, 1e-3)) * s.a * (1.0 - at(occ, w).r);
   rest += vec4f(s.rgb * bright * 1.6, 0.0);
   return c + rest * F.tint.a;
 }
