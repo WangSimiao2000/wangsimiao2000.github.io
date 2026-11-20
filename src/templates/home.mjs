@@ -29,12 +29,12 @@ const hero = ({ posts, friends }) => {
         <p class="hero-tag">${site.tagline}</p>
         <p class="hero-meta">${posts.length} 篇文章 · ${categories} 个分类 · ${friends.length} 位朋友</p>
       </div>
-      <p class="hint">向下滑动，出发 <span aria-hidden="true">▼</span><span class="hint-keys">（或按 1-${SECTIONS.length} 直达）</span></p>
+      <p class="hint" data-fit-drop>向下滑动，出发 <span aria-hidden="true">▼</span><span class="hint-keys">（或按 1-${SECTIONS.length} 直达）</span></p>
     </div>`;
 };
 
 const postList = ({ posts }) => html`
-  <ol class="post-list">
+  <ol class="post-list" data-fit>
     ${posts.slice(0, 6).map(
       (p) => html`
       <li>
@@ -54,7 +54,7 @@ export const toolLink = (t) =>
     : html`<a class="slot-link tool" href="https://github.com/${t.repo}" target="_blank" rel="noopener"><span><span class="item-name">${t.name}</span><span class="item-desc">${t.description}</span>${t.lang ? html`<span class="tool-tags"><span class="tool-badge">${t.lang}</span></span>` : ''}</span></a>`;
 
 const toolGrid = ({ tools }) => html`
-  <ul class="grid tools">
+  <ul class="grid tools" data-fit>
     ${tools.slice(0, 4).map((t) => html`<li>${toolLink(t)}</li>`)}
   </ul>
   <p class="more"><a class="btn btn-open" href="/tools/">查看全部 ${tools.length} 个工具<span class="open-icon" aria-hidden="true"></span></a></p>`;
@@ -96,8 +96,8 @@ const steamPane = (steam) => {
   const f = featured(steam);
   const sub = { recent: '最近在 Steam 上玩的', lately: '最近在 Steam 上玩过的', top: '在 Steam 上玩得最多的' }[f.kind];
   return html`
-    <p class="pane-sub">${sub} · 共 ${steam.total} 款，${playtime(steam.minutes)}</p>
-    <ol class="game-list">${f.games.map((g) => gameRow(steam, g))}</ol>
+    <p class="pane-sub" data-fit-drop>${sub} · 共 ${steam.total} 款，${playtime(steam.minutes)}</p>
+    <ol class="game-list" data-fit>${f.games.map((g) => gameRow(steam, g))}</ol>
     <p class="server-foot"><span>Steam · 数据每天更新</span><a class="btn btn-open" href="/games/">完整游戏库<span class="open-icon" aria-hidden="true"></span></a></p>`;
 };
 
@@ -137,7 +137,7 @@ const gamesTabs = ({ steam }) =>
     : '';
 
 const friendGrid = ({ friends, graveyard }) => html`
-  <ul class="grid friends">
+  <ul class="grid friends" data-fit>
     ${friends.slice(0, 6).map(
       (f) => html`
       <li>
@@ -155,7 +155,7 @@ const friendGrid = ({ friends, graveyard }) => html`
 const about = () => html`
   <div class="about">
     <p class="hero-name">嗨，我是${site.author}</p>
-    <p>图形渲染开发工程师 @ 小米。喜欢图形学、游戏和折腾服务器。</p>
+    <p data-fit-drop>图形渲染开发工程师 @ 小米。喜欢图形学、游戏和折腾服务器。</p>
     ${contactIcons('home')}
     <p class="more"><a class="btn btn-open" href="/about/">完整介绍<span class="open-icon" aria-hidden="true"></span></a></p>
     ${contactPopovers('home')}

@@ -8,6 +8,7 @@ import { paintStatus } from './status.js';
 import { startPlayTabs } from './play-tabs.js';
 import { removeLegacyServiceWorker } from './legacy-sw.js';
 import { isBirthday } from './pixel/sim/festive.js';
+import { fitCards } from './fit.js';
 
 void removeLegacyServiceWorker();
 
@@ -40,6 +41,9 @@ if (start) {
   const idx = Math.max(0, sections.findIndex((s) => s.id === start));
   window.scrollTo({ top: idx * (sections[0]?.offsetHeight || window.innerHeight), behavior: 'instant' });
 }
+
+// 卡片放不下的条目先藏好，世界再把卡片淡入（生日那行小字也算在内）
+fitCards();
 
 const world = startWorld({
   canvas,
